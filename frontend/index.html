@@ -7,9 +7,20 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Chatbot Demo Page</h1>
+    <h1 class="logo">Chatbot Demo Page</h1>
 
-    <div id="flexibot"></div>
+    <!-- Chat bubble -->
+    <div class="flexibot-bubble">💬</div>
+    
+    <!-- Chat window -->
+    <div class="flexibot-window">
+        <div class="flexibot-header">FlexiBot</div>
+        <div class="flexibot-messages" id="flexibot-messages"></div>
+        <div class="flexibot-input">
+            <input type="text" id="flexibot-input" placeholder="Type a message..." />
+            <button id="flexibot-send">Send</button>
+        </div>
+    </div>
 
     <script src="flexibot.js"></script>
 </body>

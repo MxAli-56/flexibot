@@ -1,45 +1,52 @@
-document.addEventListener("DOMContentLoaded", () => {
-    const container = document.getElementById("flexibot")
+const bubble = document.querySelector(".flexibot-bubble");
+const chatWindow = document.querySelector(".flexibot-window");
+const messages = document.querySelector("#flexibot-messages");
+const input = document.querySelector("#flexibot-input");
+const sendBtn = document.querySelector("#flexibot-send");
 
-    const bubble = document.createElement("div")
-    bubble.className = "flexibot-bubble";
-    bubble.innerText = "💬";
+// Toggle window
+bubble.addEventListener("click", () => {
+  chatWindow.style.display =
+    chatWindow.style.display === "flex" ? "none" : "flex";
+  chatWindow.style.flexDirection = "column";
+});
 
-    const chatWindow = document.getElementById("div")
-    chatWindow.className = "flexibot-window";
-    chatWindow.innerHTML = `
-    <div class="flexibot-header">FlexiBot</div>
-    <div class="flexibot-messages" id="messages"></div>
-    <div class="flexibot-input">
-    <input type="text" id="userInput" placeholder="Type a message..." />
-    <button id="sendBtn">Send</button>
-    </div>`;
+// Send message function
+function sendMessage() {
+  const text = input.value.trim();
+  if (!text) return;
 
-    container.appendChild(bubble)
-    container.appendChild(chatWindow)
+  // Add user message
+  const msg = document.createElement("div");
+  msg.textContent = "You: " + text;
+  messages.appendChild(msg);
+  input.value = "";
+  messages.scrollTop = messages.scrollHeight;
 
-    bubble.addEventListener("click", () => {
-        chatWindow.style.display = chatWindow.style.display === "flex" ? "none" : "flex"
-        chatWindow.style.flexDirection = "column"
-    })
+  // Show "typing..." indicator
+  const typing = document.createElement("div");
+  typing.id = "typing";
+  typing.textContent = "Bot is typing...";
+  messages.appendChild(typing);
+  messages.scrollTop = messages.scrollHeight;
 
-    const messagesDiv = chatWindow.querySelector("#messages");
-    const input = chatWindow.querySelector("#userInput");
-    const sendBtn = chatWindow.querySelector("#sendBtn");
+  // Dummy bot reply after 1 sec
+  setTimeout(() => {
+    typing.remove(); // remove "typing..."
+    const botMsg = document.createElement("div");
+    botMsg.textContent = "Bot: This is a dummy reply.";
+    messages.appendChild(botMsg);
+    messages.scrollTop = messages.scrollHeight;
+  }, 1000);
+}
 
-    function appendMessage(sender, text) {
-      const msg = document.createElement("div");
-      msg.textContent = `${sender}: ${text}`;
-      messagesDiv.appendChild(msg);
-      messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    }
+// Send on button click
+sendBtn.addEventListener("click", sendMessage);
 
-    sendBtn.addEventListener("click", () => {
-      const text = input.value.trim();
-      if (!text) return;
-      appendMessage("You", text);
-      input.value = "";
-      // Local dummy reply
-      setTimeout(() => appendMessage("Bot", "This is a dummy reply."), 500);
-    });
-})
+// Send on Enter (Shift+Enter = new line)
+input.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
