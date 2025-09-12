@@ -7,7 +7,7 @@ const PORT = 5000;
 app.use(cors())
 app.use(express.json())
 
-app.get("/api/message", (req, res) => {
+app.post("/api/message", (req, res) => {
   const { message } = req.body
   
   res.json({

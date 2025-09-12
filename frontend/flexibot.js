@@ -32,31 +32,25 @@ async function sendMessage() {
 
     const data = await res.json();
 
-    if (data.reply){
-        const botMsg = document.createElement("div")
-        botMsg.textContent = `Bot: ${data.reply}`
-        messages.appendChild(botMsg)
-        messages.scrollTop = messages.scrollHeight
-    }
+    // Show "typing..." indicator
+    const typing = document.createElement("div");
+    typing.id = "typing";
+    typing.textContent = "Bot is typing...";
+    messages.appendChild(typing);
+    messages.scrollTop = messages.scrollHeight;
+
+    if (data.reply) {
+      setTimeout(() => {
+        typing.remove()
+        const botMsg = document.createElement("div");
+        botMsg.textContent = `Bot: ${data.reply}`;
+        messages.appendChild(botMsg);
+        messages.scrollTop = messages.scrollHeight;
+    }, 1000)}
   } catch (error) {
     console.error("Error: ", error.message);
   }
 
-  // Show "typing..." indicator
-  const typing = document.createElement("div");
-  typing.id = "typing";
-  typing.textContent = "Bot is typing...";
-  messages.appendChild(typing);
-  messages.scrollTop = messages.scrollHeight;
-
-  // Dummy bot reply after 1 sec
-  setTimeout(() => {
-    typing.remove(); // remove "typing..."
-    const botMsg = document.createElement("div");
-    botMsg.textContent = "Bot: This is a dummy reply.";
-    messages.appendChild(botMsg);
-    messages.scrollTop = messages.scrollHeight;
-  }, 1000);
 }
 
 // Send on button click
