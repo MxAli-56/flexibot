@@ -12,7 +12,7 @@ bubble.addEventListener("click", () => {
 });
 
 // Send message function
-function sendMessage() {
+async function sendMessage() {
   const text = input.value.trim();
   if (!text) return;
 
@@ -22,6 +22,25 @@ function sendMessage() {
   messages.appendChild(msg);
   input.value = "";
   messages.scrollTop = messages.scrollHeight;
+
+  try {
+    const res = await fetch("http://localhost:5000/api/message", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: text }),
+    });
+
+    const data = await res.json();
+
+    if (data.reply){
+        const botMsg = document.createElement("div")
+        botMsg.textContent = `Bot: ${data.reply}`
+        messages.appendChild(botMsg)
+        messages.scrollTop = messages.scrollHeight
+    }
+  } catch (error) {
+    console.error("Error: ", error.message);
+  }
 
   // Show "typing..." indicator
   const typing = document.createElement("div");
