@@ -1,5 +1,8 @@
 const express = require("express");
 const cors = require("cors");
+require("dotenv").config();
+
+const { chatWithGemini } = require("./providers/gemini");
 
 const app = express();
 const PORT = 5000;
@@ -7,13 +10,14 @@ const PORT = 5000;
 app.use(cors())
 app.use(express.json())
 
-app.post("/api/message", (req, res) => {
-  const { message } = req.body
-  
-  res.json({
-    reply: `Bot says: I received your message → "${message}"`,
-  });
+app.post("/api/message", async (req, res) => {
+  const { message } = req.body;
+
+  const reply = await chatWithGemini(message);
+
+  res.json({ reply });
 });
+
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
