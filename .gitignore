@@ -8,4 +8,4 @@ instance/
 docs/
 
 .DS_Store
-Thumbs.db
+Thumbs.dbbackend/node_modules/
