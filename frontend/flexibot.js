@@ -43,7 +43,7 @@ async function sendMessage() {
       setTimeout(() => {
         typing.remove()
         const botMsg = document.createElement("div");
-        botMsg.textContent = `Bot: ${data.reply}`;
+        botMsg.innerHTML = DOMPurify.sanitize(marked.parse(`FlexiAI: ${data.reply}`));
         messages.appendChild(botMsg);
         messages.scrollTop = messages.scrollHeight;
     }, 1000)}
