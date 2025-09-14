@@ -3,13 +3,14 @@ const chatWindow = document.querySelector(".flexibot-window");
 const messages = document.querySelector("#flexibot-messages");
 const input = document.querySelector("#flexibot-input");
 const sendBtn = document.querySelector("#flexibot-send");
+const themetoggle = document.querySelector("#theme-toggle")
 
-// Toggle window
-bubble.addEventListener("click", () => {
-  chatWindow.style.display =
-    chatWindow.style.display === "flex" ? "none" : "flex";
-  chatWindow.style.flexDirection = "column";
-});
+  // Toggle window
+  bubble.addEventListener("click", () => {
+    chatWindow.style.display =
+      chatWindow.style.display === "flex" ? "none" : "flex";
+    chatWindow.style.flexDirection = "column";
+  });
 
 // Send message function
 async function sendMessage() {
@@ -63,3 +64,13 @@ input.addEventListener("keydown", (e) => {
     sendMessage();
   }
 });
+
+themetoggle.addEventListener('click', () => {
+    document.body.classList.toggle("dark-mode")
+
+    if (document.body.classList.contains("dark-mode")){
+        themetoggle.textContent = "🌙";
+    } else {
+        themetoggle.textContent = "🌞"
+    }
+})

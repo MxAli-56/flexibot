@@ -1,5 +1,6 @@
-body{
-    background-color: #333;
+body {
+  background: white;
+  color: black;
 }
 
 /* Bubble button */
@@ -26,27 +27,38 @@ body{
   right: 20px;
   width: 300px;
   height: 400px;
-  background: white;
+  background: #848383;
   border: 1px solid #ccc;
-  border-radius: 10px;
+  border-radius: 0;
   display: none;
   flex-direction: column;
   box-shadow: 0 2px 10px rgba(0,0,0,0.3);
 }
 
 .flexibot-header {
+  display: flex;
+  justify-content: space-between; 
+  align-items: center;
+  padding: 10px;
   background: #007bff;
   color: white;
-  padding: 10px;
-  text-align: center;
-  border-radius: 10px 10px 0 0;
+  font-weight: bold;
+  font-size: 20px;
 }
+
+.theme-toggle {
+  cursor: pointer;
+  font-size: 22px;
+  user-select: none;
+}
+
 
 .flexibot-messages {
   flex: 1;
   padding: 10px;
   overflow-y: auto;
   font-size: 14px;
+  background: #eeebeb;
 }
 
 .flexibot-input {
@@ -67,4 +79,25 @@ body{
   background: #007bff;
   color: white;
   cursor: pointer;
+}
+
+body.dark-mode {
+  background: #1e1e1e;
+  color: white;
+}
+
+body.dark-mode .flexibot-window {
+  background: #2c2c2ce2;
+}
+
+body.dark-mode .flexibot-messages {
+  background: #2d2d2d;
+}
+
+body.dark-mode .flexibot-header {
+  background: #4c0f77;
+}
+
+body.dark-mode .flexibot-input button {
+  background: #4c0f77;
 }
