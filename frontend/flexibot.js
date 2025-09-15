@@ -12,6 +12,8 @@ const themetoggle = document.querySelector("#theme-toggle")
     chatWindow.style.flexDirection = "column";
   });
 
+const sessionId = Date.now().toString();
+
 // Send message function
 async function sendMessage() {
   const text = input.value.trim();
@@ -25,13 +27,12 @@ async function sendMessage() {
   messages.scrollTop = messages.scrollHeight;
 
   try {
+    // Send message to backend with sessionId
     const res = await fetch("http://localhost:5000/api/message", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: text }),
+      body: JSON.stringify({ sessionId, text }),
     });
-
-    const data = await res.json();
 
     // Show "typing..." indicator
     const typing = document.createElement("div");
@@ -40,18 +41,22 @@ async function sendMessage() {
     messages.appendChild(typing);
     messages.scrollTop = messages.scrollHeight;
 
+    const data = await res.json();
+
     if (data.reply) {
       setTimeout(() => {
-        typing.remove()
+        typing.remove();
         const botMsg = document.createElement("div");
-        botMsg.innerHTML = DOMPurify.sanitize(marked.parse(`FlexiAI: ${data.reply}`));
+        botMsg.innerHTML = DOMPurify.sanitize(
+          marked.parse(`FlexiAI: ${data.reply}`)
+        );
         messages.appendChild(botMsg);
         messages.scrollTop = messages.scrollHeight;
-    }, 1000)}
+      }, 1000);
+    }
   } catch (error) {
     console.error("Error: ", error.message);
   }
-
 }
 
 // Send on button click
