@@ -12,7 +12,8 @@ const themetoggle = document.querySelector("#theme-toggle")
     chatWindow.style.flexDirection = "column";
   });
 
-const sessionId = Date.now().toString();
+// Generate unique sessionId for this browser session
+const sessionId = Date.now().toString() + "-" + Math.random().toString(36).substring(2, 8);
 
 // Send message function
 async function sendMessage() {
