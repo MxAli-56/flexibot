@@ -2,10 +2,12 @@ const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
 
+const connectDB = require("./db");
 const { chatWithGemini } = require("./providers/gemini");
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
+connectDB()
 
 app.use(cors())
 app.use(express.json())
