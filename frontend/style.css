@@ -26,8 +26,8 @@ body {
   position: fixed;
   bottom: 90px;
   right: 20px;
-  width: 300px;
-  height: 400px;
+  width: 350px;
+  height: 450px;
   background: #2c2c2ce2;
   border: 1px solid #333;
   border-radius: 0;
@@ -120,6 +120,10 @@ body {
   align-self: flex-start;
   border-bottom-left-radius: 6px;
   box-shadow: 0 1px 0 rgba(0,0,0,0.1);
+  padding: 6px 10px; /* smaller vertical padding */
+  margin: 2px 0;     /* small margin above/below bubble */
+  line-height: 1.3;  /* keep spacing readable */
+  white-space: normal; /* let text wrap normally, removes extra gaps */
 }
 
 /* Typing bubble */
