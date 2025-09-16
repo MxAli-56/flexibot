@@ -27,14 +27,16 @@ async function sendMessage() {
 
   // Add user message
   const msg = document.createElement("div");
-  msg.textContent = "You: " + text;
+  msg.className = "user-bubble"; // ✅ style
+  msg.textContent = text;
   messages.appendChild(msg);
   input.value = "";
   messages.scrollTop = messages.scrollHeight;
 
-  // Show "typing..." indicator
+  // Show "typing..." indicator as a bubble
   const typing = document.createElement("div");
   typing.id = "typing";
+  typing.className = "bot-bubble";
   typing.textContent = "FlexiAI is responding...";
   messages.appendChild(typing);
   messages.scrollTop = messages.scrollHeight;
@@ -50,12 +52,12 @@ async function sendMessage() {
     const data = await res.json();
     if (data.reply) {
       setTimeout(() => {
-        typing.remove();
         const botMsg = document.createElement("div");
+        botMsg.className = "bot-bubble"; // ✅ style
         botMsg.innerHTML = DOMPurify.sanitize(
-          marked.parse(`FlexiAI: ${data.reply}`)
+          marked.parse(data.reply)
         );
-        messages.appendChild(botMsg);
+        typing.replaceWith(botMsg); // ✅ replaces typing bubble
         messages.scrollTop = messages.scrollHeight;
       }, 1000);
     }
@@ -63,6 +65,7 @@ async function sendMessage() {
     console.error("Error: ", error.message);
   }
 }
+
 
 // Send on button click
 sendBtn.addEventListener("click", sendMessage);

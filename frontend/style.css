@@ -81,6 +81,26 @@ body {
   cursor: pointer;
 }
 
+.user-bubble, .bot-bubble {
+  margin: 6px 0;
+  padding: 8px 12px;
+  border-radius: 12px;
+  max-width: 70%;
+  word-wrap: break-word;
+}
+
+.user-bubble {
+  background-color: #0d6efd; /* blue */
+  color: white;
+  align-self: flex-end;
+}
+
+.bot-bubble {
+  background-color: #e5e5e5; /* gray */
+  color: black;
+  align-self: flex-start;
+}
+
 body.dark-mode {
   background: #1e1e1e;
   color: white;
