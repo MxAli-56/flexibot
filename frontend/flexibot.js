@@ -27,8 +27,8 @@ async function sendMessage() {
 
   // Add user message
   const msg = document.createElement("div");
-  msg.className = "user-bubble"; // ✅ style
-  msg.textContent = text;
+  msg.className = "message-bubble user-bubble";
+  msg.textContent = text; // keep plain text for user
   messages.appendChild(msg);
   input.value = "";
   messages.scrollTop = messages.scrollHeight;
@@ -36,10 +36,11 @@ async function sendMessage() {
   // Show "typing..." indicator as a bubble
   const typing = document.createElement("div");
   typing.id = "typing";
-  typing.className = "bot-bubble";
-  typing.textContent = "FlexiAI is responding...";
+  typing.className = "message-bubble typing-bubble";
+  // typing.textContent = "FlexiAI is responding...";
+  typing.innerHTML =
+    '<span class="typing-dots"><span></span><span></span><span></span></span>';
   messages.appendChild(typing);
-  messages.scrollTop = messages.scrollHeight;
 
   try {
     // Send message to backend with sessionId
@@ -53,11 +54,9 @@ async function sendMessage() {
     if (data.reply) {
       setTimeout(() => {
         const botMsg = document.createElement("div");
-        botMsg.className = "bot-bubble"; // ✅ style
-        botMsg.innerHTML = DOMPurify.sanitize(
-          marked.parse(data.reply)
-        );
-        typing.replaceWith(botMsg); // ✅ replaces typing bubble
+        botMsg.className = "message-bubble bot-bubble";
+        botMsg.innerHTML = DOMPurify.sanitize(marked.parse(data.reply));
+        typing.replaceWith(botMsg);
         messages.scrollTop = messages.scrollHeight;
       }, 1000);
     }
@@ -80,8 +79,8 @@ input.addEventListener("keydown", (e) => {
 
 // Theme toggle
 themetoggle.addEventListener("click", () => {
-  document.body.classList.toggle("dark-mode");
-  themetoggle.textContent = document.body.classList.contains("dark-mode")
-    ? "🌙"
-    : "🌞";
+  document.body.classList.toggle("light-mode");
+  themetoggle.textContent = document.body.classList.contains("light-mode")
+    ? "🌞"
+    : "🌙";
 });
