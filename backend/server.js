@@ -47,17 +47,6 @@ async function getOrCreateSession({ sessionId, clientId }) {
 }
 
 // Create a new session (called by widget on load)
-app.post('/api/session', async (req, res) => {
-  try {
-    const { clientId } = req.body; // e.g. "restaurant123"
-    const session = await getOrCreateSession({ sessionId: null, clientId });
-    res.json({ sessionId: session.sessionId });
-  } catch (err) {
-    console.error('Error creating session:', err);
-    res.status(500).json({ error: 'Could not create session' });
-  }
-});
-
 app.post("/api/message", async (req, res) => {
   try {
     const { sessionId, text } = req.body;
@@ -66,34 +55,41 @@ app.post("/api/message", async (req, res) => {
       return res.status(400).json({ error: "sessionId and text are required" });
     }
 
-    // Find the session in DB
-    const session = await Session.findOne({ sessionId });
+    // 1️⃣ Find the session in DB
+    let session = await Session.findOne({ sessionId });
     if (!session) {
-      return res.status(404).json({ error: "Session not found" });
+      // If session doesn't exist, create it with a default clientId
+      session = await Session.create({sessionId, clientId: "default", messages: []});
     }
 
-    // Save user's message
-    session.messages.push({
-      sender: "user",
-      text,
+    if (!Array.isArray(session.messages)) session.messages = [];
+
+    // 2️⃣ Save user's new message
+    session.messages.push({ sender: "user", text });
+
+    // 3️⃣ Fetch last 12 messages as context for Gemini
+    const lastMessages = session.messages.slice(-12); // last 12 messages
+    let prompt = "";
+    lastMessages.forEach((m) => {
+      const role = m.sender === "user" ? "user" : "assistant";
+      prompt += `${role}: ${m.text}\n`;
     });
+    prompt += `user: ${text}\nassistant:`; // add current user message
 
-    // Generate bot reply
-    const reply = await chatWithGemini(text);
+    // 4️⃣ Get bot reply from Gemini
+    const reply = await chatWithGemini(prompt);
 
-    // Save bot's reply
-    session.messages.push({
-      sender: "bot",
-      text: reply,
-    });
+    // 5️⃣ Save bot reply
+    session.messages.push({ sender: "bot", text: reply });
 
+    // 6️⃣ Save session
     await session.save();
 
-    // Send reply back to client
+    // 7️⃣ Send reply back to frontend
     res.json({ reply });
   } catch (error) {
-    console.error("Error saving message:", error);
-    res.status(500).json({ error: "Could not save message" });
+    console.error("Error in /api/message:", error);
+    res.status(500).json({ error: "Could not save message or generate reply" });
   }
 });
 

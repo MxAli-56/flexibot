@@ -3,17 +3,22 @@ const chatWindow = document.querySelector(".flexibot-window");
 const messages = document.querySelector("#flexibot-messages");
 const input = document.querySelector("#flexibot-input");
 const sendBtn = document.querySelector("#flexibot-send");
-const themetoggle = document.querySelector("#theme-toggle")
+const themetoggle = document.querySelector("#theme-toggle");
 
-  // Toggle window
-  bubble.addEventListener("click", () => {
-    chatWindow.style.display =
-      chatWindow.style.display === "flex" ? "none" : "flex";
-    chatWindow.style.flexDirection = "column";
-  });
+// Toggle window
+bubble.addEventListener("click", () => {
+  chatWindow.style.display =
+    chatWindow.style.display === "flex" ? "none" : "flex";
+  chatWindow.style.flexDirection = "column";
+});
 
-// Generate unique sessionId for this browser session
-const sessionId = Date.now().toString() + "-" + Math.random().toString(36).substring(2, 8);
+// ✅ Generate or get sessionId from localStorage
+let sessionId = localStorage.getItem("flexibotSessionId");
+if (!sessionId) {
+  sessionId =
+    Date.now().toString() + "-" + Math.random().toString(36).substring(2, 8);
+  localStorage.setItem("flexibotSessionId", sessionId);
+}
 
 // Send message function
 async function sendMessage() {
@@ -27,6 +32,13 @@ async function sendMessage() {
   input.value = "";
   messages.scrollTop = messages.scrollHeight;
 
+  // Show "typing..." indicator
+  const typing = document.createElement("div");
+  typing.id = "typing";
+  typing.textContent = "FlexiAI is responding...";
+  messages.appendChild(typing);
+  messages.scrollTop = messages.scrollHeight;
+
   try {
     // Send message to backend with sessionId
     const res = await fetch("http://localhost:5000/api/message", {
@@ -35,15 +47,7 @@ async function sendMessage() {
       body: JSON.stringify({ sessionId, text }),
     });
 
-    // Show "typing..." indicator
-    const typing = document.createElement("div");
-    typing.id = "typing";
-    typing.textContent = "Bot is typing...";
-    messages.appendChild(typing);
-    messages.scrollTop = messages.scrollHeight;
-
     const data = await res.json();
-
     if (data.reply) {
       setTimeout(() => {
         typing.remove();
@@ -71,12 +75,10 @@ input.addEventListener("keydown", (e) => {
   }
 });
 
-themetoggle.addEventListener('click', () => {
-    document.body.classList.toggle("dark-mode")
-
-    if (document.body.classList.contains("dark-mode")){
-        themetoggle.textContent = "🌙";
-    } else {
-        themetoggle.textContent = "🌞"
-    }
-})
+// Theme toggle
+themetoggle.addEventListener("click", () => {
+  document.body.classList.toggle("dark-mode");
+  themetoggle.textContent = document.body.classList.contains("dark-mode")
+    ? "🌙"
+    : "🌞";
+});
