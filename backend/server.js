@@ -3,6 +3,7 @@ const cors = require("cors");
 const { randomUUID } = require("crypto");
 const Session = require("./models/Session");
 const Message = require("./models/Message");
+const adminRoutes = require("./routes/admin");
 require("dotenv").config();
 
 const connectDB = require("./db");
@@ -15,6 +16,7 @@ connectDB()
 
 app.use(cors())
 app.use(express.json())
+app.use("/admin", adminRoutes);
 
 // Helper to fetch the last N messages for a session
 async function fetchConversation(sessionId, limit = 12) {
