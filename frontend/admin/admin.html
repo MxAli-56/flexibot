@@ -8,14 +8,14 @@
 </head>
 
 <body>
-    <h1>FlexiBot Admin Dashboard</h1>
-
-    <h3>Add New Client</h3>
-    <form id="clientForm">
-        <input type="text" id="name" placeholder="Client Name" required>
-        <input type="text" id="websiteURL" placeholder="Website URL" required>
-        <button type="submit">Add Client</button>
-    </form>
+    <div class="admin-container">
+        <h2>FlexiBot Admin Dashboard</h2>
+        <form id="clientForm">
+            <input type="text" id="name" placeholder="Client Name" required>
+            <input type="url" id="websiteURL" placeholder="Website URL" required>
+            <button type="submit">Add Client</button>
+        </form>
+    </div>
 
     <script>
         const API_BASE = "http://localhost:5000/admin";
