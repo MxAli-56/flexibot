@@ -25,8 +25,15 @@ router.post("/message", async (req, res) => {
   try {
     const { sessionId, clientId = "default", text } = req.body;
 
-    if (!text) {
+    // ✅ Validate input
+    if (!text || !text.trim()) {
       return res.status(400).json({ error: "Message text is required" });
+    }
+
+    if (text.length > 1000) {
+      return res
+        .status(400)
+        .json({ error: "Message too long. Max 1000 characters allowed." });
     }
 
     // 1️⃣ Find or create session
