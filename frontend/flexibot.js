@@ -20,30 +20,28 @@ if (!sessionId) {
   localStorage.setItem("flexibotSessionId", sessionId);
 }
 
-// Send message function
-async function sendMessage() {
+// Send message function with retry for temporary failures
+async function sendMessage(retries = 2) {
   const text = input.value.trim();
   if (!text) return;
 
-  // Add user message
-  const msg = document.createElement("div");
-  msg.className = "message-bubble user-bubble";
-  msg.textContent = text; // keep plain text for user
-  messages.appendChild(msg);
+  // Display user message
+  const userMsg = document.createElement("div");
+  userMsg.className = "message-bubble user-bubble";
+  userMsg.textContent = text;
+  messages.appendChild(userMsg);
   input.value = "";
   messages.scrollTop = messages.scrollHeight;
 
-  // Show "typing..." indicator as a bubble
+  // Show typing indicator
   const typing = document.createElement("div");
   typing.id = "typing";
   typing.className = "message-bubble typing-bubble";
-  // typing.textContent = "FlexiAI is responding...";
   typing.innerHTML =
     '<span class="typing-dots"><span></span><span></span><span></span></span>';
   messages.appendChild(typing);
 
   try {
-    // Send message to backend with sessionId
     const res = await fetch("http://localhost:5000/api/message", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -51,20 +49,39 @@ async function sendMessage() {
     });
 
     const data = await res.json();
-    if (data.reply) {
-      setTimeout(() => {
-        const botMsg = document.createElement("div");
-        botMsg.className = "message-bubble bot-bubble";
-        botMsg.innerHTML = DOMPurify.sanitize(marked.parse(data.reply));
-        typing.replaceWith(botMsg);
-        messages.scrollTop = messages.scrollHeight;
-      }, 1000);
+
+    const botMsg = document.createElement("div");
+    botMsg.className = "message-bubble bot-bubble";
+
+    if (!res.ok || data.error) {
+      botMsg.textContent =
+        data.error ||
+        "⚠️ Sorry, I couldn't process your message. Please try again.";
+    } else {
+      botMsg.innerHTML = DOMPurify.sanitize(marked.parse(data.reply));
     }
-  } catch (error) {
-    console.error("Error: ", error.message);
+
+    typing.replaceWith(botMsg);
+    messages.scrollTop = messages.scrollHeight;
+  } catch (err) {
+    console.error("Frontend fetch error:", err.message);
+
+    // Retry once if temporary network/server issue
+    if (retries > 0) {
+      console.warn(`⚠️ Retry sending message... (${3 - retries} attempt)`);
+      typing.remove();
+      return sendMessage(retries - 1);
+    }
+
+    // Final fallback message
+    const fallback = document.createElement("div");
+    fallback.className = "message-bubble bot-bubble";
+    fallback.textContent =
+      "⚠️ I’m having trouble connecting. Please check your internet or try again later.";
+    typing.replaceWith(fallback);
+    messages.scrollTop = messages.scrollHeight;
   }
 }
-
 
 // Send on button click
 sendBtn.addEventListener("click", sendMessage);
