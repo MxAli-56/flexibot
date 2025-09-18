@@ -10,14 +10,25 @@ const router = express.Router();
 // 🟢 Helper: fetch last N messages for context
 async function fetchConversation(sessionId, limit = 12) {
   const docs = await Message.find({ sessionId })
-    .sort({ createdAt: -1 })
+    .sort({ createdAt: -1 }) // newest first
     .limit(limit)
     .lean();
 
+  // reverse so oldest → newest
   return docs.reverse().map((d) => ({
     role: d.role,
     content: d.text,
   }));
+}
+
+// 🟢 Helper: timeout wrapper for AI call
+function timeout(ms, promise) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("Timeout")), ms)
+    ),
+  ]);
 }
 
 // 🟢 POST /api/message (main chat endpoint)
@@ -29,7 +40,6 @@ router.post("/message", async (req, res) => {
     if (!text || !text.trim()) {
       return res.status(400).json({ error: "Message text is required" });
     }
-
     if (text.length > 1000) {
       return res
         .status(400)
@@ -56,12 +66,20 @@ router.post("/message", async (req, res) => {
     // 3️⃣ Fetch last 12 messages for context
     const history = await fetchConversation(session.sessionId, 12);
 
-    // 4️⃣ Generate AI reply
-    const prompt =
-      history.map((m) => `${m.role}: ${m.content}`).join("\n") +
-      `\nuser: ${text}\nassistant:`;
+    // 4️⃣ Generate AI reply safely with timeout and try/catch
+    let reply;
+    try {
+      const prompt =
+        history.map((m) => `${m.role}: ${m.content}`).join("\n") +
+        `\nuser: ${text}\nassistant:`;
 
-    const reply = await chatWithGemini(prompt);
+      // 5-second timeout for Gemini response
+      reply = await timeout(5000, chatWithGemini(prompt));
+    } catch (gemError) {
+      console.error("Gemini API failed or timeout:", gemError.message);
+      reply =
+        "⚠️ Sorry, the assistant is not available right now. Please try again.";
+    }
 
     // 5️⃣ Save bot reply
     await Message.create({
@@ -71,7 +89,7 @@ router.post("/message", async (req, res) => {
       text: reply,
     });
 
-    // 6️⃣ Return reply
+    // 6️⃣ Return reply and sessionId
     res.json({ reply, sessionId: session.sessionId });
   } catch (error) {
     console.error("Error in /api/message:", error);
