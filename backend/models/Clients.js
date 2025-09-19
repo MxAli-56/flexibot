@@ -7,7 +7,7 @@ const clientSchema = new mongoose.Schema(
     clientId: { type: String, default: uuidv4, unique: true },
     name: { type: String, required: true },
     websiteURL: { type: String, required: true },
-    theme: {type: String, default: "style.css"},
+    theme: {type: String, default: ""},
     systemPrompt: {type: String, default: "You are FlexiBot, a helpful assistant."},
     embedCode: { type: String },
   },
