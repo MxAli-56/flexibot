@@ -248,32 +248,35 @@ function showTyping() {
   return t;
 }
 
-// Send message (frontend simulation for now)
 async function sendMessage(networkRetries = 2) {
   const text = Input.value.trim();
   if (!text) return;
 
-  // User message
+  // Show user message
   appendMessage("user", text);
   Input.value = "";
 
+  // Show typing indicator
   const typingEl = showTyping();
 
   try {
-    // Placeholder backend call (will update in 4.5)
+    // ✅ Real backend call (update URL if needed)
     const res = await fetch("http://localhost:5000/api/message", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sessionId, text }),
+      body: JSON.stringify({ clientId, sessionId, text }),
     });
+
     const data = await res.json();
 
     const botMsg = document.createElement("div");
     botMsg.className = "message-bubble bot-bubble";
 
     if (!res.ok || data.status === "error") {
-      botMsg.textContent = data.reply || "⚠️ Sorry, I couldn't process your message. Please try again.";
+      botMsg.textContent =
+        data.reply || "⚠️ Sorry, I couldn't process your message. Please try again.";
     } else {
+      // sanitize any HTML returned from backend
       botMsg.innerHTML = DOMPurify.sanitize(marked.parse(data.reply));
     }
 
@@ -283,16 +286,23 @@ async function sendMessage(networkRetries = 2) {
   } catch (err) {
     console.error("Frontend fetch error:", err.message);
 
+    // Retry network errors
     if (networkRetries > 0) {
       const attempt = 3 - networkRetries + 1;
+      console.warn(`⚠️ Network error, retrying... (Attempt ${attempt})`);
       typingEl.textContent = `Retrying... (${attempt}/3)`;
-      setTimeout(() => sendMessage(networkRetries - 1), 2000);
+
+      setTimeout(() => {
+        sendMessage(networkRetries - 1);
+      }, 2000); // wait 2s before retry
       return;
     }
 
+    // Final fallback
     const fallback = document.createElement("div");
     fallback.className = "message-bubble bot-bubble";
-    fallback.textContent = "⚠️ I’m having trouble connecting. Please check your internet or try again later.";
+    fallback.textContent =
+      "⚠️ I’m having trouble connecting. Please check your internet or try again later.";
     typingEl.replaceWith(fallback);
     Messages.scrollTop = Messages.scrollHeight;
   }
@@ -309,8 +319,9 @@ Input.addEventListener("keydown", (e) => {
   }
 });
 
-// Theme toggle
 themeToggle.addEventListener("click", () => {
-  chatWindow.classList.toggle("light-mode");
-  themeToggle.textContent = chatWindow.classList.contains("light-mode") ? "🌞" : "🌙";
+  document.body.classList.toggle("light-mode");
+  themeToggle.textContent = document.body.classList.contains("light-mode")
+    ? "🌞"
+    : "🌙";
 });

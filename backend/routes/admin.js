@@ -13,7 +13,14 @@ router.post("/addClient", async (req, res) => {
         .json({ error: "Name and websiteURL are required" });
     }
 
-    const newClient = new Client({ name, websiteURL, clientId: uuidv4() });
+    // Generate clientId
+    const clientId = uuidv4();
+
+    // Create embed script
+    const embedCode = `<script src="https://yourdomain.com/embed.js" data-client-id="${clientId}"></script>`;
+
+
+    const newClient = new Client({ name, websiteURL, clientId, embedCode });
     await newClient.save();
 
     res.json({
