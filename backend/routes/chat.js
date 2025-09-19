@@ -66,31 +66,36 @@ router.post("/message", async (req, res) => {
     // 3️⃣ Fetch last 12 messages for context
     const history = await fetchConversation(session.sessionId, 12);
 
-    // 4️⃣ Generate AI reply safely with timeout and try/catch
-    let reply;
+    // 4️⃣ Generate AI reply safely with timeout, retries handled in gemini.js
+    let aiReplyText =
+      "⚠️ The assistant is temporarily unavailable. Please try again later.";
+
     try {
       const prompt =
         history.map((m) => `${m.role}: ${m.content}`).join("\n") +
         `\nuser: ${text}\nassistant:`;
 
-      // 5-second timeout for Gemini response
-      reply = await timeout(5000, chatWithGemini(prompt));
+      const aiResponse = await timeout(20000, chatWithGemini(prompt));
+      // Ensure reply is a string
+      if (aiResponse && typeof aiResponse.reply === "string") {
+        aiReplyText = aiResponse.reply;
+      } else {
+        console.warn("Gemini returned invalid response, using fallback.");
+      }
     } catch (gemError) {
       console.error("Gemini API failed or timeout:", gemError.message);
-      reply =
-        "⚠️ Sorry, the assistant is not available right now. Please try again.";
     }
 
-    // 5️⃣ Save bot reply
+    // 5️⃣ Save bot reply safely
     await Message.create({
       sessionId: session.sessionId,
       clientId,
       role: "bot",
-      text: reply,
+      text: aiReplyText,
     });
 
     // 6️⃣ Return reply and sessionId
-    res.json({ reply, sessionId: session.sessionId });
+    res.json({ reply: aiReplyText, sessionId: session.sessionId });
   } catch (error) {
     console.error("Error in /api/message:", error);
     res.status(500).json({ error: "Internal Server Error" });

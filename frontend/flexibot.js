@@ -20,12 +20,12 @@ if (!sessionId) {
   localStorage.setItem("flexibotSessionId", sessionId);
 }
 
-// Send message function with retry for temporary failures
-async function sendMessage(retries = 2) {
+// Send message function (frontend)
+async function sendMessage(networkRetries = 2) {
   const text = input.value.trim();
   if (!text) return;
 
-  // Display user message
+  // Show user message
   const userMsg = document.createElement("div");
   userMsg.className = "message-bubble user-bubble";
   userMsg.textContent = text;
@@ -33,7 +33,7 @@ async function sendMessage(retries = 2) {
   input.value = "";
   messages.scrollTop = messages.scrollHeight;
 
-  // Show typing indicator
+  // Typing indicator (default = dots)
   const typing = document.createElement("div");
   typing.id = "typing";
   typing.className = "message-bubble typing-bubble";
@@ -50,12 +50,13 @@ async function sendMessage(retries = 2) {
 
     const data = await res.json();
 
+    // Bot reply bubble
     const botMsg = document.createElement("div");
     botMsg.className = "message-bubble bot-bubble";
 
-    if (!res.ok || data.error) {
+    if (!res.ok || data.status === "error") {
       botMsg.textContent =
-        data.error ||
+        data.reply ||
         "⚠️ Sorry, I couldn't process your message. Please try again.";
     } else {
       botMsg.innerHTML = DOMPurify.sanitize(marked.parse(data.reply));
@@ -66,14 +67,19 @@ async function sendMessage(retries = 2) {
   } catch (err) {
     console.error("Frontend fetch error:", err.message);
 
-    // Retry once if temporary network/server issue
-    if (retries > 0) {
-      console.warn(`⚠️ Retry sending message... (${3 - retries} attempt)`);
-      typing.remove();
-      return sendMessage(retries - 1);
+    // Retry network errors
+    if (networkRetries > 0) {
+      const attempt = 3 - networkRetries + 1;
+      console.warn(`⚠️ Network error, retrying... (Attempt ${attempt})`);
+      typing.textContent = `Retrying... (${attempt}/3)`;
+
+      setTimeout(() => {
+        sendMessage(networkRetries - 1);
+      }, 2000); // wait 2s before retry
+      return;
     }
 
-    // Final fallback message
+    // Final fallback if retries exhausted
     const fallback = document.createElement("div");
     fallback.className = "message-bubble bot-bubble";
     fallback.textContent =
