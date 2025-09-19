@@ -73,3 +73,18 @@ body {
 .admin-container button:hover {
     background: #1d4ed8;
 }
+
+/* Snippet Box */
+#snippetBox {
+    margin-top: 20px;
+    padding: 12px;
+    border: 1px dashed #3b82f6;
+    background: #0b1220;
+    color: #e2e8f0;
+    border-radius: 8px;
+    text-align: left;
+    font-family: monospace;
+    white-space: pre-wrap;
+    word-break: break-all;
+    display: none; /* hidden until client is added */
+}
