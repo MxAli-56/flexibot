@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const Client = require("../models/Clients");
+const { v4: uuidv4 } = require("uuid");
 
 // Add a new client
 router.post("/addClient", async (req, res) => {
@@ -12,7 +13,7 @@ router.post("/addClient", async (req, res) => {
         .json({ error: "Name and websiteURL are required" });
     }
 
-    const newClient = new Client({ name, websiteURL });
+    const newClient = new Client({ name, websiteURL, clientId: uuidv4() });
     await newClient.save();
 
     res.json({
