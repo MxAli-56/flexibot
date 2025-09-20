@@ -23,7 +23,6 @@
     <script>
         const API_BASE = "http://localhost:5000/admin";
 
-        // Add client
         document.getElementById("clientForm").addEventListener("submit", async (e) => {
             e.preventDefault();
             const name = document.getElementById("name").value;
@@ -36,26 +35,36 @@
             });
 
             const data = await res.json();
-            alert(data.message || "Error adding client");
-            loadClients();
-        });
 
-        // Load all clients
-        async function loadClients() {
-            const res = await fetch(`${API_BASE}/clients`);
-            const clients = await res.json();
+            if (res.ok && data.client) {
+                // Clear form fields
+                document.getElementById("clientForm").reset();
 
-            const list = document.getElementById("clientList");
-            list.innerHTML = "";
-            clients.forEach(c => {
-                const div = document.createElement("div");
-                div.className = "client-item";
-                div.textContent = `${c.name} (${c.websiteURL}) → clientId: ${c.clientId}`;
-                list.appendChild(div);
-            });
-        }
+                // Show snippet in a separate bubble
+                const snippetBox = document.getElementById("snippetBox");
+                snippetBox.style.display = "block";
+                snippetBox.innerHTML = `
+                 <div class="snippet-bubble">
+                 <pre id="snippetPre">${data.client.embedCode.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</pre>
 
-        loadClients();
+                <span class="copy-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18">
+                <path fill="currentColor" d="M19 21H9c-1.1 0-2-.9-2-2V7h2v12h10v2zm-4-8H5c-1.1 0-2-.9-2-2V3c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2v8c0 1.1-.9 2-2 2zm0-10H5v8h10V3z"/>
+                </svg>
+
+                </span>
+                </div>
+                `;
+
+
+                // Copy functionality
+                const pre = document.getElementById("snippetPre");
+                const icon = document.querySelector(".copy-icon");
+                icon.onclick = () => {
+                    navigator.clipboard.writeText(pre.innerText.replace(/&lt;/g, "<").replace(/&gt;/g, ">"));
+                };
+            }
+        })
     </script>
 </body>
 

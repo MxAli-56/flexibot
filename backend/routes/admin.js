@@ -3,6 +3,7 @@ const router = express.Router();
 const Client = require("../models/Clients");
 const { v4: uuidv4 } = require("uuid");
 
+
 // Add a new client
 router.post("/addClient", async (req, res) => {
   try {
@@ -16,9 +17,10 @@ router.post("/addClient", async (req, res) => {
     // Generate clientId
     const clientId = uuidv4();
 
-    // Create embed script
-    const embedCode = `<script src="https://yourdomain.com/embed.js" data-client-id="${clientId}"></script>`;
+    const domain = `${req.protocol}://${req.get("host")}`;
 
+    // Create embed script
+    const embedCode = `<script src="${domain}/embed.js" data-client-id="${clientId}"></script>`;
 
     const newClient = new Client({ name, websiteURL, clientId, embedCode });
     await newClient.save();
