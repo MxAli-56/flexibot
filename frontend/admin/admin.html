@@ -44,19 +44,23 @@
                 const snippetBox = document.getElementById("snippetBox");
                 snippetBox.style.display = "block";
                 snippetBox.innerHTML = `
-                 <div class="snippet-bubble">
-                 <pre id="snippetPre">${data.client.embedCode.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</pre>
-
-                <span class="copy-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18">
-                <path fill="currentColor" d="M19 21H9c-1.1 0-2-.9-2-2V7h2v12h10v2zm-4-8H5c-1.1 0-2-.9-2-2V3c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2v8c0 1.1-.9 2-2 2zm0-10H5v8h10V3z"/>
-                </svg>
-
-                </span>
-                </div>
-                `;
-
-
+  <div class="snippet-bubble">
+    <div class="snippet-header">
+      <span class="copy-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" 
+             viewBox="0 0 24 24" width="18" height="18">
+          <path fill="currentColor" 
+                d="M19 21H9c-1.1 0-2-.9-2-2V7h2v12h10v2zm-4-8H5c-1.1 
+                   0-2-.9-2-2V3c0-1.1.9-2 2-2h10c1.1 
+                   0 2 .9 2 2v8c0 1.1-.9 2-2 2zm0-10H5v8h10V3z"/>
+        </svg>
+      </span>
+    </div>
+    <pre id="snippetPre" class="snippet-content">
+${data.client.embedCode.replace(/</g, "&lt;").replace(/>/g, "&gt;")}
+    </pre>
+  </div>
+`;
                 // Copy functionality
                 const pre = document.getElementById("snippetPre");
                 const icon = document.querySelector(".copy-icon");
