@@ -10,4 +10,4 @@ docs/
 .DS_Store
 /backend/node_modules/
 
-/frontend/flameo.html
+restaurant/
