@@ -185,6 +185,138 @@ const flexibotStyles = `
   background: #007bff;
   color: white;
 }
+
+/* ---------------- DESKTOP (default) ---------------- */
+.flexibot-bubble {
+  width: 60px;
+  height: 60px;
+  font-size: 24px;
+  bottom: 20px;
+  right: 20px;
+}
+
+.flexibot-window {
+  width: 350px;
+  height: 450px;
+  bottom: 90px;
+  right: 20px;
+}
+
+#flexibot-messages {
+  padding: 12px;
+  gap: 8px;
+}
+
+.flexibot-input input,
+.flexibot-input button {
+  font-size: 16px;
+  padding: 8px 12px;
+}
+
+/* ---------------- TABLET (max-width: 768px) ---------------- */
+@media (max-width: 768px) {
+  .flexibot-bubble {
+    width: 50px;
+    height: 50px;
+    font-size: 20px;
+    bottom: 15px;
+    right: 15px;
+  }
+
+  .flexibot-window {
+    width: 300px;
+    height: 400px;
+    bottom: 70px;
+    right: 15px;
+  }
+
+  #flexibot-messages {
+    padding: 10px;
+    gap: 6px;
+  }
+
+  .flexibot-input input,
+  .flexibot-input button {
+    font-size: 14px;
+    padding: 6px 8px;
+  }
+
+  .typing-bubble {
+    min-width: 50px;
+    padding: 6px 10px;
+  }
+
+  .user-bubble,
+  .bot-bubble {
+    padding: 8px 12px;
+  }
+}
+
+/* ---------------- MOBILE (max-width: 480px) ---------------- */
+@media (max-width: 480px) {
+  .flexibot-bubble {
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+    bottom: 10px;
+    right: 10px;
+  }
+
+  .flexibot-window {
+    width: 90%;
+    max-width: 320px;
+    height: 55%;
+    max-height: 400px;
+    bottom: 70px;
+    right: 5%;
+  }
+
+  #flexibot-messages {
+    padding: 8px;
+    gap: 5px;
+  }
+
+  .flexibot-input input,
+  .flexibot-input button {
+    font-size: 13px;
+    padding: 5px 6px;
+  }
+
+  .typing-bubble {
+    min-width: 45px;
+    padding: 5px 8px;
+  }
+
+  .user-bubble,
+  .bot-bubble {
+    padding: 6px 10px;
+  }
+
+  .flexibot-header {
+    font-size: 16px; /* prevent overflow on tiny screens */
+  }
+}
+
+/* ✅ Fix overflow & positioning */
+.flexibot-bubble,
+.flexibot-window {
+  position: fixed;
+  max-width: 100vw;
+  max-height: 100vh;
+  box-sizing: border-box;
+}
+
+@media (max-width: 480px) {
+  .flexibot-window {
+    width: 90%;
+    height: 60vh;       
+    bottom: 60px;
+    left: 50%;          
+    right: auto;
+    transform: translateX(-50%);
+    max-width: none; /* remove limit so it adapts */
+  }
+}
 `;
 
 // Inject styles into page
