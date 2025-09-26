@@ -29,7 +29,7 @@ const flexibotStyles = `
   right: 20px;
   width: 350px;
   height: 450px;
-  background: #2c2c2ce2;
+  background: rgba(44,44,44,0.98);
   border: 1px solid #333;
   display: none;
   flex-direction: column;
@@ -158,6 +158,32 @@ const flexibotStyles = `
   0% { opacity: 0.25; transform: translateY(0); }
   50% { opacity: 1; transform: translateY(-4px); }
   100% { opacity: 0.25; transform: translateY(0); }
+}
+
+/* Light mode (chat window only) */
+.flexibot-window.light-mode {
+  background: #f8f8f8;
+  color: black;
+}
+
+.flexibot-window.light-mode .flexibot-header {
+  background: #007bff;
+  color: white;
+}
+
+.flexibot-window.light-mode .flexibot-input {
+  background: white;
+  border-top: 1px solid #ccc;
+}
+
+.flexibot-window.light-mode .flexibot-input input {
+  background: white;
+  color: black;
+}
+
+.flexibot-window.light-mode .flexibot-input button {
+  background: #007bff;
+  color: white;
 }
 `;
 
@@ -320,8 +346,8 @@ Input.addEventListener("keydown", (e) => {
 });
 
 themeToggle.addEventListener("click", () => {
-  document.body.classList.toggle("light-mode");
-  themeToggle.textContent = document.body.classList.contains("light-mode")
+  chatWindow.classList.toggle("light-mode");
+  themeToggle.textContent = chatWindow.classList.contains("light-mode")
     ? "🌞"
     : "🌙";
 });
