@@ -4,6 +4,10 @@ const messages = document.querySelector("#flexibot-messages");
 const input = document.querySelector("#flexibot-input");
 const sendBtn = document.querySelector("#flexibot-send");
 const themetoggle = document.querySelector("#theme-toggle");
+const chatHeader = document.querySelector(".flexibot-title");
+
+const botName = window.flexibotBotName || "FlexiBot";
+chatHeader.innerText = botName;
 
 // Toggle window
 bubble.addEventListener("click", () => {

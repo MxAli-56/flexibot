@@ -18,7 +18,7 @@ const flexibotStyles = `
   justify-content: center;
   cursor: pointer;
   box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-  z-index: 9999;
+  z-index: 2147483647;
   font-size: 24px;
 }
 
