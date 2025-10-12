@@ -78,6 +78,10 @@ router.post("/message", async (req, res) => {
         If the user greets you, greet them back and reply politely.
         If the user asks inappropriate questions, tell them no politely.
         If the user repeats a question, answer politely and naturally, without unnecessary disclaimers. Keep the conversation flowing.
+        Always format multi-paragraph answers with clear line breaks between headings, paragraphs, and bullet points.
+        When providing lists, use proper bullets (- or •) with a new line for each item.
+        Use headings for main sections, subheadings for subsections if needed.
+        Keep spacing consistent so the text is readable for website visitors.
         Do reinforcement learning and learn from your mistakes and make patterns to improve on your own.
         `;
 
