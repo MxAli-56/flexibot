@@ -3,6 +3,7 @@ const express = require("express");
 const { randomUUID } = require("crypto");
 const Session = require("../models/Session");
 const Message = require("../models/Message");
+const { chatWithGroq } = require("../providers/groq");
 const { chatWithGemini } = require("../providers/gemini");
 
 const router = express.Router();
@@ -36,7 +37,7 @@ router.post("/message", async (req, res) => {
   try {
     const { sessionId, clientId = "default", text } = req.body;
 
-    // ✅ Validate input
+    // ✅ Validate input (only block completely empty strings)
     if (!text || !text.trim()) {
       return res.status(400).json({ error: "Message text is required" });
     }
@@ -66,24 +67,56 @@ router.post("/message", async (req, res) => {
     // 3️⃣ Fetch last 12 messages for context
     const history = await fetchConversation(session.sessionId, 12);
 
-    // 4️⃣ Generate AI reply safely with timeout, retries handled in gemini.js
-    let aiReplyText =
-      "⚠️ The assistant is temporarily unavailable. Please try again later.";
+    // 4️⃣ Generate AI reply safely with timeout
+    let aiReplyText = "Hello! How can I assist you today?"; // default fallback
 
     try {
-      const prompt =
-        history.map((m) => `${m.role}: ${m.content}`).join("\n") +
-        `\nuser: ${text}\nassistant:`;
+      const systemPrompt = `
+        You are FlexiBot — a friendly, respectful, and professional AI assistant designed to help website visitors.
+        Respond naturally, clearly, and according to the question (no extra or less details).
+        If the user asks general questions, reply helpfully.
+        If the user greets you, greet them back and reply politely.
+        If the user asks inappropriate questions, tell them no politely.
+        If the user repeats a question, answer politely and naturally, without unnecessary disclaimers. Keep the conversation flowing.
+        Do reinforcement learning and learn from your mistakes and make patterns to improve on your own.
+        `;
 
-      const aiResponse = await timeout(20000, chatWithGemini(prompt));
-      // Ensure reply is a string
-      if (aiResponse && typeof aiResponse.reply === "string") {
-        aiReplyText = aiResponse.reply;
+      const prompt = `${systemPrompt}\n\n${history
+        .map((m) => `${m.role}: ${m.content}`)
+        .join("\n")}\nuser: ${text}\nassistant:`;
+
+
+      const { forceGemini } = req.body || {};
+
+      let aiResponse;
+
+      // 🧠 1️⃣ Use Gemini directly if forced (from frontend)
+      if (forceGemini) {
+        aiResponse = await timeout(20000, chatWithGemini(prompt));
       } else {
-        console.warn("Gemini returned invalid response, using fallback.");
+        // 🧠 2️⃣ Try Groq first → fallback to Gemini if fails
+        try {
+          aiResponse = await timeout(20000, chatWithGroq(prompt));
+          if (!aiResponse || aiResponse.status === "error") {
+            console.warn("⚠️ Groq failed, switching to Gemini...");
+            aiResponse = await timeout(20000, chatWithGemini(prompt));
+          }
+        } catch (err) {
+          console.warn("⚠️ Groq call threw error, trying Gemini:", err.message);
+          aiResponse = await timeout(20000, chatWithGemini(prompt));
+        }
       }
-    } catch (gemError) {
-      console.error("Gemini API failed or timeout:", gemError.message);
+
+      // 🧩 Apply response if valid
+      if (
+        aiResponse &&
+        typeof aiResponse.reply === "string" &&
+        aiResponse.reply.trim()
+      ) {
+        aiReplyText = aiResponse.reply;
+      }
+    } catch (error) {
+      console.error("AI call failed or timed out:", error.message);
     }
 
     // 5️⃣ Save bot reply safely
