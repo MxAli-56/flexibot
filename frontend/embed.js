@@ -418,29 +418,41 @@ async function sendMessage(networkRetries = 2) {
   const typingEl = showTyping();
 
   try {
-    // ✅ Real backend call (update URL if needed)
-    const res = await fetch("http://localhost:5000/api/message", {
+    // 1️⃣ Try Groq (default)
+    let res = await fetch("http://localhost:5000/api/message", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ clientId, sessionId, text }),
     });
 
-    const data = await res.json();
+    let data = await res.json();
 
+    // 2️⃣ Fallback to Gemini if Groq fails
+    if (!res.ok || !data.reply || data.status === "error") {
+      console.warn("Groq failed, falling back to Gemini...");
+
+      res = await fetch("http://localhost:5000/api/message", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clientId, sessionId, text, forceGemini: true }),
+      });
+      data = await res.json();
+    }
+
+    // 3️⃣ Show AI reply
     const botMsg = document.createElement("div");
     botMsg.className = "message-bubble bot-bubble";
 
     if (!res.ok || data.status === "error") {
       botMsg.textContent =
-        data.reply || "⚠️ Sorry, I couldn't process your message. Please try again.";
+        data.reply ||
+        "⚠️ Sorry, I couldn't process your message. Please try again.";
     } else {
-      // sanitize any HTML returned from backend
-      botMsg.innerHTML = DOMPurify.sanitize(marked.parse(data.reply));
+      botMsg.textContent = data.reply;
     }
 
     typingEl.replaceWith(botMsg);
     Messages.scrollTop = Messages.scrollHeight;
-
   } catch (err) {
     console.error("Frontend fetch error:", err.message);
 
@@ -452,7 +464,7 @@ async function sendMessage(networkRetries = 2) {
 
       setTimeout(() => {
         sendMessage(networkRetries - 1);
-      }, 2000); // wait 2s before retry
+      }, 2000);
       return;
     }
 
