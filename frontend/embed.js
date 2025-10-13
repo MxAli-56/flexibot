@@ -463,7 +463,7 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     try {
       // 1️⃣ Try Groq (default)
-      let res = await fetch("http://localhost:5000/api/message", {
+      let res = await fetch("https://flexibot-backend.onrender.com/api/message", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ clientId, sessionId, text }),
@@ -475,7 +475,7 @@ window.addEventListener("DOMContentLoaded", async () => {
       if (!res.ok || !data.reply || data.status === "error") {
         console.warn("Groq failed, falling back to Gemini...");
 
-        res = await fetch("http://localhost:5000/api/message", {
+        res = await fetch("https://flexibot-backend.onrender.com/api/message", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
