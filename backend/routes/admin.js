@@ -46,4 +46,27 @@ router.get("/clients", async (req, res) => {
   }
 });
 
+// Fetch client details by clientId
+router.get("/config/:clientId", async (req, res) => {
+  try {
+    const { clientId } = req.params;
+    const client = await Client.findOne({ clientId });
+
+    if (!client) {
+      return res.status(404).json({ error: "Client not found" });
+    }
+
+    // Send only the fields frontend needs (safe)
+    res.json({
+      clientId: client.clientId,
+      botName: client.botName || "FlexiBot",
+      theme: client.theme || "", // e.g. "/themes/restaurant.css"
+      websiteURL: client.websiteURL || "",
+    });
+  } catch (err) {
+    console.error("Error in /admin/config/:clientId", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 module.exports = router;

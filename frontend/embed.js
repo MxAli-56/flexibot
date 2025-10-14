@@ -1,6 +1,29 @@
 const currentScript = document.currentScript;
 const clientId = currentScript.getAttribute("data-client-id");
 
+// ------------------- fetch client config -------------------
+let clientConfig = {
+  botName: "FlexiBot",
+  theme: "" // default = no extra theme
+};
+
+async function loadClientConfig() {
+  try {
+    const res = await fetch(`https://flexibot-backend.onrender.com/admin/config/${clientId}`);
+    if (!res.ok) throw new Error("Config not found");
+    const json = await res.json();
+    clientConfig = json;
+  } catch (err) {
+    console.warn("FlexiBot: could not load client config:", err.message);
+    // fallback: keep clientConfig defaults
+  }
+}
+
+// call early so config is ready before UI is built
+(async () => {
+  await loadClientConfig();
+})();
+
 // 2️⃣ Load external libraries dynamically
 async function loadLibs() {
   await loadScript("https://cdn.jsdelivr.net/npm/dompurify@3.1.7/dist/purify.min.js");
@@ -373,7 +396,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   // Chat window inner HTML
   chatWindow.innerHTML = `
   <div class="flexibot-header">
-    FlexiBot
+    <span class="flexibot-title">${clientConfig.botName || "FlexiBot"}</span>
     <span class="theme-toggle">🌙</span>
   </div>
   <div id="flexibot-messages"></div>
@@ -385,6 +408,21 @@ window.addEventListener("DOMContentLoaded", async () => {
 
   // Add popup to page
   document.body.appendChild(chatWindow);
+
+  // Apply client theme if provided. Default CSS is already injected earlier.
+  if (clientConfig.theme && clientConfig.theme.trim()) {
+    try {
+      const themeHref = clientConfig.theme; // e.g. "/themes/restaurant.css" OR full URL
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = themeHref.startsWith("http")
+        ? themeHref
+        : `https://flexibot-frontend.vercel.app${themeHref}`;
+      document.head.appendChild(link);
+    } catch (e) {
+      console.warn("FlexiBot: failed to apply theme", e.message);
+    }
+  }
 
   // Grab the injected UI elements
   const Messages = document.getElementById("flexibot-messages");
@@ -463,11 +501,14 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     try {
       // 1️⃣ Try Groq (default)
-      let res = await fetch("https://flexibot-backend.onrender.com/api/message", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ clientId, sessionId, text }),
-      });
+      let res = await fetch(
+        "https://flexibot-backend.onrender.com/api/message",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ clientId, sessionId, text }),
+        }
+      );
 
       let data = await res.json();
 
