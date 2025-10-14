@@ -20,6 +20,9 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Simple health endpoint for uptime pings
+app.get("/health", (req, res) => res.json({ status: "ok", time: new Date().toISOString() }));
+
 const path = require("path");
 
 // Serve the frontend folder so embed.js (and css etc.) can be accessed
