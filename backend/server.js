@@ -13,7 +13,11 @@ const app = express();
 connectDB();
 
 // 🟢 Middlewares
-app.use(cors({ origin: "*", methods: ["GET", "POST"] }));
+app.use(cors({
+  origin: "*",
+  methods: ["GET", "POST", "OPTIONS"],
+  allowedHeaders: ["Content-Type"],
+}));
 app.use(express.json());
 
 const path = require("path");
