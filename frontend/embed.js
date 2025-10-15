@@ -409,7 +409,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   // Chat window inner HTML
   chatWindow.innerHTML = `
   <div class="flexibot-header">
-    <span class="flexibot-title">${clientConfig.botName || "FlexiBot"}</span>
+    <span class="flexibot-title" id="flexibot-title">FlexiBot</span>
     <span class="theme-toggle">🌙</span>
   </div>
   <div id="flexibot-messages"></div>
@@ -421,6 +421,7 @@ window.addEventListener("DOMContentLoaded", async () => {
 
   // Add popup to page
   document.body.appendChild(chatWindow);
+  document.getElementById("flexibot-title").textContent = clientConfig.botName || "FlexiBot";
 
   // Apply client theme if provided. Default CSS is already injected earlier.
   if (clientConfig.theme && clientConfig.theme.trim()) {
