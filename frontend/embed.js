@@ -391,6 +391,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   chatButton.className = "flexibot-bubble";
   chatButton.innerHTML = "💬"; // later replace with SVG/logo if needed
   document.body.appendChild(chatButton);
+  chatButton.title = clientConfig.botName || "FlexiBot";
 
   // 2. Create chat window
   const chatWindow = document.createElement("div");
