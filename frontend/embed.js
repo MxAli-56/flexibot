@@ -1,18 +1,29 @@
+let clientConfig = {
+  botName: "FlexiBot",
+  theme: "", // default = no extra theme
+};
+
 const currentScript = document.currentScript;
 const clientId = currentScript.getAttribute("data-client-id");
 
 // ------------------- fetch client config -------------------
-let clientConfig = {
-  botName: "FlexiBot",
-  theme: "" // default = no extra theme
-};
-
 async function loadClientConfig() {
   try {
-    const res = await fetch(`https://flexibot-backend.onrender.com/admin/config/${clientId}`);
+    const res = await fetch(
+      `https://flexibot-backend.onrender.com/admin/config/${clientId}`
+    );
     if (!res.ok) throw new Error("Config not found");
     const json = await res.json();
     clientConfig = json;
+
+    // 🟢 Load custom theme CSS if available
+    if (clientConfig.theme) {
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = clientConfig.theme;
+      document.head.appendChild(link);
+      console.log("🧩 Custom theme loaded:", clientConfig.theme);
+    }
   } catch (err) {
     console.warn("FlexiBot: could not load client config:", err.message);
     // fallback: keep clientConfig defaults
@@ -26,13 +37,15 @@ async function loadClientConfig() {
 
 // 2️⃣ Load external libraries dynamically
 async function loadLibs() {
-  await loadScript("https://cdn.jsdelivr.net/npm/dompurify@3.1.7/dist/purify.min.js");
+  await loadScript(
+    "https://cdn.jsdelivr.net/npm/dompurify@3.1.7/dist/purify.min.js"
+  );
   await loadScript("https://cdn.jsdelivr.net/npm/marked/marked.min.js");
 }
 
 function loadScript(src) {
-  return new Promise(resolve => {
-    const s = document.createElement('script');
+  return new Promise((resolve) => {
+    const s = document.createElement("script");
     s.src = src;
     s.onload = resolve;
     document.head.appendChild(s);

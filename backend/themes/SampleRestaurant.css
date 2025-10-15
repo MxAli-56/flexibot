@@ -1,45 +1,101 @@
-/* Restaurant theme for FlexiBot */
+/* ==============================
+   🍽️ Restaurant Theme for FlexiBot
+   ============================== */
 
 /* Bubble button */
 .flexibot-bubble {
-  background: #ff5722; /* Orange bubble */
-  color: #fff;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  background: #ff5722 !important; /* Vibrant orange bubble */
+  color: #fff !important;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4) !important;
 }
 
 /* Chat window */
 .flexibot-window {
-  background: #fff8f0; /* light cream background */
-  border: 2px solid #ff5722;
-  border-radius: 10px;
+  background: #fff8f0 !important; /* Light creamy background */
+  border: 2px solid #ff5722 !important;
+  border-radius: 12px !important;
 }
 
 /* Header */
 .flexibot-header {
-  background: #ff5722;
-  color: white;
+  background: #ff5722 !important;
+  color: #ffffff !important;
+  font-size: 18px !important;
+  font-weight: 600 !important;
 }
 
 /* Input area */
+.flexibot-input {
+  background: #fff0e0 !important;
+  border-top: 2px solid #ff5722 !important;
+}
+
 .flexibot-input input {
-  background: #fff8f0;
-  color: #333;
-  border: 1px solid #ff5722;
+  background: #fff8f0 !important;
+  color: #333 !important;
+  border: 1px solid #ff5722 !important;
 }
 
 .flexibot-input button {
-  background: #ff5722;
-  color: #fff;
+  background: #ff5722 !important;
+  color: #fff !important;
+  font-weight: 500 !important;
 }
 
 /* Bot bubble */
 .bot-bubble {
-  background-color: #fff0e0;
-  color: #333;
+  background-color: #ffe0cc !important;
+  color: #333 !important;
+  border-radius: 10px !important;
 }
 
 /* User bubble */
 .user-bubble {
-  background-color: #ff7043;
-  color: white;
+  background-color: #ff7043 !important;
+  color: #fff !important;
+  border-radius: 10px !important;
+}
+
+/* Typing bubble */
+.typing-bubble {
+  background-color: #fff0e0 !important;
+  color: #666 !important;
+}
+
+/* Light mode */
+.flexibot-window.light-mode {
+  background: #fffaf4 !important;
+  color: #111 !important;
+  border: 2px solid #ff7043 !important;
+}
+
+.flexibot-window.light-mode .flexibot-header {
+  background: #ff7043 !important;
+}
+
+.flexibot-window.light-mode .flexibot-input {
+  background: #fff !important;
+  border-top: 2px solid #ff7043 !important;
+}
+
+.flexibot-window.light-mode .flexibot-input input {
+  background: #fffaf4 !important;
+  color: #333 !important;
+  border: 1px solid #ff7043 !important;
+}
+
+.flexibot-window.light-mode .flexibot-input button {
+  background: #ff7043 !important;
+  color: #fff !important;
+}
+
+/* ==============================
+   ✅ Responsiveness
+   ============================== */
+
+@media (max-width: 480px) {
+  .flexibot-window {
+    border-radius: 8px !important;
+    border-width: 1px !important;
+  }
 }
