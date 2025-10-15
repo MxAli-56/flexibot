@@ -15,29 +15,10 @@ async function loadClientConfig() {
     if (!res.ok) throw new Error("Config not found");
     const json = await res.json();
     clientConfig = json;
-
-    // 🟢 Load custom theme CSS if available
-    if (clientConfig.theme) {
-      const link = document.createElement("link");
-      link.rel = "stylesheet";
-      link.href = clientConfig.theme;
-      document.head.appendChild(link);
-      console.log("🧩 Custom theme loaded:", clientConfig.theme);
-    }
-
-    // ✅ Set bot name in header AFTER fetching config
-    const titleEl = document.getElementById("flexibot-title");
-    if (titleEl) titleEl.textContent = clientConfig.botName || "FlexiBot";
   } catch (err) {
     console.warn("FlexiBot: could not load client config:", err.message);
-    // fallback: keep clientConfig defaults
   }
 }
-
-// call early so config is ready before UI is built
-(async () => {
-  await loadClientConfig();
-})();
 
 // 2️⃣ Load external libraries dynamically
 async function loadLibs() {
@@ -56,8 +37,19 @@ function loadScript(src) {
   });
 }
 
+// ------------------- Main DOMContentLoaded -------------------
 window.addEventListener("DOMContentLoaded", async () => {
+  // 1️⃣ Load external libraries first
   await loadLibs();
+
+  // 2️⃣ Fetch client config
+  await loadClientConfig();
+
+  // 3️⃣ Update chat header title safely
+  const titleEl = document.getElementById("flexibot-title");
+  if (titleEl) {
+    titleEl.textContent = clientConfig.botName || "FlexiBot";
+  }
 
   // FlexiBot CSS (embed-safe, scoped, injected via JS)
   const flexibotStyles = `
@@ -413,19 +405,18 @@ window.addEventListener("DOMContentLoaded", async () => {
   // Chat window inner HTML
   chatWindow.innerHTML = `
   <div class="flexibot-header">
-    <span class="flexibot-title" id="flexibot-title">FlexiBot</span>
-    <span class="theme-toggle">🌙</span>
+  <span class="flexibot-title" id="flexibot-title">Loading...</span>
+  <span class="theme-toggle">🌙</span>
   </div>
   <div id="flexibot-messages"></div>
   <div class="flexibot-input">
-    <input type="text" id="flexibot-input" placeholder="Enter your query..." />
-    <button id="flexibot-send">Send</button>
+  <input type="text" id="flexibot-input" placeholder="Enter your query..." />
+  <button id="flexibot-send">Send</button>
   </div>
-`;
+  `;
 
-  // Add popup to page
   document.body.appendChild(chatWindow);
-  
+
   // Apply client theme if provided. Default CSS is already injected earlier.
   if (clientConfig.theme && clientConfig.theme.trim()) {
     try {
