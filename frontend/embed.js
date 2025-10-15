@@ -24,6 +24,10 @@ async function loadClientConfig() {
       document.head.appendChild(link);
       console.log("🧩 Custom theme loaded:", clientConfig.theme);
     }
+
+    // ✅ Set bot name in header AFTER fetching config
+    const titleEl = document.getElementById("flexibot-title");
+    if (titleEl) titleEl.textContent = clientConfig.botName || "FlexiBot";
   } catch (err) {
     console.warn("FlexiBot: could not load client config:", err.message);
     // fallback: keep clientConfig defaults
@@ -34,7 +38,6 @@ async function loadClientConfig() {
 (async () => {
   await loadClientConfig();
 })();
-console.log("Bot name from config:", clientConfig.botName);
 
 // 2️⃣ Load external libraries dynamically
 async function loadLibs() {
@@ -422,8 +425,7 @@ window.addEventListener("DOMContentLoaded", async () => {
 
   // Add popup to page
   document.body.appendChild(chatWindow);
-  document.getElementById("flexibot-title").textContent = clientConfig.botName || "FlexiBot";
-
+  
   // Apply client theme if provided. Default CSS is already injected earlier.
   if (clientConfig.theme && clientConfig.theme.trim()) {
     try {
