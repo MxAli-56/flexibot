@@ -45,12 +45,6 @@ window.addEventListener("DOMContentLoaded", async () => {
   // 2️⃣ Fetch client config
   await loadClientConfig();
 
-  // 3️⃣ Update chat header title safely
-  const titleEl = document.getElementById("flexibot-title");
-  if (titleEl) {
-    titleEl.textContent = clientConfig.botName || "FlexiBot";
-  }
-
   // FlexiBot CSS (embed-safe, scoped, injected via JS)
   const flexibotStyles = `
 /* Bubble button */
@@ -416,6 +410,12 @@ window.addEventListener("DOMContentLoaded", async () => {
   `;
 
   document.body.appendChild(chatWindow);
+
+  // Update chat header title after window is created
+  const titleEl = document.getElementById("flexibot-title");
+  if (titleEl) {
+    titleEl.textContent = clientConfig.botName || "FlexiBot";
+  }
 
   // Apply client theme if provided. Default CSS is already injected earlier.
   if (clientConfig.theme && clientConfig.theme.trim()) {
