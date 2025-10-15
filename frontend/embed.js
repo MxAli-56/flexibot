@@ -34,6 +34,7 @@ async function loadClientConfig() {
 (async () => {
   await loadClientConfig();
 })();
+console.log("Bot name from config:", clientConfig.botName);
 
 // 2️⃣ Load external libraries dynamically
 async function loadLibs() {
