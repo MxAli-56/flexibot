@@ -27,6 +27,7 @@ const path = require("path");
 
 // Serve the frontend folder so embed.js (and css etc.) can be accessed
 app.use(express.static(path.join(__dirname, "../frontend")));
+app.use("/themes", express.static("themes"));
 
 // 🟢 Routes
 app.use("/admin", adminRoutes);

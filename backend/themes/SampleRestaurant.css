@@ -1,0 +1,45 @@
+/* Restaurant theme for FlexiBot */
+
+/* Bubble button */
+.flexibot-bubble {
+  background: #ff5722; /* Orange bubble */
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+
+/* Chat window */
+.flexibot-window {
+  background: #fff8f0; /* light cream background */
+  border: 2px solid #ff5722;
+  border-radius: 10px;
+}
+
+/* Header */
+.flexibot-header {
+  background: #ff5722;
+  color: white;
+}
+
+/* Input area */
+.flexibot-input input {
+  background: #fff8f0;
+  color: #333;
+  border: 1px solid #ff5722;
+}
+
+.flexibot-input button {
+  background: #ff5722;
+  color: #fff;
+}
+
+/* Bot bubble */
+.bot-bubble {
+  background-color: #fff0e0;
+  color: #333;
+}
+
+/* User bubble */
+.user-bubble {
+  background-color: #ff7043;
+  color: white;
+}
