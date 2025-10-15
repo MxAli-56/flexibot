@@ -39,7 +39,10 @@ function loadScript(src) {
 }
 
 // ------------------- Main DOMContentLoaded -------------------
-window.addEventListener("DOMContentLoaded", async () => {
+window.addEventListener("load", async () => {
+  // Clear old clientConfig before loading
+  clientConfig = {};
+  
   // 1️⃣ Load external libraries first
   await loadLibs();
 
