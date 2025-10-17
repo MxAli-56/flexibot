@@ -39,15 +39,14 @@ function loadScript(src) {
 }
 
 // ------------------- Main DOMContentLoaded -------------------
-window.addEventListener("load", async () => {
-  // Clear old clientConfig before loading
-  clientConfig = {};
-  
+window.addEventListener("DOMContentLoaded", async () => {
+
   // 1️⃣ Load external libraries first
   await loadLibs();
 
   // 2️⃣ Fetch client config
   await loadClientConfig();
+  initChatUI();
 
   // FlexiBot CSS (embed-safe, scoped, injected via JS)
   const flexibotStyles = `
@@ -385,6 +384,7 @@ window.addEventListener("load", async () => {
 }
 `;
 
+function initChatUI() {
   // Inject styles into page
   const styleEl = document.createElement("style");
   styleEl.textContent = flexibotStyles;
@@ -395,7 +395,7 @@ window.addEventListener("load", async () => {
   chatButton.className = "flexibot-bubble";
   chatButton.innerHTML = "💬"; // later replace with SVG/logo if needed
   document.body.appendChild(chatButton);
-  chatButton.title = clientConfig.botName || "FlexiBot";
+  chatButton.title = clientConfig.botName?.trim() || "FlexiBot";
 
   // 2. Create chat window
   const chatWindow = document.createElement("div");
@@ -436,6 +436,7 @@ window.addEventListener("load", async () => {
       console.warn("FlexiBot: failed to apply theme", e.message);
     }
   }
+}
 
   // Grab the injected UI elements
   const Messages = document.getElementById("flexibot-messages");

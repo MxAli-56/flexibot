@@ -20,7 +20,7 @@ router.post("/addClient", async (req, res) => {
     const domain = `${req.protocol}://${req.get("host")}`;
 
     // Create embed script
-    const embedCode = `<script src="${domain}/embed.js?v=${version}" data-client-id="${clientId}"></script>`;
+    const embedCode = `<script src="${domain}/embed.js?v=${Date.now()}" data-client-id="${clientId}"></script>`;
 
     const newClient = new Client({ name, websiteURL, clientId, embedCode });
     await newClient.save();
