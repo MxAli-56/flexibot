@@ -366,22 +366,32 @@ async function loadClientConfig() {
     const json = await res.json();
     clientConfig = json;
 
-    // 🔹 Load client theme instantly after config
+    // 🔹 Apply theme if available
     if (clientConfig.theme && clientConfig.theme.trim()) {
-      try {
-        const themeHref = clientConfig.theme;
-        const link = document.createElement("link");
-        link.rel = "stylesheet";
-        link.href = themeHref.startsWith("http")
-          ? themeHref
-          : `https://flexibot-frontend.vercel.app${themeHref}`;
-        document.head.appendChild(link);
-      } catch (e) {
-        console.warn("FlexiBot: failed to apply theme", e.message);
-      }
+      const themeHref = clientConfig.theme;
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = themeHref.startsWith("http")
+        ? themeHref
+        : `https://flexibot-frontend.vercel.app${themeHref}`;
+      link.onload = () => {
+        document
+          .querySelectorAll(".flexibot-window, .flexibot-bubble")
+          .forEach((el) => (el.style.opacity = "1"));
+      };
+      document.head.appendChild(link);
+    } else {
+      // 🔹 No theme — show instantly
+      document
+        .querySelectorAll(".flexibot-window, .flexibot-bubble")
+        .forEach((el) => (el.style.opacity = "1"));
     }
   } catch (err) {
     console.warn("FlexiBot: could not load client config:", err.message);
+    // Show widgets even if config fails
+    document
+      .querySelectorAll(".flexibot-window, .flexibot-bubble")
+      .forEach((el) => (el.style.opacity = "1"));
   }
 }
 
@@ -439,13 +449,6 @@ function initChatUI() {
   const titleEl = document.getElementById("flexibot-title");
   if (titleEl) titleEl.textContent = clientConfig.botName || "FlexiBot";
   chatButton.title = clientConfig.botName?.trim() || "FlexiBot";
-
-  // ✅ Step 3 → Reveal UI smoothly after theme loaded
-  setTimeout(() => {
-    document
-      .querySelectorAll(".flexibot-window, .flexibot-bubble")
-      .forEach((el) => (el.style.opacity = "1"));
-  }, 150);
 }
 
   // Grab the injected UI elements
