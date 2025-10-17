@@ -9,6 +9,19 @@ const clientId = currentScript.getAttribute("data-client-id");
 // ------------------- fetch client config -------------------
 async function loadClientConfig() {
   try {
+    // 🔹 Inject base CSS early + hide widgets
+    const baseStyle = document.createElement("style");
+    baseStyle.textContent =
+      flexibotStyles +
+      `
+      .flexibot-window, .flexibot-bubble {
+        opacity: 0;
+        transition: opacity 0.2s ease-in;
+      }
+    `;
+    document.head.appendChild(baseStyle);
+
+    // 🔹 Fetch config
     const res = await fetch(
       `https://flexibot-backend.onrender.com/admin/config/${clientId}?_=${Date.now()}`,
       { cache: "no-store" }
@@ -16,6 +29,21 @@ async function loadClientConfig() {
     if (!res.ok) throw new Error("Config not found");
     const json = await res.json();
     clientConfig = json;
+
+    // 🔹 Load client theme instantly after config
+    if (clientConfig.theme && clientConfig.theme.trim()) {
+      try {
+        const themeHref = clientConfig.theme;
+        const link = document.createElement("link");
+        link.rel = "stylesheet";
+        link.href = themeHref.startsWith("http")
+          ? themeHref
+          : `https://flexibot-frontend.vercel.app${themeHref}`;
+        document.head.appendChild(link);
+      } catch (e) {
+        console.warn("FlexiBot: failed to apply theme", e.message);
+      }
+    }
   } catch (err) {
     console.warn("FlexiBot: could not load client config:", err.message);
   }
@@ -385,57 +413,38 @@ window.addEventListener("DOMContentLoaded", async () => {
 `;
 
 function initChatUI() {
-  // Inject styles into page
-  const styleEl = document.createElement("style");
-  styleEl.textContent = flexibotStyles;
-  document.head.appendChild(styleEl);
-
-  // Step 4.2 → Inject floating chat button
+  // Step 1 → Inject chat UI
   const chatButton = document.createElement("div");
   chatButton.className = "flexibot-bubble";
-  chatButton.innerHTML = "💬"; // later replace with SVG/logo if needed
+  chatButton.innerHTML = "💬";
   document.body.appendChild(chatButton);
-  chatButton.title = clientConfig.botName?.trim() || "FlexiBot";
 
-  // 2. Create chat window
   const chatWindow = document.createElement("div");
   chatWindow.className = "flexibot-window";
-
-  // Chat window inner HTML
   chatWindow.innerHTML = `
-  <div class="flexibot-header">
-  <span class="flexibot-title" id="flexibot-title">Loading...</span>
-  <span class="theme-toggle">🌙</span>
-  </div>
-  <div id="flexibot-messages"></div>
-  <div class="flexibot-input">
-  <input type="text" id="flexibot-input" placeholder="Enter your query..." />
-  <button id="flexibot-send">Send</button>
-  </div>
+    <div class="flexibot-header">
+      <span class="flexibot-title" id="flexibot-title">Loading...</span>
+      <span class="theme-toggle">🌙</span>
+    </div>
+    <div id="flexibot-messages"></div>
+    <div class="flexibot-input">
+      <input type="text" id="flexibot-input" placeholder="Enter your query..." />
+      <button id="flexibot-send">Send</button>
+    </div>
   `;
-
   document.body.appendChild(chatWindow);
 
-  // Update chat header title after window is created
+  // Step 2 → Update title and tooltip
   const titleEl = document.getElementById("flexibot-title");
-  if (titleEl) {
-    titleEl.textContent = clientConfig.botName || "FlexiBot";
-  }
+  if (titleEl) titleEl.textContent = clientConfig.botName || "FlexiBot";
+  chatButton.title = clientConfig.botName?.trim() || "FlexiBot";
 
-  // Apply client theme if provided. Default CSS is already injected earlier.
-  if (clientConfig.theme && clientConfig.theme.trim()) {
-    try {
-      const themeHref = clientConfig.theme; // e.g. "/themes/restaurant.css" OR full URL
-      const link = document.createElement("link");
-      link.rel = "stylesheet";
-      link.href = themeHref.startsWith("http")
-        ? themeHref
-        : `https://flexibot-frontend.vercel.app${themeHref}`;
-      document.head.appendChild(link);
-    } catch (e) {
-      console.warn("FlexiBot: failed to apply theme", e.message);
-    }
-  }
+  // ✅ Step 3 → Reveal UI smoothly after theme loaded
+  setTimeout(() => {
+    document
+      .querySelectorAll(".flexibot-window, .flexibot-bubble")
+      .forEach((el) => (el.style.opacity = "1"));
+  }, 150);
 }
 
   // Grab the injected UI elements
