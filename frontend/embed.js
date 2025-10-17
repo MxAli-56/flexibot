@@ -1,5 +1,15 @@
-// FlexiBot CSS (embed-safe, scoped, injected via JS)
-const flexibotStyles = `
+let clientConfig = {
+  botName: "FlexiBot",
+  theme: "", // default = no extra theme
+};
+
+const currentScript = document.currentScript;
+const clientId = currentScript.getAttribute("data-client-id");
+
+// ------------------- fetch client config -------------------
+async function loadClientConfig() {
+  // FlexiBot CSS (embed-safe, scoped, injected via JS)
+  const flexibotStyles = `
 /* Bubble button */
 .flexibot-bubble {
   position: fixed;
@@ -333,17 +343,6 @@ const flexibotStyles = `
   }
 }
 `;
-
-let clientConfig = {
-  botName: "FlexiBot",
-  theme: "", // default = no extra theme
-};
-
-const currentScript = document.currentScript;
-const clientId = currentScript.getAttribute("data-client-id");
-
-// ------------------- fetch client config -------------------
-async function loadClientConfig() {
   try {
     // 🔹 Inject base CSS early + hide widgets
     const baseStyle = document.createElement("style");
