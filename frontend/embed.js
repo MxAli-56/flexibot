@@ -1,10 +1,5 @@
-let clientConfig = {
-  botName: "FlexiBot",
-  theme: "", // default = no extra theme
-};
-
-  // FlexiBot CSS (embed-safe, scoped, injected via JS)
-  const flexibotStyles = `
+// FlexiBot CSS (embed-safe, scoped, injected via JS)
+const flexibotStyles = `
 /* Bubble button */
 .flexibot-bubble {
   position: fixed;
@@ -339,6 +334,11 @@ let clientConfig = {
 }
 `;
 
+let clientConfig = {
+  botName: "FlexiBot",
+  theme: "", // default = no extra theme
+};
+
 const currentScript = document.currentScript;
 const clientId = currentScript.getAttribute("data-client-id");
 
@@ -414,7 +414,6 @@ function loadScript(src) {
 
 // ------------------- Main DOMContentLoaded -------------------
 window.addEventListener("DOMContentLoaded", async () => {
-
   // 1️⃣ Load external libraries first
   await loadLibs();
 
@@ -422,17 +421,16 @@ window.addEventListener("DOMContentLoaded", async () => {
   await loadClientConfig();
   initChatUI();
 
+  function initChatUI() {
+    // Step 1 → Inject chat UI
+    const chatButton = document.createElement("div");
+    chatButton.className = "flexibot-bubble";
+    chatButton.innerHTML = "💬";
+    document.body.appendChild(chatButton);
 
-function initChatUI() {
-  // Step 1 → Inject chat UI
-  const chatButton = document.createElement("div");
-  chatButton.className = "flexibot-bubble";
-  chatButton.innerHTML = "💬";
-  document.body.appendChild(chatButton);
-
-  const chatWindow = document.createElement("div");
-  chatWindow.className = "flexibot-window";
-  chatWindow.innerHTML = `
+    const chatWindow = document.createElement("div");
+    chatWindow.className = "flexibot-window";
+    chatWindow.innerHTML = `
     <div class="flexibot-header">
       <span class="flexibot-title" id="flexibot-title">Loading...</span>
       <span class="theme-toggle">🌙</span>
@@ -443,13 +441,13 @@ function initChatUI() {
       <button id="flexibot-send">Send</button>
     </div>
   `;
-  document.body.appendChild(chatWindow);
+    document.body.appendChild(chatWindow);
 
-  // Step 2 → Update title and tooltip
-  const titleEl = document.getElementById("flexibot-title");
-  if (titleEl) titleEl.textContent = clientConfig.botName || "FlexiBot";
-  chatButton.title = clientConfig.botName?.trim() || "FlexiBot";
-}
+    // Step 2 → Update title and tooltip
+    const titleEl = document.getElementById("flexibot-title");
+    if (titleEl) titleEl.textContent = clientConfig.botName || "FlexiBot";
+    chatButton.title = clientConfig.botName?.trim() || "FlexiBot";
+  }
 
   // Grab the injected UI elements
   const Messages = document.getElementById("flexibot-messages");
