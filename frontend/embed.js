@@ -9,19 +9,6 @@ const clientId = currentScript.getAttribute("data-client-id");
 // ------------------- fetch client config -------------------
 async function loadClientConfig() {
   try {
-    // 🔹 Inject base CSS early + hide widgets
-    const baseStyle = document.createElement("style");
-    baseStyle.textContent =
-      flexibotStyles +
-      `
-      .flexibot-window, .flexibot-bubble {
-        opacity: 0;
-        transition: opacity 0.2s ease-in;
-      }
-    `;
-    document.head.appendChild(baseStyle);
-
-    // 🔹 Fetch config
     const res = await fetch(
       `https://flexibot-backend.onrender.com/admin/config/${clientId}?_=${Date.now()}`,
       { cache: "no-store" }
@@ -29,21 +16,6 @@ async function loadClientConfig() {
     if (!res.ok) throw new Error("Config not found");
     const json = await res.json();
     clientConfig = json;
-
-    // 🔹 Load client theme instantly after config
-    if (clientConfig.theme && clientConfig.theme.trim()) {
-      try {
-        const themeHref = clientConfig.theme;
-        const link = document.createElement("link");
-        link.rel = "stylesheet";
-        link.href = themeHref.startsWith("http")
-          ? themeHref
-          : `https://flexibot-frontend.vercel.app${themeHref}`;
-        document.head.appendChild(link);
-      } catch (e) {
-        console.warn("FlexiBot: failed to apply theme", e.message);
-      }
-    }
   } catch (err) {
     console.warn("FlexiBot: could not load client config:", err.message);
   }
@@ -424,6 +396,7 @@ function initChatUI() {
   chatButton.innerHTML = "💬"; // later replace with SVG/logo if needed
   document.body.appendChild(chatButton);
 
+
   // 2. Create chat window
   const chatWindow = document.createElement("div");
   chatWindow.className = "flexibot-window";
@@ -450,7 +423,21 @@ function initChatUI() {
   }
 
   chatButton.title = clientConfig.botName?.trim() || "FlexiBot";
-  document.querySelectorAll(".flexibot-window, .flexibot-bubble").forEach(el => el.style.opacity = "1");
+
+  // Apply client theme if provided. Default CSS is already injected earlier.
+  if (clientConfig.theme && clientConfig.theme.trim()) {
+    try {
+      const themeHref = clientConfig.theme; // e.g. "/themes/restaurant.css" OR full URL
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = themeHref.startsWith("http")
+        ? themeHref
+        : `https://flexibot-frontend.vercel.app${themeHref}`;
+      document.head.appendChild(link);
+    } catch (e) {
+      console.warn("FlexiBot: failed to apply theme", e.message);
+    }
+  }
 }
 
   // Grab the injected UI elements
