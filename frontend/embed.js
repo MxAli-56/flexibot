@@ -40,13 +40,6 @@ function loadScript(src) {
 
 // ------------------- Main DOMContentLoaded -------------------
 window.addEventListener("DOMContentLoaded", async () => {
-  // 1️⃣ Load external libraries first
-  await loadLibs();
-
-  // 2️⃣ Fetch client config
-  await loadClientConfig();
-  initChatUI();
-
   // FlexiBot CSS (embed-safe, scoped, injected via JS)
   const flexibotStyles = `
 /* Bubble button */
@@ -383,6 +376,13 @@ window.addEventListener("DOMContentLoaded", async () => {
 }
 `;
 
+  // 1️⃣ Load external libraries first
+  await loadLibs();
+
+  // 2️⃣ Fetch client config
+  await loadClientConfig();
+  initChatUI();
+
   function initChatUI() {
     // Inject styles into page
     const styleEl = document.createElement("style");
@@ -435,167 +435,171 @@ window.addEventListener("DOMContentLoaded", async () => {
         console.warn("FlexiBot: failed to apply theme", e.message);
       }
     }
-  }
+    // Grab the injected UI elements
+    const Messages = document.getElementById("flexibot-messages");
+    const Input = document.getElementById("flexibot-input");
+    const Send = document.getElementById("flexibot-send");
+    const themeToggle = chatWindow.querySelector(".theme-toggle"); // inside header
 
-  // Grab the injected UI elements
-  const Messages = document.getElementById("flexibot-messages");
-  const Input = document.getElementById("flexibot-input");
-  const Send = document.getElementById("flexibot-send");
-  const themeToggle = chatWindow.querySelector(".theme-toggle"); // inside header
-
-  // Toggle chat window
-  function openChat() {
-    chatWindow.style.display = "flex";
-    chatWindow.style.flexDirection = "column";
-    setTimeout(() => {
-      try {
-        Input.focus();
-      } catch (e) {}
-    }, 50);
-    Messages.scrollTop = Messages.scrollHeight;
-  }
-  function closeChat() {
-    chatWindow.style.display = "none";
-  }
-  function toggleChat() {
-    if (!chatWindow.style.display || chatWindow.style.display === "none") {
-      openChat();
-    } else {
-      closeChat();
+    // Toggle chat window
+    function openChat() {
+      chatWindow.style.display = "flex";
+      chatWindow.style.flexDirection = "column";
+      setTimeout(() => {
+        try {
+          Input.focus();
+        } catch (e) {}
+      }, 50);
+      Messages.scrollTop = Messages.scrollHeight;
     }
-  }
-
-  // Connect floating button to toggle
-  chatButton.addEventListener("click", toggleChat);
-
-  // Close chat on ESC key
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") closeChat();
-  });
-
-  // ✅ Session ID (same as flexibot.js)
-  let sessionId = localStorage.getItem("flexibotSessionId");
-  if (!sessionId) {
-    sessionId =
-      Date.now().toString() + "-" + Math.random().toString(36).substring(2, 8);
-    localStorage.setItem("flexibotSessionId", sessionId);
-  }
-
-  // Append message helper
-  function appendMessage(who, text) {
-    const el = document.createElement("div");
-    el.className =
-      "message-bubble " + (who === "user" ? "user-bubble" : "bot-bubble");
-    el.textContent = text;
-    Messages.appendChild(el);
-    Messages.scrollTop = Messages.scrollHeight;
-  }
-
-  // Typing indicator helper
-  function showTyping() {
-    const t = document.createElement("div");
-    t.className = "typing-bubble";
-    t.innerHTML = `<span class="typing-dots"><span></span><span></span><span></span></span>`;
-    Messages.appendChild(t);
-    Messages.scrollTop = Messages.scrollHeight;
-    return t;
-  }
-
-  async function sendMessage(networkRetries = 2) {
-    const text = Input.value.trim();
-    if (!text) return;
-
-    // Show user message
-    appendMessage("user", text);
-    Input.value = "";
-
-    // Show typing indicator
-    const typingEl = showTyping();
-
-    try {
-      // 1️⃣ Try Groq (default)
-      let res = await fetch(
-        "https://flexibot-backend.onrender.com/api/message",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ clientId, sessionId, text }),
-        }
-      );
-
-      let data = await res.json();
-
-      // 2️⃣ Fallback to Gemini if Groq fails
-      if (!res.ok || !data.reply || data.status === "error") {
-        console.warn("Groq failed, falling back to Gemini...");
-
-        res = await fetch("https://flexibot-backend.onrender.com/api/message", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            clientId,
-            sessionId,
-            text,
-            forceGemini: true,
-          }),
-        });
-        data = await res.json();
-      }
-
-      // 3️⃣ Show AI reply
-      const botMsg = document.createElement("div");
-      botMsg.className = "message-bubble bot-bubble";
-
-      if (!res.ok || data.status === "error") {
-        botMsg.textContent =
-          data.reply ||
-          "⚠️ Sorry, I couldn't process your message. Please try again.";
+    function closeChat() {
+      chatWindow.style.display = "none";
+    }
+    function toggleChat() {
+      if (!chatWindow.style.display || chatWindow.style.display === "none") {
+        openChat();
       } else {
-        botMsg.innerHTML = DOMPurify.sanitize(marked.parse(data.reply));
+        closeChat();
       }
+    }
 
-      typingEl.replaceWith(botMsg);
-      Messages.scrollTop = Messages.scrollHeight;
-    } catch (err) {
-      console.error("Frontend fetch error:", err.message);
+    // Connect floating button to toggle
+    chatButton.addEventListener("click", toggleChat);
 
-      // Retry network errors
-      if (networkRetries > 0) {
-        const attempt = 3 - networkRetries + 1;
-        console.warn(`⚠️ Network error, retrying... (Attempt ${attempt})`);
-        typingEl.textContent = `Retrying... (${attempt}/3)`;
+    // Close chat on ESC key
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeChat();
+    });
 
-        setTimeout(() => {
-          sendMessage(networkRetries - 1);
-        }, 2000);
-        return;
-      }
+    // ✅ Session ID (same as flexibot.js)
+    let sessionId = localStorage.getItem("flexibotSessionId");
+    if (!sessionId) {
+      sessionId =
+        Date.now().toString() +
+        "-" +
+        Math.random().toString(36).substring(2, 8);
+      localStorage.setItem("flexibotSessionId", sessionId);
+    }
 
-      // Final fallback
-      const fallback = document.createElement("div");
-      fallback.className = "message-bubble bot-bubble";
-      fallback.textContent =
-        "⚠️ I’m having trouble connecting. Please check your internet or try again later.";
-      typingEl.replaceWith(fallback);
+    // Append message helper
+    function appendMessage(who, text) {
+      const el = document.createElement("div");
+      el.className =
+        "message-bubble " + (who === "user" ? "user-bubble" : "bot-bubble");
+      el.textContent = text;
+      Messages.appendChild(el);
       Messages.scrollTop = Messages.scrollHeight;
     }
-  }
 
-  // Send on button click
-  Send.addEventListener("click", sendMessage);
-
-  // Send on Enter key (Shift+Enter = newline)
-  Input.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      Send.click();
+    // Typing indicator helper
+    function showTyping() {
+      const t = document.createElement("div");
+      t.className = "typing-bubble";
+      t.innerHTML = `<span class="typing-dots"><span></span><span></span><span></span></span>`;
+      Messages.appendChild(t);
+      Messages.scrollTop = Messages.scrollHeight;
+      return t;
     }
-  });
 
-  themeToggle.addEventListener("click", () => {
-    chatWindow.classList.toggle("light-mode");
-    themeToggle.textContent = chatWindow.classList.contains("light-mode")
-      ? "🌞"
-      : "🌙";
-  });
+    async function sendMessage(networkRetries = 2) {
+      const text = Input.value.trim();
+      if (!text) return;
+
+      // Show user message
+      appendMessage("user", text);
+      Input.value = "";
+
+      // Show typing indicator
+      const typingEl = showTyping();
+
+      try {
+        // 1️⃣ Try Groq (default)
+        let res = await fetch(
+          "https://flexibot-backend.onrender.com/api/message",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ clientId, sessionId, text }),
+          }
+        );
+
+        let data = await res.json();
+
+        // 2️⃣ Fallback to Gemini if Groq fails
+        if (!res.ok || !data.reply || data.status === "error") {
+          console.warn("Groq failed, falling back to Gemini...");
+
+          res = await fetch(
+            "https://flexibot-backend.onrender.com/api/message",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                clientId,
+                sessionId,
+                text,
+                forceGemini: true,
+              }),
+            }
+          );
+          data = await res.json();
+        }
+
+        // 3️⃣ Show AI reply
+        const botMsg = document.createElement("div");
+        botMsg.className = "message-bubble bot-bubble";
+
+        if (!res.ok || data.status === "error") {
+          botMsg.textContent =
+            data.reply ||
+            "⚠️ Sorry, I couldn't process your message. Please try again.";
+        } else {
+          botMsg.innerHTML = DOMPurify.sanitize(marked.parse(data.reply));
+        }
+
+        typingEl.replaceWith(botMsg);
+        Messages.scrollTop = Messages.scrollHeight;
+      } catch (err) {
+        console.error("Frontend fetch error:", err.message);
+
+        // Retry network errors
+        if (networkRetries > 0) {
+          const attempt = 3 - networkRetries + 1;
+          console.warn(`⚠️ Network error, retrying... (Attempt ${attempt})`);
+          typingEl.textContent = `Retrying... (${attempt}/3)`;
+
+          setTimeout(() => {
+            sendMessage(networkRetries - 1);
+          }, 2000);
+          return;
+        }
+
+        // Final fallback
+        const fallback = document.createElement("div");
+        fallback.className = "message-bubble bot-bubble";
+        fallback.textContent =
+          "⚠️ I’m having trouble connecting. Please check your internet or try again later.";
+        typingEl.replaceWith(fallback);
+        Messages.scrollTop = Messages.scrollHeight;
+      }
+    }
+
+    // Send on button click
+    Send.addEventListener("click", sendMessage);
+
+    // Send on Enter key (Shift+Enter = newline)
+    Input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        Send.click();
+      }
+    });
+
+    themeToggle.addEventListener("click", () => {
+      chatWindow.classList.toggle("light-mode");
+      themeToggle.textContent = chatWindow.classList.contains("light-mode")
+        ? "🌞"
+        : "🌙";
+    });
+  } 
 });
