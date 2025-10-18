@@ -40,7 +40,6 @@ function loadScript(src) {
 
 // ------------------- Main DOMContentLoaded -------------------
 window.addEventListener("DOMContentLoaded", async () => {
-
   // 1️⃣ Load external libraries first
   await loadLibs();
 
@@ -384,25 +383,25 @@ window.addEventListener("DOMContentLoaded", async () => {
 }
 `;
 
-function initChatUI() {
-  // Inject styles into page
-  const styleEl = document.createElement("style");
-  styleEl.textContent = flexibotStyles;
-  document.head.appendChild(styleEl);
+  function initChatUI() {
+    // Inject styles into page
+    const styleEl = document.createElement("style");
+    styleEl.textContent = flexibotStyles;
+    document.head.appendChild(styleEl);
 
-  // Step 4.2 → Inject floating chat button
-  const chatButton = document.createElement("div");
-  chatButton.className = "flexibot-bubble";
-  chatButton.innerHTML = "💬"; // later replace with SVG/logo if needed
-  document.body.appendChild(chatButton);
+    // Step 4.2 → Inject floating chat button
+    const chatButton = document.createElement("div");
+    chatButton.className = "flexibot-bubble";
+    chatButton.innerHTML = "💬"; // later replace with SVG/logo if needed
+    document.body.appendChild(chatButton);
+    chatButton.title = clientConfig.botName?.trim() || "FlexiBot";
 
+    // 2. Create chat window
+    const chatWindow = document.createElement("div");
+    chatWindow.className = "flexibot-window";
 
-  // 2. Create chat window
-  const chatWindow = document.createElement("div");
-  chatWindow.className = "flexibot-window";
-
-  // Chat window inner HTML
-  chatWindow.innerHTML = `
+    // Chat window inner HTML
+    chatWindow.innerHTML = `
   <div class="flexibot-header">
   <span class="flexibot-title" id="flexibot-title">Loading...</span>
   <span class="theme-toggle">🌙</span>
@@ -414,31 +413,29 @@ function initChatUI() {
   </div>
   `;
 
-  document.body.appendChild(chatWindow);
+    document.body.appendChild(chatWindow);
 
-  // Update chat header title after window is created
-  const titleEl = document.getElementById("flexibot-title");
-  if (titleEl) {
-    titleEl.textContent = clientConfig.botName || "FlexiBot";
-  }
+    // Update chat header title after window is created
+    const titleEl = document.getElementById("flexibot-title");
+    if (titleEl) {
+      titleEl.textContent = clientConfig.botName || "FlexiBot";
+    }
 
-  chatButton.title = clientConfig.botName?.trim() || "FlexiBot";
-
-  // Apply client theme if provided. Default CSS is already injected earlier.
-  if (clientConfig.theme && clientConfig.theme.trim()) {
-    try {
-      const themeHref = clientConfig.theme; // e.g. "/themes/restaurant.css" OR full URL
-      const link = document.createElement("link");
-      link.rel = "stylesheet";
-      link.href = themeHref.startsWith("http")
-        ? themeHref
-        : `https://flexibot-frontend.vercel.app${themeHref}`;
-      document.head.appendChild(link);
-    } catch (e) {
-      console.warn("FlexiBot: failed to apply theme", e.message);
+    // Apply client theme if provided. Default CSS is already injected earlier.
+    if (clientConfig.theme && clientConfig.theme.trim()) {
+      try {
+        const themeHref = clientConfig.theme; // e.g. "/themes/restaurant.css" OR full URL
+        const link = document.createElement("link");
+        link.rel = "stylesheet";
+        link.href = themeHref.startsWith("http")
+          ? themeHref
+          : `https://flexibot-frontend.vercel.app${themeHref}`;
+        document.head.appendChild(link);
+      } catch (e) {
+        console.warn("FlexiBot: failed to apply theme", e.message);
+      }
     }
   }
-}
 
   // Grab the injected UI elements
   const Messages = document.getElementById("flexibot-messages");
