@@ -19,6 +19,7 @@
     "groq-sdk": "^0.33.0",
     "mongodb": "^6.19.0",
     "mongoose": "^8.18.1",
+    "node-cron": "^4.2.1",
     "node-fetch": "^3.3.2",
     "uuid": "^13.0.0"
   }

@@ -12,6 +12,7 @@ const app = express();
 
 // 🟢 Connect MongoDB
 connectDB();
+require("./cron/crawlercron");
 
 // 🟢 Middlewares
 app.use(
