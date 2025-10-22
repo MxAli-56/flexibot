@@ -9,7 +9,9 @@ const clientSchema = new mongoose.Schema(
     websiteURL: { type: String, required: true },
     botName: { type: String, default: "FlexiBot" },
     theme: {type: String, default: ""},
-    systemPrompt: {type: String, default: "You are FlexiBot, a helpful assistant."},
+    systemPrompt: {type: String, default: ""},
+    siteContext: { type: String, default: "" },
+    lastCrawled: { type: Date },
     embedCode: { type: String },
   },
   { timestamps: true }

@@ -3,8 +3,9 @@ const express = require("express");
 const cors = require("cors");
 const connectDB = require("./db");
 const adminRoutes = require("./routes/admin");
+const chatRoutes = require("./routes/chat");
 require("dotenv").config();
-const chatRoutes = require("./routes/chat"); // ✅ import chat routes
+const path = require("path");
 
 const PORT = process.env.PORT || 5000;
 const app = express();
@@ -13,27 +14,29 @@ const app = express();
 connectDB();
 
 // 🟢 Middlewares
-app.use(cors({
-  origin: "*",
-  methods: ["GET", "POST", "OPTIONS"],
-  allowedHeaders: ["Content-Type"],
-}));
+app.use(
+  cors({
+    origin: "*",
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type"],
+  })
+);
 app.use(express.json());
 
-// Simple health endpoint for uptime pings
-app.get("/health", (req, res) => res.json({ status: "ok", time: new Date().toISOString() }));
+// 🟢 Routes
+app.use("/api/admin", adminRoutes);
+app.use("/api", chatRoutes);
 
-const path = require("path");
+// 🩺 Health check endpoint (for UptimeRobot)
+app.get("/health", (req, res) =>
+  res.json({ status: "ok", time: new Date().toISOString() })
+);
 
-// Serve the frontend folder so embed.js (and css etc.) can be accessed
+// 🧱 Serve frontend files (embed.js, styles, etc.)
 app.use(express.static(path.join(__dirname, "../frontend")));
 app.use("/themes", express.static(path.join(__dirname, "themes")));
 
-// 🟢 Routes
-app.use("/admin", adminRoutes);
-app.use("/api", chatRoutes); // ✅ mount chat routes
-
 // 🟢 Start Server
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`✅ Server running on http://localhost:${PORT}`);
 });
