@@ -5,6 +5,7 @@ const Session = require("../models/Session");
 const Message = require("../models/Message");
 const { chatWithGroq } = require("../providers/groq");
 const { chatWithGemini } = require("../providers/gemini");
+const { crawlWebsite } = require("../../utils/crawler"); // 🧩 added
 
 const router = express.Router();
 
@@ -15,7 +16,6 @@ async function fetchConversation(sessionId, limit = 12) {
     .limit(limit)
     .lean();
 
-  // reverse so oldest → newest
   return docs.reverse().map((d) => ({
     role: d.role,
     content: d.text,
@@ -32,12 +32,20 @@ function timeout(ms, promise) {
   ]);
 }
 
+// 🧩 Optional cache for crawled sites (so we don’t crawl every message)
+const crawlCache = new Map(); // { websiteUrl: { content, lastFetched } }
+
 // 🟢 POST /api/message (main chat endpoint)
 router.post("/message", async (req, res) => {
   try {
-    const { sessionId, clientId = "default", text } = req.body;
+    const {
+      sessionId,
+      clientId = "default",
+      text,
+      websiteUrl,
+      forceGemini,
+    } = req.body;
 
-    // ✅ Validate input (only block completely empty strings)
     if (!text || !text.trim()) {
       return res.status(400).json({ error: "Message text is required" });
     }
@@ -64,41 +72,55 @@ router.post("/message", async (req, res) => {
       text,
     });
 
-    // 3️⃣ Fetch last 12 messages for context
+    // 3️⃣ Fetch last messages for context
     const history = await fetchConversation(session.sessionId, 12);
 
-    // 4️⃣ Generate AI reply safely with timeout
-    let aiReplyText = "Hello! How can I assist you today?"; // default fallback
+    // 🕷️ 4️⃣ Crawl website (if provided and not recently cached)
+    let siteContext = "";
+    if (websiteUrl) {
+      const cached = crawlCache.get(websiteUrl);
+      const now = Date.now();
+      if (cached && now - cached.lastFetched < 1000 * 60 * 60 * 6) {
+        // reuse if less than 6 hours old
+        siteContext = cached.content;
+        console.log(`♻️ Using cached crawl for ${websiteUrl}`);
+      } else {
+        console.log(`🕷️ Crawling: ${websiteUrl}`);
+        siteContext = await crawlWebsite(websiteUrl, 2);
+        crawlCache.set(websiteUrl, { content: siteContext, lastFetched: now });
+      }
+    }
+
+    // 5️⃣ Build full system prompt
+    const systemPrompt = `
+You are FlexiBot — a friendly, respectful, and professional AI assistant designed to help website visitors.
+Respond naturally, clearly, and according to the question (no extra or less details).
+If the user asks general questions, reply helpfully.
+If the user greets you, greet them back and reply politely.
+If the user asks inappropriate questions, tell them no politely.
+If the user repeats a question, answer politely and naturally, without unnecessary disclaimers. Keep the conversation flowing.
+Always format multi-paragraph answers with clear line breaks between headings, paragraphs, and bullet points.
+When providing lists, use proper bullets (- or •) with a new line for each item.
+Use headings for main sections, subheadings for subsections if needed.
+Keep spacing consistent so the text is readable for website visitors.
+
+Website Context (use it to make answers site-specific):
+${siteContext ? siteContext.slice(0, 3000) : "No website data available."}
+`;
+
+    // 6️⃣ Combine history + user text
+    const prompt = `${systemPrompt}\n\n${history
+      .map((m) => `${m.role}: ${m.content}`)
+      .join("\n")}\nuser: ${text}\nassistant:`;
+
+    // 7️⃣ Generate AI reply (Groq → fallback Gemini)
+    let aiReplyText = "Hello! How can I assist you today?";
+    let aiResponse;
 
     try {
-      const systemPrompt = `
-        You are FlexiBot — a friendly, respectful, and professional AI assistant designed to help website visitors.
-        Respond naturally, clearly, and according to the question (no extra or less details).
-        If the user asks general questions, reply helpfully.
-        If the user greets you, greet them back and reply politely.
-        If the user asks inappropriate questions, tell them no politely.
-        If the user repeats a question, answer politely and naturally, without unnecessary disclaimers. Keep the conversation flowing.
-        Always format multi-paragraph answers with clear line breaks between headings, paragraphs, and bullet points.
-        When providing lists, use proper bullets (- or •) with a new line for each item.
-        Use headings for main sections, subheadings for subsections if needed.
-        Keep spacing consistent so the text is readable for website visitors.
-        Do reinforcement learning and learn from your mistakes and make patterns to improve on your own.
-        `;
-
-      const prompt = `${systemPrompt}\n\n${history
-        .map((m) => `${m.role}: ${m.content}`)
-        .join("\n")}\nuser: ${text}\nassistant:`;
-
-
-      const { forceGemini } = req.body || {};
-
-      let aiResponse;
-
-      // 🧠 1️⃣ Use Gemini directly if forced (from frontend)
       if (forceGemini) {
         aiResponse = await timeout(20000, chatWithGemini(prompt));
       } else {
-        // 🧠 2️⃣ Try Groq first → fallback to Gemini if fails
         try {
           aiResponse = await timeout(20000, chatWithGroq(prompt));
           if (!aiResponse || aiResponse.status === "error") {
@@ -111,7 +133,6 @@ router.post("/message", async (req, res) => {
         }
       }
 
-      // 🧩 Apply response if valid
       if (
         aiResponse &&
         typeof aiResponse.reply === "string" &&
@@ -123,7 +144,7 @@ router.post("/message", async (req, res) => {
       console.error("AI call failed or timed out:", error.message);
     }
 
-    // 5️⃣ Save bot reply safely
+    // 8️⃣ Save bot reply
     await Message.create({
       sessionId: session.sessionId,
       clientId,
@@ -131,7 +152,7 @@ router.post("/message", async (req, res) => {
       text: aiReplyText,
     });
 
-    // 6️⃣ Return reply and sessionId
+    // 9️⃣ Return final response
     res.json({ reply: aiReplyText, sessionId: session.sessionId });
   } catch (error) {
     console.error("Error in /api/message:", error);
