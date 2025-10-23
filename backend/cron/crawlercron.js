@@ -2,7 +2,7 @@
 const cron = require("node-cron");
 const { crawlWebsite } = require("../utils/crawler");
 const { mergeSystemPrompt } = require("../utils/systemPromptManager");
-const Client = require("../models/Client");
+const Client = require("../models/Clients");
 
 // Runs every 24 hours (you can test with "*/5 * * * *" = every 5 mins)
 cron.schedule("0 0 * * *", async () => {
