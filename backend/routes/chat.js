@@ -87,7 +87,7 @@ router.post("/message", async (req, res) => {
         console.log(`♻️ Using cached crawl for ${websiteUrl}`);
       } else {
         console.log(`🕷️ Crawling: ${websiteUrl}`);
-        siteContext = await crawlWebsite(websiteUrl, 2);
+        siteContext = await crawlWebsite(websiteUrl, 3);
         crawlCache.set(websiteUrl, { content: siteContext, lastFetched: now });
       }
     }

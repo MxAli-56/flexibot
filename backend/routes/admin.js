@@ -73,26 +73,50 @@ router.get("/config/:clientId", async (req, res) => {
 // POST /api/admin/crawl-site
 router.post("/crawl-site", async (req, res) => {
   try {
-    const { clientId } = req.body; // get which client to crawl
+    const { clientId } = req.body;
 
-    const client = await Client.findOne({ clientId });
+    const client = await Client.findById(clientId);
     if (!client) {
       return res.status(404).json({ message: "Client not found" });
     }
 
-    // Crawl the website and get content
+    // Crawl the website
     const siteContext = await crawlWebsite(client.websiteURL);
 
-    // Update DB with new content
+    // Save new content
     client.siteContext = siteContext;
     client.lastCrawled = new Date();
     await client.save();
 
-    res.status(200).json({
-      message: "Website crawled and context saved successfully.",
-      siteContext: siteContext.slice(0, 500) + "..." // just preview
-    });
+    // 🧠 Auto-update system prompt for this client
+    const basePrompt = `
+You are FlexiBot — a friendly, respectful, and professional AI assistant designed to help website visitors.
+Respond naturally, clearly, and according to the question (no extra or less details).
+If the user asks general questions, reply helpfully.
+If the user greets you, greet them back and reply politely.
+If the user asks inappropriate questions, tell them no politely.
+If the user repeats a question, answer politely and naturally, without unnecessary disclaimers. Keep the conversation flowing.
+Always format multi-paragraph answers with clear line breaks between headings, paragraphs, and bullet points.
+When providing lists, use proper bullets (- or •) with a new line for each item.
+Use headings for main sections, subheadings for subsections if needed.
+Keep spacing consistent so the text is readable for website visitors.
+`;
 
+    const updatedPrompt = `
+${basePrompt}
+
+Website Context (use it to make answers site-specific):
+${siteContext ? siteContext.slice(0, 3000) : "No website data available."}
+`;
+
+    // Update in DB
+    client.systemPrompt = updatedPrompt;
+    await client.save();
+
+    res.status(200).json({
+      message: "Website crawled and system prompt updated successfully.",
+      siteContextPreview: siteContext.slice(0, 500) + "...",
+    });
   } catch (error) {
     console.error("Error crawling site:", error);
     res.status(500).json({ message: "Error crawling site", error });
