@@ -5,7 +5,8 @@ const Session = require("../models/Session");
 const Message = require("../models/Message");
 const { chatWithGroq } = require("../providers/groq");
 const { chatWithGemini } = require("../providers/gemini");
-const { crawlWebsite } = require("../../utils/crawler"); // 🧩 added
+const { crawlWebsite } = require("../utils/crawler");
+const { getSystemPrompt } = require("../utils/systemPromptManager");
 
 const router = express.Router();
 
@@ -91,18 +92,27 @@ router.post("/message", async (req, res) => {
       }
     }
 
-    // 5️⃣ Build full system prompt
-    const systemPrompt = `
-You are FlexiBot — a friendly, respectful, and professional AI assistant designed to help website visitors.
-Respond naturally, clearly, and according to the question (no extra or less details).
-If the user asks general questions, reply helpfully.
-If the user greets you, greet them back and reply politely.
-If the user asks inappropriate questions, tell them no politely.
-If the user repeats a question, answer politely and naturally, without unnecessary disclaimers. Keep the conversation flowing.
-Always format multi-paragraph answers with clear line breaks between headings, paragraphs, and bullet points.
-When providing lists, use proper bullets (- or •) with a new line for each item.
-Use headings for main sections, subheadings for subsections if needed.
-Keep spacing consistent so the text is readable for website visitors.
+    // 5️⃣ Build full system prompt (fetch from DB dynamically)
+    let systemPrompt = await getSystemPrompt(clientId);
+
+    if (!systemPrompt) {
+      // fallback if no custom one yet
+      systemPrompt = `
+    You are FlexiBot — a friendly, respectful, and professional AI assistant designed to help website visitors.
+    Respond naturally, clearly, and according to the question (no extra or less details).
+    If the user asks general questions, reply helpfully.
+    If the user greets you, greet them back and reply politely.
+    If the user asks inappropriate questions, tell them no politely.
+    If the user repeats a question, answer politely and naturally, without unnecessary disclaimers. Keep the conversation flowing.
+    Always format multi-paragraph answers with clear line breaks between headings, paragraphs, and bullet points.
+    When providing lists, use proper bullets (- or •) with a new line for each item.
+    Use headings for main sections, subheadings for subsections if needed.
+    Keep spacing consistent so the text is readable for website visitors.
+  `;
+    }
+
+    // Add optional site content context
+    systemPrompt += `
 
 Website Context (use it to make answers site-specific):
 ${siteContext ? siteContext.slice(0, 3000) : "No website data available."}
