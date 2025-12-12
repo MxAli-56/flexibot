@@ -2,7 +2,7 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "models/gemini-1.5-flash" });
+const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
 async function chatWithGemini(message, retries = 3, attempt = 1) {
   try {
@@ -56,7 +56,7 @@ async function chatWithGemini(message, retries = 3, attempt = 1) {
 
     // Generic fallback
     return {
-      reply: "⚠️ Gemini is not available right now. Please try again later.",
+      reply: "⚠️ Bot is not available right now. Please try again later.",
       attempt,
       status: "error",
     };
