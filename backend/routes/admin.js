@@ -48,7 +48,7 @@ router.get("/clients", async (req, res) => {
 });
 
 // Fetch client details by clientId
-router.get("/config/:clientId", async (req, res) => {
+router.get("/client-config/:clientId", async (req, res) => {
   try {
     const { clientId } = req.params;
     const client = await Client.findOne({ clientId });
