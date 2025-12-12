@@ -10,7 +10,7 @@ const clientId = currentScript.getAttribute("data-client-id");
 async function loadClientConfig() {
   try {
     const res = await fetch(
-      `https://flexibot-backend.onrender.com/admin/config/${clientId}?_=${Date.now()}`,
+      `https://flexibot-backend.onrender.com/api/admin/client-config/${clientId}?_=${Date.now()}`,
       { cache: "no-store" }
     );
     if (!res.ok) throw new Error("Config not found");
