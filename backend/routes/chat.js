@@ -4,8 +4,7 @@ const { randomUUID } = require("crypto");
 const Session = require("../models/Session");
 const Message = require("../models/Message");
 
-const { chatWithDeepSeek } = require("../providers/deepseek");
-const { chatWithGemini } = require("../providers/gemini");
+const { chatWithBytez } = require("../providers/bytez");
 
 const { crawlWebsite } = require("../utils/crawler");
 const { getSystemPrompt } = require("../utils/systemPromptManager");
@@ -24,27 +23,11 @@ async function fetchConversation(sessionId, limit = 12) {
   }));
 }
 
-function timeout(ms, promise) {
-  return Promise.race([
-    promise,
-    new Promise((_, reject) =>
-      setTimeout(() => reject(new Error("Timeout")), ms)
-    ),
-  ]);
-}
-
 const crawlCache = new Map();
 
 router.post("/message", async (req, res) => {
   try {
-    const {
-      sessionId,
-      clientId = "default",
-      text,
-      websiteUrl,
-      forceGemini,
-      forceDeepSeek,
-    } = req.body;
+    const { sessionId, clientId = "default", text, websiteUrl } = req.body;
 
     if (!text || !text.trim()) {
       return res.status(400).json({ error: "Message text is required" });
@@ -111,44 +94,26 @@ ${siteContext ? siteContext.slice(0, 3000) : "No website data available."}
     // 6️⃣ Full prompt
     const prompt = `${systemPrompt}\n\n${history
       .map((m) => `${m.role}: ${m.content}`)
-      .join("\n")}\nuser: ${text}\nassistant:`;
+      .join("\n")}\nassistant:`;
 
     // ---------------------------------------------------
-    // 7️⃣ AI Handling: MAIN = DeepSeek → Gemini
+    // 7️⃣ AI Handling: BYTEZ ONLY (Phi-3)
     // ---------------------------------------------------
-    let aiReplyText = "Hello! How can I assist you today?";
-    let aiResponse;
+    let aiReplyText = "⚠️ AI is not available right now.";
 
     try {
-      // 🔒 Manual override (for testing)
-      if (forceDeepSeek) {
-        aiResponse = await timeout(20000, chatWithDeepSeek(prompt));
-      } else if (forceGemini) {
-        aiResponse = await timeout(20000, chatWithGemini(prompt));
-      } else {
-        // MAIN FLOW: DeepSeek → Gemini
-        try {
-          aiResponse = await timeout(20000, chatWithDeepSeek(prompt));
-
-          if (!aiResponse || aiResponse.status === "error") {
-            console.warn("⚠️ DeepSeek failed, switching to Gemini...");
-            aiResponse = await timeout(20000, chatWithGemini(prompt));
-          }
-        } catch (err) {
-          console.warn("⚠️ DeepSeek threw error, trying Gemini:", err.message);
-          aiResponse = await timeout(20000, chatWithGemini(prompt));
-        }
-      }
+      const aiResponse = await (chatWithBytez(prompt));
 
       if (
         aiResponse &&
+        aiResponse.status === "success" &&
         typeof aiResponse.reply === "string" &&
         aiResponse.reply.trim()
       ) {
         aiReplyText = aiResponse.reply;
       }
     } catch (error) {
-      console.error("AI call failed:", error.message);
+      console.error("Bytez AI failed:", error.message);
     }
 
     // 8️⃣ Save bot reply
