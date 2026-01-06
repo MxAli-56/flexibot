@@ -4,6 +4,7 @@ const { randomUUID } = require("crypto");
 const Session = require("../models/Session");
 const Message = require("../models/Message");
 
+const { chatWithMistral } = require("../providers/mistral");
 const { chatWithBytez } = require("../providers/bytez");
 
 const { crawlWebsite } = require("../utils/crawler");
@@ -97,23 +98,34 @@ ${siteContext ? siteContext.slice(0, 1000) : "No website data available."}
       .join("\n")}\nassistant:`;
 
     // ---------------------------------------------------
-    // 7️⃣ AI Handling: BYTEZ ONLY (Phi-3)
+    // 7️⃣ AI Handling: DUAL PROVIDER (Mistral -> Bytez)
     // ---------------------------------------------------
-    let aiReplyText = "⚠️ AI is not available right now.";
+    let aiReplyText = "";
 
     try {
-      const aiResponse = await (chatWithBytez(prompt));
+      console.log("💎 Attempting Mistral (Primary)...");
+      const mistralRes = await chatWithMistral(prompt);
 
-      if (
-        aiResponse &&
-        aiResponse.status === "success" &&
-        typeof aiResponse.reply === "string" &&
-        aiResponse.reply.trim()
-      ) {
-        aiReplyText = aiResponse.reply;
+      if (mistralRes.status === "success") {
+        aiReplyText = mistralRes.reply;
+      } else {
+        // If Mistral specifically fails, try Bytez as a backup
+        throw new Error("Mistral failed, trying backup...");
       }
     } catch (error) {
-      console.error("Bytez AI failed:", error.message);
+      console.warn("⚠️ Mistral fallback triggered. Trying Bytez...");
+
+      try {
+        const bytezRes = await chatWithBytez(prompt);
+        if (bytezRes.status === "success") {
+          aiReplyText = bytezRes.reply;
+        } else {
+          aiReplyText =
+            "⚠️ Both AI systems are currently overloaded. Please try again in a moment.";
+        }
+      } catch (bytezError) {
+        aiReplyText = "⚠️ The chatbot is taking a quick break. Please refresh!";
+      }
     }
 
     // 8️⃣ Save bot reply
