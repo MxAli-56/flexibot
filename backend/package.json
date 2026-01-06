@@ -13,6 +13,7 @@
   "license": "ISC",
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
+    "@mistralai/mistralai": "^1.11.0",
     "axios": "^1.12.2",
     "bytez.js": "^3.0.0",
     "cheerio": "^1.1.2",
