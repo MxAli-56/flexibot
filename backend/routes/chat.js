@@ -88,7 +88,7 @@ Follow formatting rules, spacing, and tone guidelines.
     systemPrompt += `
 
 Website Context:
-${siteContext ? siteContext.slice(0, 3000) : "No website data available."}
+${siteContext ? siteContext.slice(0, 1000) : "No website data available."}
 `;
 
     // 6️⃣ Full prompt
