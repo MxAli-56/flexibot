@@ -35,9 +35,13 @@ async function sendMessage(networkRetries = 2) {
   userMsg.textContent = text;
   messages.appendChild(userMsg);
   input.value = "";
-  messages.scrollTop = messages.scrollHeight;
 
-  // Typing indicator (default = dots)
+  // 🚀 Force scroll after user message
+  setTimeout(() => {
+    messages.scrollTop = messages.scrollHeight;
+  }, 10);
+
+  // Typing indicator
   const typing = document.createElement("div");
   typing.id = "typing";
   typing.className = "message-bubble typing-bubble";
@@ -45,29 +49,41 @@ async function sendMessage(networkRetries = 2) {
     '<span class="typing-dots"><span></span><span></span><span></span></span>';
   messages.appendChild(typing);
 
+  // 🚀 Scroll to show typing dots
+  messages.scrollTop = messages.scrollHeight;
+
   try {
-    const res = await fetch("https://flexibot-backend.onrender.com/api/message", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sessionId, text }),
-    });
+    const res = await fetch(
+      "https://flexibot-backend.onrender.com/api/message",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId, text }),
+      }
+    );
 
     const data = await res.json();
 
-    // Bot reply bubble
     const botMsg = document.createElement("div");
     botMsg.className = "message-bubble bot-bubble";
 
     if (!res.ok || data.status === "error") {
       botMsg.textContent =
-        data.reply ||
-        "⚠️ Sorry, I couldn't process your message. Please try again.";
+        data.reply || "⚠️ Sorry, I couldn't process your message.";
     } else {
+      // ✅ Use DOMPurify and Marked
       botMsg.innerHTML = DOMPurify.sanitize(marked.parse(data.reply));
     }
 
     typing.replaceWith(botMsg);
-    messages.scrollTop = messages.scrollHeight;
+
+    // 🚀 THE FIX: Wait for the browser to render the markdown/images
+    setTimeout(() => {
+      messages.scrollTo({
+        top: messages.scrollHeight,
+        behavior: "smooth", // Makes it feel high-end
+      });
+    }, 50);
   } catch (err) {
     console.error("Frontend fetch error:", err.message);
 
