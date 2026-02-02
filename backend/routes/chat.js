@@ -3,13 +3,10 @@ const express = require("express");
 const { randomUUID } = require("crypto");
 const Session = require("../models/Session");
 const Message = require("../models/Message");
-const Client = require("../models/Client"); // Added this to fetch MongoDB clinic data
+const Client = require("../models/Client");
 
 const { chatWithMistral } = require("../providers/mistral");
 const { chatWithBytez } = require("../providers/bytez");
-
-const { crawlWebsite } = require("../utils/crawler");
-const { getSystemPrompt } = require("../utils/systemPromptManager");
 
 const router = express.Router();
 
@@ -25,22 +22,18 @@ async function fetchConversation(sessionId, limit = 12) {
   }));
 }
 
-const crawlCache = new Map();
-
 router.post("/message", async (req, res) => {
   try {
-    const { sessionId, clientId = "default", text, websiteUrl } = req.body;
+    const { sessionId, clientId = "default", text } = req.body;
 
     if (!text || !text.trim()) {
       return res.status(400).json({ error: "Message text is required" });
     }
     if (text.length > 1000) {
-      return res
-        .status(400)
-        .json({ error: "Message too long. Max 1000 characters allowed." });
+      return res.status(400).json({ error: "Message too long." });
     }
 
-    // 1️⃣ Fetch Client Data (Knowledge Base) from MongoDB
+    // 1️⃣ Fetch Client Knowledge Base
     const clientData = await Client.findOne({ clientId });
 
     // 2️⃣ Create or find session
@@ -60,81 +53,57 @@ router.post("/message", async (req, res) => {
       text,
     });
 
-    // 4️⃣ History
+    // 4️⃣ Get Chat History
     const history = await fetchConversation(session.sessionId, 12);
 
-    // 5️⃣ Crawl logic (Secondary Fallback)
-    let siteContext = "";
-    if (websiteUrl && !clientData?.siteContext) { 
-      // Only crawl if we DON'T have manual data in MongoDB
-      const cached = crawlCache.get(websiteUrl);
-      const now = Date.now();
-
-      if (cached && now - cached.lastFetched < 1000 * 60 * 60 * 6) {
-        siteContext = cached.content;
-      } else {
-        siteContext = await crawlWebsite(websiteUrl, 3);
-        crawlCache.set(websiteUrl, { content: siteContext, lastFetched: now });
-      }
-    }
-
-    // 6️⃣ System Prompt Construction
-    // Prioritize manual System Prompt from DB, then manager, then default
-    let basePrompt = clientData?.systemPrompt || await getSystemPrompt(clientId);
-    
-    if (!basePrompt) {
-      basePrompt = "You are FlexiBot, a helpful and professional AI assistant.";
-    }
-
-    // Final Knowledge Source: Manual siteContext > Crawled context > Default
-    const knowledgeBase = clientData?.siteContext || siteContext || "No specific clinic data provided.";
+    // 5️⃣ Construct Specialized System Prompt
+    let basePrompt =
+      clientData?.systemPrompt ||
+      "You are FlexiBot, a professional AI assistant.";
+    const knowledge =
+      clientData?.siteContext || "No specific business data available.";
 
     const finalSystemPrompt = `
 ${basePrompt}
 
 CRITICAL KNOWLEDGE BASE:
-${knowledgeBase.slice(0, 2000)}
+${knowledge.slice(0, 2000)}
 
 INSTRUCTIONS:
 - Only answer based on the knowledge provided above.
-- If the answer isn't there, politely ask for their name/phone so a human can help.
-- Be concise and professional.
+- If the answer isn't there, ask for their name and phone so we can contact them.
+- Be concise and polite.
 `;
 
-    // 7️⃣ Full prompt assembly
+    // 6️⃣ Assembly
     const prompt = `${finalSystemPrompt}\n\n${history
       .map((m) => `${m.role}: ${m.content}`)
       .join("\n")}\nassistant:`;
 
-    // ---------------------------------------------------
-    // 8️⃣ AI Handling: DUAL PROVIDER (Mistral -> Bytez)
-    // ---------------------------------------------------
+    // 7️⃣ Dual AI Provider Handling
     let aiReplyText = "";
-
     try {
-      console.log("💎 Attempting Mistral (Primary)...");
+      console.log(`💎 Mistral calling for: ${clientData?.name || clientId}`);
       const mistralRes = await chatWithMistral(prompt);
-
       if (mistralRes.status === "success") {
         aiReplyText = mistralRes.reply;
       } else {
         throw new Error("Mistral failed");
       }
     } catch (error) {
-      console.warn("⚠️ Mistral fallback triggered. Trying Bytez...");
+      console.warn("⚠️ Fallback to Bytez...");
       try {
         const bytezRes = await chatWithBytez(prompt);
-        if (bytezRes.status === "success") {
-          aiReplyText = bytezRes.reply;
-        } else {
-          aiReplyText = "⚠️ Service temporarily busy. Please try again.";
-        }
-      } catch (bytezError) {
-        aiReplyText = "⚠️ Connection error. Please refresh!";
+        aiReplyText =
+          bytezRes.status === "success"
+            ? bytezRes.reply
+            : "Service temporarily busy.";
+      } catch (e) {
+        aiReplyText = "Connection error. Please refresh.";
       }
     }
 
-    // 9️⃣ Save bot reply
+    // 8️⃣ Save & Respond
     await Message.create({
       sessionId: session.sessionId,
       clientId,
@@ -142,10 +111,9 @@ INSTRUCTIONS:
       text: aiReplyText,
     });
 
-    // 🔟 Send response
     res.json({ reply: aiReplyText, sessionId: session.sessionId });
   } catch (error) {
-    console.error("Error in /api/message:", error);
+    console.error("Critical Error:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });

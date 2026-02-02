@@ -11,7 +11,6 @@ const clientSchema = new mongoose.Schema(
     theme: {type: String, default: ""},
     systemPrompt: {type: String, default: ""},
     siteContext: { type: String, default: "" },
-    lastCrawled: { type: Date },
     embedCode: { type: String },
   },
   { timestamps: true }
