@@ -513,7 +513,7 @@ window.addEventListener("DOMContentLoaded", async () => {
       const typingEl = showTyping();
 
       try {
-        // 1️⃣ Try Groq (default)
+        // 1️⃣ Try Mistral (default)
         let res = await fetch(
           "https://flexibot-backend.onrender.com/api/message",
           {
@@ -525,9 +525,9 @@ window.addEventListener("DOMContentLoaded", async () => {
 
         let data = await res.json();
 
-        // 2️⃣ Fallback to Gemini if Groq fails
+        // 2️⃣ Fallback to Bytez if Mistral fails
         if (!res.ok || !data.reply || data.status === "error") {
-          console.warn("Groq failed, falling back to Gemini...");
+          console.warn("Mistral failed, falling back to Bytez...");
 
           res = await fetch(
             "https://flexibot-backend.onrender.com/api/message",
