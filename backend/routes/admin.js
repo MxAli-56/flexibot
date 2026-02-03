@@ -3,7 +3,6 @@ const router = express.Router();
 const Client = require("../models/Clients");
 const { v4: uuidv4 } = require("uuid");
 const version = Date.now();
-const { crawlWebsite } = require("../utils/crawler");
 
   // Add a new client
   router.post("/addClient", async (req, res) => {
