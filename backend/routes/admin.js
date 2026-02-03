@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const Client = require("../models/Client");
+const Client = require("../models/Clients");
 const { v4: uuidv4 } = require("uuid");
 
 // Add a new client

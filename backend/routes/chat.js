@@ -3,7 +3,7 @@ const express = require("express");
 const { randomUUID } = require("crypto");
 const Session = require("../models/Session");
 const Message = require("../models/Message");
-const Client = require("../models/Client");
+const Client = require("../models/Clients");
 
 const { chatWithMistral } = require("../providers/mistral");
 const { chatWithBytez } = require("../providers/bytez");
