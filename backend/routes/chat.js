@@ -103,26 +103,19 @@ INSTRUCTIONS:
       }
     }
 
-    // ✨ 7.5️⃣ DATA CLEANSING (THE "CLAUDE" FIX) ✨
-    // This scrubs out internal thoughts, robotic phrases, and parenthetical leaks
+    // ✨ 7.5️⃣ REFINED DATA CLEANSING
     if (aiReplyText) {
-      // 1. Remove anything inside parentheses (Common AI "thought" leaks)
-      aiReplyText = aiReplyText.replace(/\(.*?\)/g, "");
+      // 1. Remove internal thoughts in parentheses but keep it smart
+      aiReplyText = aiReplyText.replace(/\(If user.*?\)/gi, "");
+      aiReplyText = aiReplyText.replace(/\(Note:.*?\)/gi, "");
 
-      // 2. Remove anything inside square brackets
-      aiReplyText = aiReplyText.replace(/\[.*?\]/g, "");
+      // 2. Remove ONLY the specific robotic parenthetical you saw earlier
+      aiReplyText = aiReplyText.replace(/\(If you'd like to book.*?\)/gi, "");
 
-      // 3. Scrub common "robot" start words (case insensitive)
-      aiReplyText = aiReplyText.replace(
-        /^(Got it!|Certainly!|Sure!|Of course!)\s*/i,
-        "",
-      );
+      // 3. Scrub "Got it!" and "Certainly!" starts
+      aiReplyText = aiReplyText.replace(/^(Got it!|Certainly!)\s*/i, "");
 
-      // 4. Scrub repetitive booking CTAs if they leaked from the instructions
-      aiReplyText = aiReplyText.replace(/Want me to book you a slot\??/gi, "");
-      aiReplyText = aiReplyText.replace(/Would you like to book\??/gi, "");
-
-      // 5. Clean up multiple spaces, newlines, and trim the ends
+      // 4. Clean up spaces
       aiReplyText = aiReplyText.replace(/\s+/g, " ").trim();
     }
 
