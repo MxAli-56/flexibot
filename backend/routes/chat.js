@@ -58,8 +58,8 @@ router.post("/message", async (req, res) => {
 
     // 5️⃣ Construct Specialized System Prompt
     let basePrompt =
-      clientData?.systemPrompt ||
-      "You are FlexiBot, a professional AI assistant.";
+  clientData?.systemPrompt ||
+  "You are a professional AI assistant for a business. Help customers with their inquiries in a warm, helpful manner. Only answer based on the knowledge provided. If you don't know something, offer to collect their contact info for a callback.";
     const knowledge =
       clientData?.siteContext || "No specific business data available.";
 
@@ -67,7 +67,7 @@ router.post("/message", async (req, res) => {
 ${basePrompt}
 
 CRITICAL KNOWLEDGE BASE:
-${knowledge.slice(0, 2000)}
+${knowledge.slice(0, 5000)}
 
 INSTRUCTIONS:
 - Only answer based on the knowledge provided above.
