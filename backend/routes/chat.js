@@ -58,8 +58,8 @@ router.post("/message", async (req, res) => {
 
     // 5️⃣ Construct Specialized System Prompt
     let basePrompt =
-  clientData?.systemPrompt ||
-  "You are a professional AI assistant for a business. Help customers with their inquiries in a warm, helpful manner. Only answer based on the knowledge provided. If you don't know something, offer to collect their contact info for a callback.";
+      clientData?.systemPrompt ||
+      "You are a professional AI assistant for a business. Help customers with their inquiries in a warm, helpful manner. Only answer based on the knowledge provided. If you don't know something, offer to collect their contact info for a callback.";
     const knowledge =
       clientData?.siteContext || "No specific business data available.";
 
@@ -103,7 +103,30 @@ INSTRUCTIONS:
       }
     }
 
-    // 8️⃣ Save & Respond
+    // ✨ 7.5️⃣ DATA CLEANSING (THE "CLAUDE" FIX) ✨
+    // This scrubs out internal thoughts, robotic phrases, and parenthetical leaks
+    if (aiReplyText) {
+      // 1. Remove anything inside parentheses (Common AI "thought" leaks)
+      aiReplyText = aiReplyText.replace(/\(.*?\)/g, "");
+
+      // 2. Remove anything inside square brackets
+      aiReplyText = aiReplyText.replace(/\[.*?\]/g, "");
+
+      // 3. Scrub common "robot" start words (case insensitive)
+      aiReplyText = aiReplyText.replace(
+        /^(Got it!|Certainly!|Sure!|Of course!)\s*/i,
+        "",
+      );
+
+      // 4. Scrub repetitive booking CTAs if they leaked from the instructions
+      aiReplyText = aiReplyText.replace(/Want me to book you a slot\??/gi, "");
+      aiReplyText = aiReplyText.replace(/Would you like to book\??/gi, "");
+
+      // 5. Clean up multiple spaces, newlines, and trim the ends
+      aiReplyText = aiReplyText.replace(/\s+/g, " ").trim();
+    }
+
+    // 8️⃣ Save & Respond (Using the now cleaned aiReplyText)
     await Message.create({
       sessionId: session.sessionId,
       clientId,
