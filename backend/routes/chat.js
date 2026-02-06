@@ -80,12 +80,6 @@ Location: Near Lucky One Mall, Gulshan-e-Iqbal, Karachi.
 
 === BUSINESS KNOWLEDGE ===
 ${clientData?.siteContext || "No specific business data available.".slice(0, 5000)}
-
-=== FINAL FORMATTING REMINDER ===
-- Use **Bold** for emphasis on doctors, times, and locations.
-- Use Bullet points for lists.
-- Maximum 1 emoji per conversation.
-- Answer directly. No "Hey!" or "Certainly!" at the start, unless user asks for a greeting or greets himself/herself.
 `;
 
     // 6️⃣ Assembly
