@@ -149,7 +149,10 @@ if (aiReplyText) {
 
   // 7. EMOJI CONTROL - Keep only in goodbye messages
   const emojiRegex = /😊|😔|👍|✨|🦷|💙/g;
-  const isClosingMessage = /see you|have a (great|wonderful) day|goodbye|take care/i.test(aiReplyText);
+  const isClosingMessage =
+    /see you|have a (great|wonderful) day|goodbye|take care|you're welcome|thank you/i.test(
+      aiReplyText,
+    );
 
   if (!isClosingMessage) {
     // Remove ALL emojis if not a goodbye message
