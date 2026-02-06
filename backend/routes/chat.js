@@ -56,13 +56,6 @@ router.post("/message", async (req, res) => {
     // 4️⃣ Get Chat History
     const history = await fetchConversation(session.sessionId, 12);
 
-    // 5️⃣ Construct Specialized System Prompt
-    let basePrompt =
-      clientData?.systemPrompt ||
-      "You are a professional AI assistant for a business. Help customers with their inquiries in a warm, helpful manner. Only answer based on the knowledge provided. If you don't know something, offer to collect their contact info for a callback.";
-    const knowledge =
-      clientData?.siteContext || "No specific business data available.";
-
     const getCurrentDateTime = () => {
       const now = new Date();
       const options = {
@@ -78,18 +71,21 @@ router.post("/message", async (req, res) => {
       return now.toLocaleString("en-US", options);
     };
 
-    const finalSystemPrompt = `
-CURRENT DATE AND TIME: ${getCurrentDateTime()}
+const finalSystemPrompt = `
+${clientData?.systemPrompt || "You are a helpful assistant."}
 
-${basePrompt}
+=== CURRENT CONTEXT ===
+Today's Date & Time: ${getCurrentDateTime()}
+Location: Near Lucky One Mall, Gulshan-e-Iqbal, Karachi.
 
-CRITICAL KNOWLEDGE BASE:
-${knowledge.slice(0, 5000)}
+=== BUSINESS KNOWLEDGE ===
+${clientData?.siteContext || "No specific business data available.".slice(0, 5000)}
 
-INSTRUCTIONS:
-- Only answer based on the knowledge provided above.
-- If the answer isn't there, ask for their name and phone so we can contact them.
-- Be concise and polite.
+=== FINAL FORMATTING REMINDER ===
+- Use **Bold** for emphasis on doctors, times, and locations.
+- Use Bullet points for lists.
+- Maximum 1 emoji per conversation.
+- Answer directly. No "Hey!" or "Certainly!" at the start, unless user asks for a greeting or greets himself/herself.
 `;
 
     // 6️⃣ Assembly
