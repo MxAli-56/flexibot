@@ -72,16 +72,17 @@ router.post("/message", async (req, res) => {
     };
 
 const finalSystemPrompt = `
-${clientData?.systemPrompt || "You are a helpful assistant."}
+${clientData?.systemPrompt || "You are a professional assistant."}
 
 === CURRENT CONTEXT ===
 Today's Date & Time: ${getCurrentDateTime()}
 
 === BUSINESS KNOWLEDGE ===
-${clientData?.siteContext || "No specific business data available.".slice(0, 5000)}
+${(clientData?.siteContext || "No specific business data available.").slice(0, 5000)}
 
-=== UI INSTRUCTIONS ===
-- Always use a double newline (\n\n) between different thoughts.
+=== UI & STYLE INSTRUCTIONS ===
+- Use double newlines (\n\n) between different pieces of information.
+- Always check business knowledge before answering the user's question. Never reply from your own knowledge related to our clinic things. If the answer is not in the business knowledge, say "I don't have that information right now." instead of making something up.
 `;
 
     // 6️⃣ Assembly
