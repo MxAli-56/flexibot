@@ -76,10 +76,12 @@ ${clientData?.systemPrompt || "You are a helpful assistant."}
 
 === CURRENT CONTEXT ===
 Today's Date & Time: ${getCurrentDateTime()}
-Location: Near Lucky One Mall, Gulshan-e-Iqbal, Karachi.
 
 === BUSINESS KNOWLEDGE ===
 ${clientData?.siteContext || "No specific business data available.".slice(0, 5000)}
+
+=== UI INSTRUCTIONS ===
+- Always use a double newline (\n\n) between different thoughts.
 `;
 
     // 6️⃣ Assembly
