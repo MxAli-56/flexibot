@@ -12,3 +12,5 @@ docs/
 
 restaurant/
 SmileCareDental/
+
+/backend/utils/mailer.js

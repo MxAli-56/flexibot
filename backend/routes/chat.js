@@ -63,7 +63,24 @@ router.post("/message", async (req, res) => {
     const knowledge =
       clientData?.siteContext || "No specific business data available.";
 
+    const getCurrentDateTime = () => {
+      const now = new Date();
+      const options = {
+        timeZone: "Asia/Karachi",
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      };
+      return now.toLocaleString("en-US", options);
+    };
+
     const finalSystemPrompt = `
+CURRENT DATE AND TIME: ${getCurrentDateTime()}
+
 ${basePrompt}
 
 CRITICAL KNOWLEDGE BASE:
