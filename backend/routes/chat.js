@@ -153,16 +153,19 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
         "<b>Dr. $1</b>",
       );
 
-      // 8. BOLD BULLET HEADINGS ONLY (Availability, Specialization, Services)
+      // 8. BOLD BULLET HEADINGS (Fixes the Bold & Dash issue)
+      // We look for optional dash/stars and capture the heading name.
+      // We force a "-" at the start to ensure all 3 headings have it.
       aiReplyText = aiReplyText.replace(
-        /([-•*]\s*)(Availability|Specialization|Services|Speciality)(:)/gi,
-        "$1<b>$2</b>$3",
+        /[-•*]?\s*(?:\*\*)?(Availability|Specialization|Services|Speciality)(?:\*\*)?(:)/gi,
+        "<b>- $1</b>$2",
       );
 
-      // 9. CLEAN MARKDOWN - Remove any **text** so it doesn't break our HTML bolding
+      // 9. CLEAN REMAINING MARKDOWN - Moved slightly down to not interfere with headings
       aiReplyText = aiReplyText.replace(/\*\*(.*?)\*\*/g, "$1");
+      aiReplyText = aiReplyText.replace(/\*\*/g, ""); // Catch any stray lone stars
 
-      // 10. Fix spacing after "from" and "to" if missing
+      // 10. Fix spacing after "from" and "to" (Keep your working code)
       aiReplyText = aiReplyText.replace(/from(\d)/gi, "from $1");
       aiReplyText = aiReplyText.replace(/to(\d)/gi, "to $1");
 
