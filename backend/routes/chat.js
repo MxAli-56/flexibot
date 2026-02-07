@@ -155,24 +155,26 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
         "For more assistance",
       );
 
-      // 7. FIX DOCTOR NAME FORMATTING - Do this BEFORE bold conversion
-      // Handles: "Dr. Alizeh Shah" or "Dr Alizeh Shah" or "Dr.Alizeh Shah"
+      // 7. FIX DOCTOR NAMES - Bold the name only (not "is available from")
       aiReplyText = aiReplyText.replace(
         /Dr\.?\s*(Sameer Ahmed|Alizeh Shah|Faraz Khan|Sarah Mansoor)/gi,
         "<b>Dr. $1</b>",
       );
 
-      // 8. Fix spacing issues - Add space after "from" if missing
+      // 8. Fix spacing after "from" if missing
       aiReplyText = aiReplyText.replace(/from(\d)/gi, "from $1");
 
-      // 9. Fix spacing issues - Add space after "to" if missing
+      // 9. Fix spacing after "to" if missing
       aiReplyText = aiReplyText.replace(/to(\d)/gi, "to $1");
 
-      // 10. IMPROVED BOLDING for other text (but skip if already bolded from step 7)
-      aiReplyText = aiReplyText.replace(/\*\*(?!<b>)(.*?)\*\*/g, "<b>$1</b>");
+      // 10. BOLD BULLET HEADINGS ONLY (Availability, Specialization, Services)
+      aiReplyText = aiReplyText.replace(
+        /([-•*]\s*)(Availability|Specialization|Services)(:)/gi,
+        "$1<b>$2</b>$3",
+      );
 
-      // 11. CLEANUP: Remove any remaining double stars
-      aiReplyText = aiReplyText.replace(/\*\*/g, "");
+      // 11. Remove any **text** markdown (we handle bolding manually)
+      aiReplyText = aiReplyText.replace(/\*\*(.*?)\*\*/g, "$1");
 
       // 12. EMOJI CONTROL - Keep only in goodbye messages
       const emojiRegex = /😊|😔|👍|✨|🦷|💙/g;
@@ -194,23 +196,30 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
         '<a href="$2" target="_blank" style="color: #007bff; text-decoration: underline; font-weight: bold;">$1</a>',
       );
 
-      // 14. CONSISTENT SPACING - Single line break between sentences
-      aiReplyText = aiReplyText.replace(/\.\s+/g, ".<br/>");
-      aiReplyText = aiReplyText.replace(/!\s+/g, "!<br/>");
-      aiReplyText = aiReplyText.replace(/\?\s+/g, "?<br/>");
+      // 14. PARAGRAPH SPACING - Single space between normal sentences
+      aiReplyText = aiReplyText.replace(/\.\s+([A-Z])/g, ". $1");
+      aiReplyText = aiReplyText.replace(/!\s+([A-Z])/g, "! $1");
+      aiReplyText = aiReplyText.replace(/\?\s+([A-Z])/g, "? $1");
 
-      // 15. BULLET POINT SPACING - Ensure consistent spacing around bullets
-      // Detect bullet patterns: "- Text" or "• Text" or "* Text"
-      aiReplyText = aiReplyText.replace(/(<br\/>){2,}([-•*]\s)/g, "<br/>$2"); // Single break before bullet
-      aiReplyText = aiReplyText.replace(/([-•*]\s.*?)(<br\/>){2,}/g, "$1<br/>"); // Single break after bullet
+      // 15. BLANK LINE BEFORE "Here are" or bullet sections
+      aiReplyText = aiReplyText.replace(/(Here are .*?:)/gi, "<br/><br/>$1");
 
-      // 16. Clean up excessive line breaks (max 2 <br/> in a row = 1 blank line)
+      // 16. BLANK LINE AFTER bullet lists (before next paragraph)
+      aiReplyText = aiReplyText.replace(
+        /([-•*]\s.*?)(\n|$)(\s*)([A-Z][a-z])/g,
+        "$1<br/><br/>$4",
+      );
+
+      // 17. Convert newlines to <br/> for chat display
+      aiReplyText = aiReplyText.replace(/\n/g, "<br/>");
+
+      // 18. Clean up excessive <br/> (max 2 in a row = 1 blank line)
       aiReplyText = aiReplyText.replace(/(<br\/>){3,}/g, "<br/><br/>");
 
-      // 17. Clean up extra spaces
+      // 19. Clean up extra spaces
       aiReplyText = aiReplyText.replace(/[ \t]+/g, " ").trim();
 
-      // 18. Final cleanup - remove trailing line breaks before emoji
+      // 20. Final cleanup - remove trailing line breaks before emoji
       aiReplyText = aiReplyText.replace(/(<br\/>)+😊/g, " 😊");
     }
 
