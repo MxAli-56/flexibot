@@ -14,13 +14,30 @@ const app = express();
 connectDB();
 
 // 🟢 Middlewares
+
+// --- SECURITY UPDATE: TASK 3 CORS ---
+const allowedOrigins = [
+  "https://smile-care-dental-lovat.vercel.app",
+  "http://localhost:3000",
+];
+
 app.use(
   cors({
-    origin: "*",
+    origin: function (origin, callback) {
+      // allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.indexOf(origin) === -1) {
+        return callback(new Error("CORS Policy Blocked this request."), false);
+      }
+      return callback(null, true);
+    },
     methods: ["GET", "POST", "OPTIONS"],
     allowedHeaders: ["Content-Type"],
-  })
+    credentials: true,
+  }),
 );
+// --- END SECURITY UPDATE ---
+
 app.use(express.json());
 
 // 🟢 Routes
@@ -29,7 +46,7 @@ app.use("/api", chatRoutes);
 
 // 🩺 Health check endpoint (for UptimeRobot)
 app.get("/health", (req, res) =>
-  res.json({ status: "ok", time: new Date().toISOString() })
+  res.json({ status: "ok", time: new Date().toISOString() }),
 );
 
 // 🧱 Serve frontend files (embed.js, styles, etc.)
