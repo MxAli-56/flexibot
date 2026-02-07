@@ -124,14 +124,17 @@ if (aiReplyText) {
   aiReplyText = aiReplyText.replace(/\(If no.*?\)/gi, "");
 
   // 2. Remove booking spam phrases
-  aiReplyText = aiReplyText.replace(/Would you like to book (a time|a slot|it)\?/gi, "");
+  aiReplyText = aiReplyText.replace(
+    /Would you like to book (a time|a slot|it)\?/gi,
+    "",
+  );
   aiReplyText = aiReplyText.replace(/Should I book it\?/gi, "");
   aiReplyText = aiReplyText.replace(/Want me to check availability\?/gi, "");
 
   // 3. Fix "How else can I help" at conversation start
   aiReplyText = aiReplyText.replace(
     /^(Hey!|Hi!) How else can I help you.*?\?/i,
-    "How can I help you today?"
+    "How can I help you today?",
   );
 
   // 4. Scrub robotic starts
@@ -140,13 +143,13 @@ if (aiReplyText) {
   // 5. Fix "visit us near Lucky One Mall" to proper address
   aiReplyText = aiReplyText.replace(
     /visit us (near|in|at) Lucky One Mall/gi,
-    "visit us at Gulshan-e-Iqbal, Block 10 (near Lucky One Mall)"
+    "visit us at Gulshan-e-Iqbal, Block 10 (near Lucky One Mall)",
   );
 
   // 6. Replace "confirm your visit" with "for more assistance"
   aiReplyText = aiReplyText.replace(
     /To confirm your (visit|visits)/gi,
-    "For more assistance"
+    "For more assistance",
   );
 
   // 7. EMOJI CONTROL - Keep only in goodbye messages
@@ -174,10 +177,22 @@ if (aiReplyText) {
   aiReplyText = aiReplyText.replace(/\n{3,}/g, "\n\n");
 
   // 10. Clean up extra spaces
-  aiReplyText = aiReplyText.replace(/\s+/g, " ").trim();
+  aiReplyText = aiReplyText.replace(/[ \t]+/g, " ").trim();
 
   // 11. Final cleanup - remove trailing newlines before emoji
   aiReplyText = aiReplyText.replace(/\n+😊/g, " 😊");
+
+  // 12. DYNAMIC LINK CONVERSION: Turns [Any Text](any-url) into a Blue Clickable Link
+  aiReplyText = aiReplyText.replace(
+    /\[(.*?)\]\((.*?)\)/g,
+    '<a href="$2" target="_blank" style="color: #007bff !important; text-decoration: underline; font-weight: bold;">$1</a>',
+  );
+
+  // 13. UNIVERSAL BOLDING: Convert **text** to HTML bold tags
+  aiReplyText = aiReplyText.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>");
+
+  // 14. AUTO-SPACING: Force a break before Doctor names if they are bunched up
+  aiReplyText = aiReplyText.replace(/(Dr\.\s[A-Z])/g, "<br/><br/>$1");
 }
 
     // 8️⃣ Save & Respond (Using the now cleaned aiReplyText)
