@@ -114,8 +114,6 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
       }
     }
 
-    console.log("🔍 RAW MISTRAL OUTPUT:", aiReplyText);
-
     // ✨ 7.5️⃣ AGGRESSIVE POST-PROCESSING FOR MISTRAL
     if (aiReplyText) {
       // 1-6: YOUR ORIGINAL LOGIC (Thoughts, Spam, Address, robotic starts) - UNTOUCHED
