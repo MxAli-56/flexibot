@@ -115,18 +115,6 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
     }
 
     console.log("🔍 RAW MISTRAL OUTPUT:", aiReplyText);
-```
-
-Then send me what prints in your console when you ask about Dr. Alizeh.
-
-I need to see if Mistral is sending:
-```
-// Availability: Today\n- Specialization: General
-```
-
-OR
-```
-// Availability: Today - Specialization: General
 
     // ✨ 7.5️⃣ AGGRESSIVE POST-PROCESSING FOR MISTRAL
     if (aiReplyText) {
