@@ -155,7 +155,7 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
         "For more assistance",
       );
 
-      // 7. FIX DOCTOR NAMES - Bold the name only (not "is available from")
+      // 7. FIX DOCTOR NAMES - Bold the name only
       aiReplyText = aiReplyText.replace(
         /Dr\.?\s*(Sameer Ahmed|Alizeh Shah|Faraz Khan|Sarah Mansoor)/gi,
         "<b>Dr. $1</b>",
@@ -196,24 +196,30 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
         '<a href="$2" target="_blank" style="color: #007bff; text-decoration: underline; font-weight: bold;">$1</a>',
       );
 
-      // 14. PARAGRAPH SPACING - Single space between normal sentences
-      aiReplyText = aiReplyText.replace(/\.\s+([A-Z])/g, ". $1");
-      aiReplyText = aiReplyText.replace(/!\s+([A-Z])/g, "! $1");
-      aiReplyText = aiReplyText.replace(/\?\s+([A-Z])/g, "? $1");
+      // 14. Convert sentences ending with period/exclamation/question to have line breaks
+      aiReplyText = aiReplyText.replace(/\.\s+/g, ".<br/>");
+      aiReplyText = aiReplyText.replace(/!\s+/g, "!<br/>");
+      aiReplyText = aiReplyText.replace(/\?\s+/g, "?<br/>");
 
-      // 15. BLANK LINE BEFORE "Here are" or bullet sections
-      aiReplyText = aiReplyText.replace(/(Here are .*?:)/gi, "<br/><br/>$1");
-
-      // 16. BLANK LINE AFTER bullet lists (before next paragraph)
+      // 15. BLANK LINE BEFORE first bullet (after any text ending with period/colon)
       aiReplyText = aiReplyText.replace(
-        /([-•*]\s.*?)(\n|$)(\s*)([A-Z][a-z])/g,
-        "$1<br/><br/>$4",
+        /([.:])<br\/>([-•*]\s)/gi,
+        "$1<br/><br/>$2",
       );
 
-      // 17. Convert newlines to <br/> for chat display
-      aiReplyText = aiReplyText.replace(/\n/g, "<br/>");
+      // 16. BLANK LINE BETWEEN each bullet point
+      aiReplyText = aiReplyText.replace(
+        /([-•*]\s.*?)<br\/>([-•*]\s)/g,
+        "$1<br/><br/>$2",
+      );
 
-      // 18. Clean up excessive <br/> (max 2 in a row = 1 blank line)
+      // 17. BLANK LINE AFTER last bullet (before next sentence starting with capital letter)
+      aiReplyText = aiReplyText.replace(
+        /([-•*]\s.*?)<br\/>([A-Z])/g,
+        "$1<br/><br/>$2",
+      );
+
+      // 18. Clean up excessive <br/> (max 2 in a row)
       aiReplyText = aiReplyText.replace(/(<br\/>){3,}/g, "<br/><br/>");
 
       // 19. Clean up extra spaces
