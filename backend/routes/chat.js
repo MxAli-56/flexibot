@@ -114,6 +114,20 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
       }
     }
 
+    console.log("🔍 RAW MISTRAL OUTPUT:", aiReplyText);
+```
+
+Then send me what prints in your console when you ask about Dr. Alizeh.
+
+I need to see if Mistral is sending:
+```
+// Availability: Today\n- Specialization: General
+```
+
+OR
+```
+// Availability: Today - Specialization: General
+
     // ✨ 7.5️⃣ AGGRESSIVE POST-PROCESSING FOR MISTRAL
     if (aiReplyText) {
       // 1-6: YOUR ORIGINAL LOGIC (Thoughts, Spam, Address, robotic starts) - UNTOUCHED
@@ -183,37 +197,33 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
         '<a href="$2" target="_blank" style="color: #007bff; text-decoration: underline; font-weight: bold;">$1</a>',
       );
 
-      // 13. PARAGRAPH SPACING (Image 4 Style)
-      // Only add gap if period is followed by a Capital Letter (prevents breaking AM/PM)
-      aiReplyText = aiReplyText.replace(/([.!?])\s+(?=[A-Z])/g, "$1<br/><br/>");
-
-      // 14. FIX COLON SPACING (Gap before first bullet)
-      aiReplyText = aiReplyText.replace(/:\s*<br\/>/gi, ":<br/><br/>");
-      aiReplyText = aiReplyText.replace(/:\s*(?=[-•*])/gi, ":<br/><br/>");
-
-      // 15. BLANK LINE BETWEEN & AFTER each bullet point
+      // 13. PARAGRAPH SPACING - Add breaks ONLY at sentence ends (but NOT after "Dr.")
+      // This prevents "Dr.<br/><br/>Name" issue
       aiReplyText = aiReplyText.replace(
-        /([-•*]\s.*?)(?:<br\/>\s*|(?=\n))(?=[-•*]\s)/g,
-        "$1<br/><br/>",
-      );
-      aiReplyText = aiReplyText.replace(
-        /([-•*]\s.*?)(?:<br\/>\s*|(?=\n))(?=[A-Z][a-z])/g,
+        /([.!?])\s+(?![A-Z][a-z]+\s+(?:Ahmed|Shah|Khan|Mansoor))/g,
         "$1<br/><br/>",
       );
 
-      // 16. DOCTOR NAME ANCHOR (Prevents the "Dr. [Gap] Name" issue)
-      // Fixes the period issue from Step 13 specifically for Doctor names
+      // 14. BLANK LINE BEFORE FIRST BULLET (after text ending with colon or period)
       aiReplyText = aiReplyText.replace(
-        /<b>Dr\.<\/b><br\/><br\/>/gi,
-        "<b>Dr. </b>",
+        /([.:])\s*([-•*]\s)/gi,
+        "$1<br/><br/>$2",
       );
 
-      // 17. FINAL SPACING CLEANUP - Max 2 <br/>
+      // 15. BLANK LINE BETWEEN BULLETS
+      aiReplyText = aiReplyText.replace(
+        /([-•*]\s[^\n]+)\n([-•*]\s)/g,
+        "$1<br/><br/>$2",
+      );
+
+      // 16. BLANK LINE AFTER LAST BULLET (before sentence starting with capital)
+      aiReplyText = aiReplyText.replace(
+        /([-•*]\s[^\n]+)\n([A-Z])/g,
+        "$1<br/><br/>$2",
+      );
+
+      // 17. FINAL CLEANUP - Remove triple breaks, keep max 2
       aiReplyText = aiReplyText.replace(/(<br\s*\/?>){3,}/gi, "<br/><br/>");
-
-      // 18. Clean up extra spaces & trailing line breaks before emoji
-      aiReplyText = aiReplyText.replace(/[ \t]+/g, " ").trim();
-      aiReplyText = aiReplyText.replace(/(<br\s*\/?>)+😊/g, " 😊");
     }
 
     // 8️⃣ Save & Respond (Using the now cleaned aiReplyText)
