@@ -188,11 +188,18 @@ if (aiReplyText) {
     '<a href="$2" target="_blank" style="color: #007bff !important; text-decoration: underline; font-weight: bold;">$1</a>',
   );
 
-  // 13. UNIVERSAL BOLDING: Convert **text** to HTML bold tags
-  aiReplyText = aiReplyText.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>");
+  // 13. IMPROVED BOLDING: Fix broken bold stars (handles cases where stars are on new lines)
+  aiReplyText = aiReplyText.replace(/\*\*\s*(.*?)\s*\*\*/g, "<b>$1</b>");
 
-  // 14. AUTO-SPACING: Force a break before Doctor names if they are bunched up
-  aiReplyText = aiReplyText.replace(/(Dr\.\s[A-Z])/g, "<br/><br/>$1");
+  // 14. SMARTER SPACING: Only add breaks if there isn't already a break there.
+  // This prevents that "unusual" massive gap you see in Image 3.
+  aiReplyText = aiReplyText.replace(
+    /([.!?])\s*(Dr\.\s[A-Z])/g,
+    "$1<br/><br/><b>$2</b>",
+  );
+
+  // 15. CLEANUP: If the AI left dangling stars like **Dr. or Shah**, remove them
+  aiReplyText = aiReplyText.replace(/\*\*/g, "");
 }
 
     // 8️⃣ Save & Respond (Using the now cleaned aiReplyText)
