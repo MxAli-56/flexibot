@@ -71,7 +71,7 @@ router.post("/message", async (req, res) => {
       return now.toLocaleString("en-US", options);
     };
 
-const finalSystemPrompt = `
+    const finalSystemPrompt = `
 ${clientData?.systemPrompt || "You are a helpful assistant."}
 
 === CURRENT CONTEXT ===
@@ -83,7 +83,7 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
 === UI INSTRUCTIONS ===
 - Always use a double newline (\n\n) between different thoughts.
 - Use **Bold** for emphasis on doctors, times, and locations.
-- Use Bullet points for lists.
+- For bullet lists, use simple dashes (-) with single line breaks between items.
 `;
 
     // 6️⃣ Assembly
@@ -115,92 +115,104 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
     }
 
     // ✨ 7.5️⃣ AGGRESSIVE POST-PROCESSING FOR MISTRAL
-if (aiReplyText) {
-  // 1. Remove internal thoughts in parentheses
-  aiReplyText = aiReplyText.replace(/\(If user.*?\)/gi, "");
-  aiReplyText = aiReplyText.replace(/\(Note:.*?\)/gi, "");
-  aiReplyText = aiReplyText.replace(/\(If you'd like to book.*?\)/gi, "");
-  aiReplyText = aiReplyText.replace(/\(If yes.*?\)/gi, "");
-  aiReplyText = aiReplyText.replace(/\(If no.*?\)/gi, "");
+    if (aiReplyText) {
+      // 1. Remove internal thoughts in parentheses
+      aiReplyText = aiReplyText.replace(/\(If user.*?\)/gi, "");
+      aiReplyText = aiReplyText.replace(/\(Note:.*?\)/gi, "");
+      aiReplyText = aiReplyText.replace(/\(If you'd like to book.*?\)/gi, "");
+      aiReplyText = aiReplyText.replace(/\(If yes.*?\)/gi, "");
+      aiReplyText = aiReplyText.replace(/\(If no.*?\)/gi, "");
 
-  // 2. Remove booking spam phrases
-  aiReplyText = aiReplyText.replace(
-    /Would you like to book (a time|a slot|it)\?/gi,
-    "",
-  );
-  aiReplyText = aiReplyText.replace(/Should I book it\?/gi, "");
-  aiReplyText = aiReplyText.replace(/Want me to check availability\?/gi, "");
+      // 2. Remove booking spam phrases
+      aiReplyText = aiReplyText.replace(
+        /Would you like to book (a time|a slot|it)\?/gi,
+        "",
+      );
+      aiReplyText = aiReplyText.replace(/Should I book it\?/gi, "");
+      aiReplyText = aiReplyText.replace(
+        /Want me to check availability\?/gi,
+        "",
+      );
 
-  // 3. Fix "How else can I help" at conversation start
-  aiReplyText = aiReplyText.replace(
-    /^(Hey!|Hi!) How else can I help you.*?\?/i,
-    "How can I help you today?",
-  );
+      // 3. Fix "How else can I help" at conversation start
+      aiReplyText = aiReplyText.replace(
+        /^(Hey!|Hi!) How else can I help you.*?\?/i,
+        "How can I help you today?",
+      );
 
-  // 4. Scrub robotic starts
-  aiReplyText = aiReplyText.replace(/^(Got it!|Certainly!)\s*/i, "");
+      // 4. Scrub robotic starts
+      aiReplyText = aiReplyText.replace(/^(Got it!|Certainly!)\s*/i, "");
 
-  // 5. Fix "visit us near Lucky One Mall" to proper address
-  aiReplyText = aiReplyText.replace(
-    /visit us (near|in|at) Lucky One Mall/gi,
-    "visit us at Gulshan-e-Iqbal, Block 10 (near Lucky One Mall)",
-  );
+      // 5. Fix "visit us near Lucky One Mall" to proper address
+      aiReplyText = aiReplyText.replace(
+        /visit us (near|in|at) Lucky One Mall/gi,
+        "visit us at Gulshan-e-Iqbal, Block 10 (near Lucky One Mall)",
+      );
 
-  // 6. Replace "confirm your visit" with "for more assistance"
-  aiReplyText = aiReplyText.replace(
-    /To confirm your (visit|visits)/gi,
-    "For more assistance",
-  );
+      // 6. Replace "confirm your visit" with "for more assistance"
+      aiReplyText = aiReplyText.replace(
+        /To confirm your (visit|visits)/gi,
+        "For more assistance",
+      );
 
-  // 7. EMOJI CONTROL - Keep only in goodbye messages
-  const emojiRegex = /😊|😔|👍|✨|🦷|💙/g;
-  const isClosingMessage =
-    /see you|have a (great|wonderful) day|goodbye|take care|you're welcome|thank you/i.test(
-      aiReplyText,
-    );
+      // 7. FIX DOCTOR NAME FORMATTING - Do this BEFORE bold conversion
+      // Handles: "Dr. Alizeh Shah" or "Dr Alizeh Shah" or "Dr.Alizeh Shah"
+      aiReplyText = aiReplyText.replace(
+        /Dr\.?\s*(Sameer Ahmed|Alizeh Shah|Faraz Khan|Sarah Mansoor)/gi,
+        "<b>Dr. $1</b>",
+      );
 
-  if (!isClosingMessage) {
-    // Remove ALL emojis if not a goodbye message
-    aiReplyText = aiReplyText.replace(emojiRegex, "");
-  } else {
-    // If goodbye, keep only ONE emoji at the end
-    aiReplyText = aiReplyText.replace(emojiRegex, "");
-    aiReplyText = aiReplyText.trim() + " 😊";
-  }
+      // 8. Fix spacing issues - Add space after "from" if missing
+      aiReplyText = aiReplyText.replace(/from(\d)/gi, "from $1");
 
-  // 8. Add line breaks between sentences (WhatsApp style)
-  aiReplyText = aiReplyText.replace(/\.\s+/g, ".\n\n");
-  aiReplyText = aiReplyText.replace(/!\s+/g, "!\n\n");
-  aiReplyText = aiReplyText.replace(/\?\s+/g, "?\n\n");
+      // 9. Fix spacing issues - Add space after "to" if missing
+      aiReplyText = aiReplyText.replace(/to(\d)/gi, "to $1");
 
-  // 9. Clean up excessive newlines (max 2 in a row)
-  aiReplyText = aiReplyText.replace(/\n{3,}/g, "\n\n");
+      // 10. IMPROVED BOLDING for other text (but skip if already bolded from step 7)
+      aiReplyText = aiReplyText.replace(/\*\*(?!<b>)(.*?)\*\*/g, "<b>$1</b>");
 
-  // 10. Clean up extra spaces
-  aiReplyText = aiReplyText.replace(/[ \t]+/g, " ").trim();
+      // 11. CLEANUP: Remove any remaining double stars
+      aiReplyText = aiReplyText.replace(/\*\*/g, "");
 
-  // 11. Final cleanup - remove trailing newlines before emoji
-  aiReplyText = aiReplyText.replace(/\n+😊/g, " 😊");
+      // 12. EMOJI CONTROL - Keep only in goodbye messages
+      const emojiRegex = /😊|😔|👍|✨|🦷|💙/g;
+      const isClosingMessage =
+        /see you|have a (great|wonderful) day|goodbye|take care|you're welcome|thank you/i.test(
+          aiReplyText,
+        );
 
-  // 12. DYNAMIC LINK CONVERSION: Turns [Any Text](any-url) into a Blue Clickable Link
-  aiReplyText = aiReplyText.replace(
-    /\[(.*?)\]\((.*?)\)/g,
-    '<a href="$2" target="_blank" style="color: #007bff !important; text-decoration: underline; font-weight: bold;">$1</a>',
-  );
+      if (!isClosingMessage) {
+        aiReplyText = aiReplyText.replace(emojiRegex, "");
+      } else {
+        aiReplyText = aiReplyText.replace(emojiRegex, "");
+        aiReplyText = aiReplyText.trim() + " 😊";
+      }
 
-  // 13. IMPROVED BOLDING: Fix broken bold stars (handles cases where stars are on new lines)
-  aiReplyText = aiReplyText.replace(/\*\*\s*(.*?)\s*\*\*/g, "<b>$1</b>");
+      // 13. DYNAMIC LINK CONVERSION
+      aiReplyText = aiReplyText.replace(
+        /\[(.*?)\]\((.*?)\)/g,
+        '<a href="$2" target="_blank" style="color: #007bff; text-decoration: underline; font-weight: bold;">$1</a>',
+      );
 
-  // 14. SMARTER SPACING: Only add breaks if there isn't already a break there.
-  // This prevents that "unusual" massive gap you see in Image 3.
-  aiReplyText = aiReplyText.replace(
-    /([.!?])\s*(Dr\.\s[A-Z])/g,
-    "$1<br/><br/><b>$2</b>",
-  );
+      // 14. CONSISTENT SPACING - Single line break between sentences
+      aiReplyText = aiReplyText.replace(/\.\s+/g, ".<br/>");
+      aiReplyText = aiReplyText.replace(/!\s+/g, "!<br/>");
+      aiReplyText = aiReplyText.replace(/\?\s+/g, "?<br/>");
 
-  // 15. CLEANUP: If the AI left dangling stars like **Dr. or Shah**, remove them
-  aiReplyText = aiReplyText.replace(/\*\*/g, "");
-}
+      // 15. BULLET POINT SPACING - Ensure consistent spacing around bullets
+      // Detect bullet patterns: "- Text" or "• Text" or "* Text"
+      aiReplyText = aiReplyText.replace(/(<br\/>){2,}([-•*]\s)/g, "<br/>$2"); // Single break before bullet
+      aiReplyText = aiReplyText.replace(/([-•*]\s.*?)(<br\/>){2,}/g, "$1<br/>"); // Single break after bullet
+
+      // 16. Clean up excessive line breaks (max 2 <br/> in a row = 1 blank line)
+      aiReplyText = aiReplyText.replace(/(<br\/>){3,}/g, "<br/><br/>");
+
+      // 17. Clean up extra spaces
+      aiReplyText = aiReplyText.replace(/[ \t]+/g, " ").trim();
+
+      // 18. Final cleanup - remove trailing line breaks before emoji
+      aiReplyText = aiReplyText.replace(/(<br\/>)+😊/g, " 😊");
+    }
 
     // 8️⃣ Save & Respond (Using the now cleaned aiReplyText)
     await Message.create({
