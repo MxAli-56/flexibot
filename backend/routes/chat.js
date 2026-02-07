@@ -116,14 +116,12 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
 
     // ✨ 7.5️⃣ AGGRESSIVE POST-PROCESSING FOR MISTRAL
     if (aiReplyText) {
-      // 1. Remove internal thoughts in parentheses
+      // 1-6: YOUR ORIGINAL LOGIC (Thoughts, Spam, Address, robotic starts) - UNTOUCHED
       aiReplyText = aiReplyText.replace(/\(If user.*?\)/gi, "");
       aiReplyText = aiReplyText.replace(/\(Note:.*?\)/gi, "");
       aiReplyText = aiReplyText.replace(/\(If you'd like to book.*?\)/gi, "");
       aiReplyText = aiReplyText.replace(/\(If yes.*?\)/gi, "");
       aiReplyText = aiReplyText.replace(/\(If no.*?\)/gi, "");
-
-      // 2. Remove booking spam phrases
       aiReplyText = aiReplyText.replace(
         /Would you like to book (a time|a slot|it)\?/gi,
         "",
@@ -133,23 +131,15 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
         /Want me to check availability\?/gi,
         "",
       );
-
-      // 3. Fix "How else can I help" at conversation start
       aiReplyText = aiReplyText.replace(
         /^(Hey!|Hi!) How else can I help you.*?\?/i,
         "How can I help you today?",
       );
-
-      // 4. Scrub robotic starts
       aiReplyText = aiReplyText.replace(/^(Got it!|Certainly!)\s*/i, "");
-
-      // 5. Fix "visit us near Lucky One Mall" to proper address
       aiReplyText = aiReplyText.replace(
         /visit us (near|in|at) Lucky One Mall/gi,
         "visit us at Gulshan-e-Iqbal, Block 10 (near Lucky One Mall)",
       );
-
-      // 6. Replace "confirm your visit" with "for more assistance"
       aiReplyText = aiReplyText.replace(
         /To confirm your (visit|visits)/gi,
         "For more assistance",
@@ -161,28 +151,25 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
         "<b>Dr. $1</b>",
       );
 
-      // 8. Fix spacing after "from" if missing
-      aiReplyText = aiReplyText.replace(/from(\d)/gi, "from $1");
-
-      // 9. Fix spacing after "to" if missing
-      aiReplyText = aiReplyText.replace(/to(\d)/gi, "to $1");
-
-      // 10. BOLD BULLET HEADINGS ONLY (Availability, Specialization, Services)
+      // 8. BOLD BULLET HEADINGS ONLY (Availability, Specialization, Services)
       aiReplyText = aiReplyText.replace(
-        /([-•*]\s*)(Availability|Specialization|Services)(:)/gi,
+        /([-•*]\s*)(Availability|Specialization|Services|Speciality)(:)/gi,
         "$1<b>$2</b>$3",
       );
 
-      // 11. Remove any **text** markdown (we handle bolding manually)
+      // 9. CLEAN MARKDOWN - Remove any **text** so it doesn't break our HTML bolding
       aiReplyText = aiReplyText.replace(/\*\*(.*?)\*\*/g, "$1");
 
-      // 12. EMOJI CONTROL - Keep only in goodbye messages
+      // 10. Fix spacing after "from" and "to" if missing
+      aiReplyText = aiReplyText.replace(/from(\d)/gi, "from $1");
+      aiReplyText = aiReplyText.replace(/to(\d)/gi, "to $1");
+
+      // 11. EMOJI CONTROL - YOUR ORIGINAL LOGIC - UNTOUCHED
       const emojiRegex = /😊|😔|👍|✨|🦷|💙/g;
       const isClosingMessage =
         /see you|have a (great|wonderful) day|goodbye|take care|you're welcome|thank you/i.test(
           aiReplyText,
         );
-
       if (!isClosingMessage) {
         aiReplyText = aiReplyText.replace(emojiRegex, "");
       } else {
@@ -190,43 +177,43 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
         aiReplyText = aiReplyText.trim() + " 😊";
       }
 
-      // 13. DYNAMIC LINK CONVERSION
+      // 12. DYNAMIC LINK CONVERSION - YOUR ORIGINAL LOGIC - UNTOUCHED
       aiReplyText = aiReplyText.replace(
         /\[(.*?)\]\((.*?)\)/g,
         '<a href="$2" target="_blank" style="color: #007bff; text-decoration: underline; font-weight: bold;">$1</a>',
       );
 
-      // 14. Convert sentences ending with period/exclamation/question to have line breaks
-      aiReplyText = aiReplyText.replace(/\.\s+/g, ".<br/>");
-      aiReplyText = aiReplyText.replace(/!\s+/g, "!<br/>");
-      aiReplyText = aiReplyText.replace(/\?\s+/g, "?<br/>");
+      // 13. PARAGRAPH SPACING (Image 4 Style)
+      // Only add gap if period is followed by a Capital Letter (prevents breaking AM/PM)
+      aiReplyText = aiReplyText.replace(/([.!?])\s+(?=[A-Z])/g, "$1<br/><br/>");
 
-      // 15. BLANK LINE BEFORE first bullet (after any text ending with period/colon)
+      // 14. FIX COLON SPACING (Gap before first bullet)
+      aiReplyText = aiReplyText.replace(/:\s*<br\/>/gi, ":<br/><br/>");
+      aiReplyText = aiReplyText.replace(/:\s*(?=[-•*])/gi, ":<br/><br/>");
+
+      // 15. BLANK LINE BETWEEN & AFTER each bullet point
       aiReplyText = aiReplyText.replace(
-        /([.:])<br\/>([-•*]\s)/gi,
-        "$1<br/><br/>$2",
+        /([-•*]\s.*?)(?:<br\/>\s*|(?=\n))(?=[-•*]\s)/g,
+        "$1<br/><br/>",
+      );
+      aiReplyText = aiReplyText.replace(
+        /([-•*]\s.*?)(?:<br\/>\s*|(?=\n))(?=[A-Z][a-z])/g,
+        "$1<br/><br/>",
       );
 
-      // 16. BLANK LINE BETWEEN each bullet point
+      // 16. DOCTOR NAME ANCHOR (Prevents the "Dr. [Gap] Name" issue)
+      // Fixes the period issue from Step 13 specifically for Doctor names
       aiReplyText = aiReplyText.replace(
-        /([-•*]\s.*?)<br\/>([-•*]\s)/g,
-        "$1<br/><br/>$2",
+        /<b>Dr\.<\/b><br\/><br\/>/gi,
+        "<b>Dr. </b>",
       );
 
-      // 17. BLANK LINE AFTER last bullet (before next sentence starting with capital letter)
-      aiReplyText = aiReplyText.replace(
-        /([-•*]\s.*?)<br\/>([A-Z])/g,
-        "$1<br/><br/>$2",
-      );
+      // 17. FINAL SPACING CLEANUP - Max 2 <br/>
+      aiReplyText = aiReplyText.replace(/(<br\s*\/?>){3,}/gi, "<br/><br/>");
 
-      // 18. Clean up excessive <br/> (max 2 in a row)
-      aiReplyText = aiReplyText.replace(/(<br\/>){3,}/g, "<br/><br/>");
-
-      // 19. Clean up extra spaces
+      // 18. Clean up extra spaces & trailing line breaks before emoji
       aiReplyText = aiReplyText.replace(/[ \t]+/g, " ").trim();
-
-      // 20. Final cleanup - remove trailing line breaks before emoji
-      aiReplyText = aiReplyText.replace(/(<br\/>)+😊/g, " 😊");
+      aiReplyText = aiReplyText.replace(/(<br\s*\/?>)+😊/g, " 😊");
     }
 
     // 8️⃣ Save & Respond (Using the now cleaned aiReplyText)
