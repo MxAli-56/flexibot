@@ -82,6 +82,8 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
 
 === UI INSTRUCTIONS ===
 - Always use a double newline (\n\n) between different thoughts.
+- Use **Bold** for emphasis on doctors, times, and locations.
+- Use Bullet points for lists.
 `;
 
     // 6️⃣ Assembly
