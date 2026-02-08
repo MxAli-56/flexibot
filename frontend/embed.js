@@ -682,14 +682,14 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     // --- PLACE IT HERE ---
     async function sendGreeting() {
-      // Prevent duplicate greetings if user re-opens window in same session
-      if (Messages.children.length > 0) return;
+    // Prevent duplicate greetings if user re-opens window in same session
+    if (Messages.children.length > 0) return;
 
-      // Pulls from your config so it stays generic for all clinics
-      const clinicName = window.FlexiBotConfig?.clientName || "our clinic";
-      const greetingText = `Hi there! Welcome to ${clinicName}. How can I help you today?`;
+    const clinicName = clientConfig.botName || "our clinic"; 
+    const greetingText = `Hi there! Welcome to ${clinicName}. How can I help you today?`;
 
-      appendMessage("bot", greetingText);
+    appendMessage("bot", greetingText);
+}
 
       const suggestions = [
         "Which dentist is available today?",
@@ -837,4 +837,4 @@ window.addEventListener("DOMContentLoaded", async () => {
       }
     });
   } 
-});
+);
