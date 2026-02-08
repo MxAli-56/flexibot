@@ -112,23 +112,24 @@ window.addEventListener("DOMContentLoaded", async () => {
   border-radius: 0;
 }
 
-/* Close Button Styling */
-.flexibot-header span:last-child {
-    font-size: 22px !important; /* Slightly larger for visibility */
+/* Precise Close Button Styling */
+#flexibot-close {
+    font-size: 28px !important;
     cursor: pointer;
+    color: white;
     width: 32px;
     height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.2s ease;
-    border-radius: 50%; /* Optional: creates a subtle circular hover effect */
-    font-family: Arial, sans-serif; /* Keeps the X shape standard */
+    line-height: 1;
+    z-index: 10; /* Keeps it above everything */
 }
 
-.flexibot-header span:last-child:hover {
-    background-color: rgba(255, 255, 255, 0.1); /* Subtle highlight on hover */
-    transform: scale(1.1);
+#flexibot-close:hover {
+    transform: scale(1.2);
+    opacity: 0.8;
 }
 
 .header-left {
@@ -205,12 +206,14 @@ window.addEventListener("DOMContentLoaded", async () => {
 }
 
 #flexibot-messages::-webkit-scrollbar-thumb {
-    background-color: rgba(76, 15, 119, 0.5); /* Semi-transparent purple */
+    background-color: rgba(255, 255, 255, 0.3); /* Subtle white */
     border-radius: 10px;
+    border: 2px solid transparent; /* Creates padding around the thumb */
+    background-clip: padding-box;
 }
 
 #flexibot-messages::-webkit-scrollbar-thumb:hover {
-    background-color: #4c0f77; /* Solid purple when user interacts */
+    background-color: rgba(255, 255, 255, 0.6); /* Brighter white on hover */
 }
 
 /* The wrapper that adds padding around the pill */
@@ -279,7 +282,6 @@ window.addEventListener("DOMContentLoaded", async () => {
 .user-bubble {
   background-color: #0d6efd;
   color: #fff;
-  align-self: flex-end;
   border-bottom-right-radius: 6px;
 }
 
@@ -287,10 +289,9 @@ window.addEventListener("DOMContentLoaded", async () => {
 .bot-bubble {
   background-color: #e9ecef;
   color: #111;
-  align-self: flex-start;
   border-bottom-left-radius: 6px;
-  padding: 10px 6px 0px 5px;
-  margin: 4px 0;
+  padding: 12px; /* Fixed your previous tight padding */
+  margin: 0;     /* Wrapper handles the spacing now */
   line-height: 1.5;
   white-space: pre-wrap;
   word-wrap: break-word;
@@ -353,7 +354,12 @@ window.addEventListener("DOMContentLoaded", async () => {
 }
 
 .user-message-wrapper {
-  animation: messageFadeIn 0.3s ease-out forwards;
+    display: flex !important;
+    justify-content: flex-end !important; /* Forces it to the right */
+    width: 100%;
+    margin-bottom: 10px;
+    padding-right: 10px; /* Gives it a little breathing room from the edge */
+    animation: messageFadeIn 0.3s ease-out forwards;
 }
   
 /* Typing bubble */
@@ -621,7 +627,7 @@ window.addEventListener("DOMContentLoaded", async () => {
       </div>
     </div>
   </div>
-  <div id="flexibot-close" style="cursor:pointer; font-size: 20px; color: rgba(255,255,255,0.8);">&times;</div>
+  <div id="flexibot-close">&times;</div>
   </div>
       <div id="flexibot-messages"></div>
       <div class="flexibot-input-container">
