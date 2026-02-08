@@ -56,9 +56,31 @@ window.addEventListener("DOMContentLoaded", async () => {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2); /* Updated shadow for depth */
   z-index: 2147483647;
   font-size: 24px;
+  transition: transform 0.3s ease; /* Added for hover effect */
+}
+
+/* Added: Hover effect */
+.flexibot-bubble:hover {
+  transform: scale(1.1);
+}
+
+/* Added: The "Chat with us" Pointer/Pill */
+.flexibot-cta {
+  position: absolute;
+  right: 75px;
+  background: white;
+  color: #333;
+  padding: 8px 15px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  pointer-events: none;
+  animation: cta-pulse 2s infinite ease-in-out;
 }
 
 /* Chat window */
@@ -86,12 +108,6 @@ window.addEventListener("DOMContentLoaded", async () => {
   color: white;
   font-weight: bold;
   font-size: 20px;
-}
-
-.theme-toggle {
-  cursor: pointer;
-  font-size: 22px;
-  user-select: none;
 }
 
 /* Messages container */
@@ -217,32 +233,6 @@ window.addEventListener("DOMContentLoaded", async () => {
   100% { opacity: 0.25; transform: translateY(0); }
 }
 
-/* Light mode (chat window only) */
-.flexibot-window.light-mode {
-  background: #f8f8f8;
-  color: black;
-}
-
-.flexibot-window.light-mode .flexibot-header {
-  background: #007bff;
-  color: white;
-}
-
-.flexibot-window.light-mode .flexibot-input {
-  background: white;
-  border-top: 1px solid #ccc;
-}
-
-.flexibot-window.light-mode .flexibot-input input {
-  background: white;
-  color: black;
-}
-
-.flexibot-window.light-mode .flexibot-input button {
-  background: #007bff;
-  color: white;
-}
-
 /* ---------------- DESKTOP (default) ---------------- */
 .flexibot-bubble {
   width: 60px;
@@ -272,10 +262,10 @@ window.addEventListener("DOMContentLoaded", async () => {
 
 /* ---------------- TABLET (max-width: 768px) ---------------- */
 @media (max-width: 768px) {
-  .flexibot-bubble {
-    width: 50px;
-    height: 50px;
-    font-size: 20px;
+.flexibot-bubble {
+    width: 55px; /* Adjusted for tablet */
+    height: 55px;
+    font-size: 22px;
     bottom: 15px;
     right: 15px;
   }
@@ -311,12 +301,16 @@ window.addEventListener("DOMContentLoaded", async () => {
 
 /* ---------------- MOBILE (max-width: 480px) ---------------- */
 @media (max-width: 480px) {
-  .flexibot-bubble {
-    width: 40px;
-    height: 40px;
-    font-size: 18px;
-    bottom: 10px;
-    right: 10px;
+.flexibot-bubble {
+    width: 50px; /* Slightly larger than before for better thumb-target */
+    height: 50px;
+    font-size: 20px;
+    bottom: 15px;
+    right: 15px;
+  }
+  
+  .flexibot-cta {
+    display: none; /* Hide pill on mobile for clean look */
   }
 
   .flexibot-window {
@@ -374,6 +368,12 @@ window.addEventListener("DOMContentLoaded", async () => {
     max-width: none; /* remove limit so it adapts */
   }
 }
+
+@keyframes cta-pulse {
+  0% { transform: scale(1); opacity: 0.9; }
+  50% { transform: scale(1.05); opacity: 1; }
+  100% { transform: scale(1); opacity: 0.9; }
+}
 `;
 
   // 1️⃣ Load external libraries first
@@ -389,10 +389,16 @@ window.addEventListener("DOMContentLoaded", async () => {
     styleEl.textContent = flexibotStyles;
     document.head.appendChild(styleEl);
 
-    // Step 4.2 → Inject floating chat button
+    // --- UPDATED: Inject floating chat button ---
     const chatButton = document.createElement("div");
     chatButton.className = "flexibot-bubble";
-    chatButton.innerHTML = "💬"; // later replace with SVG/logo if needed
+    // We added the CTA div here so the CSS has something to target
+    chatButton.innerHTML = `
+        <div class="flexibot-cta">Chat with us</div>
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M21 15C21 15.5304 20.7893 16.0391 20.4142 16.4142C20.0391 16.7893 19.5304 17 19 17H7L3 21V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V15Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    `;
     document.body.appendChild(chatButton);
     chatButton.title = clientConfig.botName?.trim() || "FlexiBot";
 
@@ -400,18 +406,26 @@ window.addEventListener("DOMContentLoaded", async () => {
     const chatWindow = document.createElement("div");
     chatWindow.className = "flexibot-window";
 
-    // Chat window inner HTML
+    // UPDATED: Header structure for Icon + Name + Online Dot
     chatWindow.innerHTML = `
-  <div class="flexibot-header">
-  <span class="flexibot-title" id="flexibot-title">Loading...</span>
-  <span class="theme-toggle">🌙</span>
-  </div>
-  <div id="flexibot-messages"></div>
-  <div class="flexibot-input">
-  <input type="text" id="flexibot-input" placeholder="Enter your query..." />
-  <button id="flexibot-send">Send</button>
-  </div>
-  `;
+      <div class="flexibot-header">
+        <div class="header-left">
+          <div class="bot-logo-header"></div> <div class="header-info">
+            <span class="bot-name" id="flexibot-title">Loading...</span>
+            <div class="online-status">
+              <span class="online-dot"></span>
+              <span class="online-text">Online</span>
+            </div>
+          </div>
+        </div>
+        <div id="flexibot-close" style="cursor:pointer; font-size: 24px; color: white;">&times;</div>
+      </div>
+      <div id="flexibot-messages"></div>
+      <div class="flexibot-input">
+        <input type="text" id="flexibot-input" placeholder="Enter your query..." />
+        <button id="flexibot-send">Send</button>
+      </div>
+    `;
 
     document.body.appendChild(chatWindow);
 
@@ -439,7 +453,6 @@ window.addEventListener("DOMContentLoaded", async () => {
     const Messages = document.getElementById("flexibot-messages");
     const Input = document.getElementById("flexibot-input");
     const Send = document.getElementById("flexibot-send");
-    const themeToggle = chatWindow.querySelector(".theme-toggle"); // inside header
 
     // Toggle chat window
     function openChat() {
@@ -520,7 +533,7 @@ window.addEventListener("DOMContentLoaded", async () => {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ clientId, sessionId, text }),
-          }
+          },
         );
 
         let data = await res.json();
@@ -540,7 +553,7 @@ window.addEventListener("DOMContentLoaded", async () => {
                 text,
                 forceGemini: true,
               }),
-            }
+            },
           );
           data = await res.json();
         }
@@ -593,13 +606,6 @@ window.addEventListener("DOMContentLoaded", async () => {
         e.preventDefault();
         Send.click();
       }
-    });
-
-    themeToggle.addEventListener("click", () => {
-      chatWindow.classList.toggle("light-mode");
-      themeToggle.textContent = chatWindow.classList.contains("light-mode")
-        ? "🌞"
-        : "🌙";
     });
   } 
 });

@@ -17,8 +17,8 @@ connectDB();
 
 // --- SECURITY UPDATE: TASK 3 CORS ---
 const allowedOrigins = [
-  "https://smile-care-dental-lovat.vercel.app",
-  "http://localhost:3000",
+  "https://smile-care-dental-lovat.vercel.app", // my own dummy website for testing
+  "http://localhost:3000", // local development
 ];
 
 app.use(
