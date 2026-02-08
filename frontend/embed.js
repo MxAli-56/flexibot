@@ -246,6 +246,37 @@ window.addEventListener("DOMContentLoaded", async () => {
   font-weight: bold;    /* ensure bold works */
 }
 
+.bot-logo-header svg {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+
+/* Style for the icon appearing NEXT to bot messages */
+.bot-message-wrapper {
+  display: flex;
+  align-items: flex-end; /* Aligns icon with the bottom of the bubble */
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.bot-avatar-small {
+  width: 28px;
+  height: 28px;
+  background: #eee;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #4c0f77;
+}
+
+.bot-avatar-small svg {
+  width: 16px;
+  height: 16px;
+}
+
 /* Typing bubble */
 .typing-bubble {
   display: inline-block;
@@ -461,9 +492,11 @@ window.addEventListener("DOMContentLoaded", async () => {
     chatWindow.innerHTML = `
       <div class="flexibot-header">
   <div class="header-left">
-    <div class="bot-logo-header">
-      <span style="font-size: 20px;">🤖</span> 
-    </div>
+    <div class="bot-logo-header" style="color: #4c0f77;">
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4.5 10.1c.2-1.5.9-3 2-4.1a5.1 5.1 0 0 1 7.1 0c1.1 1.1 1.8 2.6 2 4.1.2 1.4.7 2.7 1.4 3.9.7 1.2 1 2.6 1 4a2.5 2.5 0 0 1-5 0c0-1.2-.4-2.4-1.1-3.4-.4-.5-1-.9-1.7-.9h-.4c-.7 0-1.3.4-1.7.9-.7 1-1.1 2.2-1.1 3.4a2.5 2.5 0 0 1-5 0c0-1.4.3-2.8 1-4 .7-1.2 1.2-2.5 1.4-3.9Z"/>
+  </svg>
+</div>
     <div class="header-info">
       <div class="name-row">
         <span class="bot-name" id="flexibot-title">Smile Care AI</span>
