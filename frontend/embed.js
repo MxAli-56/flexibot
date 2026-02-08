@@ -92,7 +92,9 @@ window.addEventListener("DOMContentLoaded", async () => {
   width: 350px;
   height: 450px;
   background: rgba(44,44,44,0.98);
-  border: 1px solid #333;
+  border-radius: 12px; 
+  overflow: hidden;    
+  border: 1px solid rgba(255, 255, 255, 0.1);
   display: none;
   flex-direction: column;
   box-shadow: 0 2px 10px rgba(0,0,0,0.3);
@@ -107,8 +109,26 @@ window.addEventListener("DOMContentLoaded", async () => {
   padding: 15px 20px; /* More breathing room on sides */
   background: #4c0f77;
   color: white;
-  border-top-left-radius: 10px; /* Match window curves */
-  border-top-right-radius: 10px;
+  border-radius: 0;
+}
+
+/* Close Button Styling */
+.flexibot-header span:last-child {
+    font-size: 22px !important; /* Slightly larger for visibility */
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    border-radius: 50%; /* Optional: creates a subtle circular hover effect */
+    font-family: Arial, sans-serif; /* Keeps the X shape standard */
+}
+
+.flexibot-header span:last-child:hover {
+    background-color: rgba(255, 255, 255, 0.1); /* Subtle highlight on hover */
+    transform: scale(1.1);
 }
 
 .header-left {
@@ -165,6 +185,8 @@ window.addEventListener("DOMContentLoaded", async () => {
 /* Messages container */
 #flexibot-messages {
   flex: 1;
+  scrollbar-width: thin; 
+  scrollbar-color: rgba(76, 15, 119, 0.7) transparent;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -172,6 +194,23 @@ window.addEventListener("DOMContentLoaded", async () => {
   padding: 12px;
   align-items: flex-start;
   box-sizing: border-box;
+}
+
+#flexibot-messages::-webkit-scrollbar {
+    width: 6px; /* Slimmer, more modern look */
+}
+
+#flexibot-messages::-webkit-scrollbar-track {
+    background: transparent; /* Makes the "white/gray part" disappear */
+}
+
+#flexibot-messages::-webkit-scrollbar-thumb {
+    background-color: rgba(76, 15, 119, 0.5); /* Semi-transparent purple */
+    border-radius: 10px;
+}
+
+#flexibot-messages::-webkit-scrollbar-thumb:hover {
+    background-color: #4c0f77; /* Solid purple when user interacts */
 }
 
 /* The wrapper that adds padding around the pill */
@@ -676,25 +715,24 @@ window.addEventListener("DOMContentLoaded", async () => {
       localStorage.setItem("flexibotSessionId", sessionId);
     }
 
-    function appendMessage(who, text) {
-      const wrapper = document.createElement("div");
+function appendMessage(who, text) {
+  const wrapper = document.createElement("div");
 
-      if (who === "bot") {
-        wrapper.className = "bot-message-wrapper";
-        wrapper.innerHTML = `
+  if (who === "bot") {
+    wrapper.className = "bot-message-wrapper";
+    wrapper.innerHTML = `
       <div class="bot-avatar-small">${toothIcon}</div>
       <div class="message-bubble bot-bubble">${text}</div>
     `;
-      } else {
-        // User message stays simple
-        wrapper.className = "message-bubble user-bubble";
-        wrapper.style.alignSelf = "flex-end";
-        wrapper.textContent = text;
-      }
+  } else {
+    // FIX: Give the user message a wrapper so the animation triggers
+    wrapper.className = "user-message-wrapper";
+    wrapper.innerHTML = `<div class="message-bubble user-bubble">${text}</div>`;
+  }
 
-      Messages.appendChild(wrapper);
-      Messages.scrollTop = Messages.scrollHeight;
-    }
+  Messages.appendChild(wrapper);
+  Messages.scrollTop = Messages.scrollHeight;
+}
 
     // --- PLACE IT HERE ---
     async function sendGreeting() {
