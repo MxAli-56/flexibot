@@ -273,16 +273,20 @@ window.addEventListener("DOMContentLoaded", async () => {
   font-weight: bold;    /* ensure bold works */
 }
 
-.bot-logo-header svg {
-  width: 22px;
-  height: 22px;
+/* Keeps the tooth icon centered and perfectly sized in all circles */
+.bot-logo-header svg, 
+.bot-avatar-small svg {
+  width: 70%; 
+  height: 70%;
   display: block;
+  /* Ensures the SVG inherits the color of the parent */
+  fill: currentColor; 
 }
 
-/* Style for the icon appearing NEXT to bot messages */
+/* Maintain your layout wrappers */
 .bot-message-wrapper {
   display: flex;
-  align-items: flex-end; /* Aligns icon with the bottom of the bubble */
+  align-items: flex-end; 
   gap: 8px;
   margin-bottom: 10px;
 }
@@ -297,11 +301,6 @@ window.addEventListener("DOMContentLoaded", async () => {
   justify-content: center;
   flex-shrink: 0;
   color: #4c0f77;
-}
-
-.bot-avatar-small svg {
-  width: 16px;
-  height: 16px;
 }
 
 /* Typing bubble */
@@ -520,9 +519,9 @@ window.addEventListener("DOMContentLoaded", async () => {
       <div class="flexibot-header">
   <div class="header-left">
     <div class="bot-logo-header" style="color: #4c0f77;">
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M4.5 10.1c.2-1.5.9-3 2-4.1a5.1 5.1 0 0 1 7.1 0c1.1 1.1 1.8 2.6 2 4.1.2 1.4.7 2.7 1.4 3.9.7 1.2 1 2.6 1 4a2.5 2.5 0 0 1-5 0c0-1.2-.4-2.4-1.1-3.4-.4-.5-1-.9-1.7-.9h-.4c-.7 0-1.3.4-1.7.9-.7 1-1.1 2.2-1.1 3.4a2.5 2.5 0 0 1-5 0c0-1.4.3-2.8 1-4 .7-1.2 1.2-2.5 1.4-3.9Z"/>
-  </svg>
+  <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+  <path d="M38.33,18.82c-.8-5.32-3.88-8.7-8.11-9.15a10.89,10.89,0,0,0-5.46,1,1,0,0,1-1.52-.89V5a1,1,0,0,0-2,0v4.75a1,1,0,0,1-1.52.89,10.89,10.89,0,0,0-5.46-1c-4.23.45-7.31,3.83-8.11,9.15a20.46,20.46,0,0,0,.68,9c1.68,5,6,8.25,6,12.79a3.42,3.42,0,0,0,6.83.21,1,1,0,0,1,1.13-.88,11.38,11.38,0,0,0,1.9.15,11.38,11.38,0,0,0,1.9-.15,1,1,0,0,1,1.13.88,3.42,3.42,0,0,0,6.83-.21c0-4.54,4.32-7.77,6-12.79A20.46,20.46,0,0,0,38.33,18.82Z"/>
+</svg>
 </div>
     <div class="header-info">
       <div class="name-row">
@@ -635,8 +634,10 @@ function appendMessage(who, text) {
     wrapper.className = "bot-message-wrapper";
     wrapper.innerHTML = `
       <div class="bot-avatar-small">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 10.1c.2-1.5.9-3 2-4.1a5.1 5.1 0 0 1 7.1 0c1.1 1.1 1.8 2.6 2 4.1.2 1.4.7 2.7 1.4 3.9.7 1.2 1 2.6 1 4a2.5 2.5 0 0 1-5 0c0-1.2-.4-2.4-1.1-3.4-.4-.5-1-.9-1.7-.9h-.4c-.7 0-1.3.4-1.7.9-.7 1-1.1 2.2-1.1 3.4a2.5 2.5 0 0 1-5 0c0-1.4.3-2.8 1-4 .7-1.2 1.2-2.5 1.4-3.9Z"/></svg>
-      </div>
+  <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+    <path d="M38.33,18.82c-.8-5.32-3.88-8.7-8.11-9.15a10.89,10.89,0,0,0-5.46,1,1,0,0,1-1.52-.89V5a1,1,0,0,0-2,0v4.75a1,1,0,0,1-1.52.89,10.89,10.89,0,0,0-5.46-1c-4.23.45-7.31,3.83-8.11,9.15a20.46,20.46,0,0,0,.68,9c1.68,5,6,8.25,6,12.79a3.42,3.42,0,0,0,6.83.21,1,1,0,0,1,1.13-.88,11.38,11.38,0,0,0,1.9.15,11.38,11.38,0,0,0,1.9-.15,1,1,0,0,1,1.13.88,3.42,3.42,0,0,0,6.83-.21c0-4.54,4.32-7.77,6-12.79A20.46,20.46,0,0,0,38.33,18.82Z"/>
+  </svg>
+</div>
       <div class="message-bubble bot-bubble">${text}</div>
     `;
   } else {
@@ -714,15 +715,18 @@ function appendMessage(who, text) {
             ? data.reply || "⚠️ Sorry, I couldn't process your message."
             : DOMPurify.sanitize(marked.parse(data.reply));
 
-        botWrapper.innerHTML = `
-  <div class="bot-avatar-small">
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 10.1c.2-1.5.9-3 2-4.1a5.1 5.1 0 0 1 7.1 0c1.1 1.1 1.8 2.6 2 4.1.2 1.4.7 2.7 1.4 3.9.7 1.2 1 2.6 1 4a2.5 2.5 0 0 1-5 0c0-1.2-.4-2.4-1.1-3.4-.4-.5-1-.9-1.7-.9h-.4c-.7 0-1.3.4-1.7.9-.7 1-1.1 2.2-1.1 3.4a2.5 2.5 0 0 1-5 0c0-1.4.3-2.8 1-4 .7-1.2 1.2-2.5 1.4-3.9Z"/></svg>
+        // Look for the line where you define botWrapper.innerHTML:
+      botWrapper.innerHTML = `
+      <div class="bot-avatar-small">
+      <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+      <path d="M38.33,18.82c-.8-5.32-3.88-8.7-8.11-9.15a10.89,10.89,0,0,0-5.46,1,1,0,0,1-1.52-.89V5a1,1,0,0,0-2,0v4.75a1,1,0,0,1-1.52.89,10.89,10.89,0,0,0-5.46-1c-4.23.45-7.31,3.83-8.11,9.15a20.46,20.46,0,0,0,.68,9c1.68,5,6,8.25,6,12.79a3.42,3.42,0,0,0,6.83.21,1,1,0,0,1,1.13-.88,11.38,11.38,0,0,0,1.9.15,11.38,11.38,0,0,0,1.9-.15,1,1,0,0,1,1.13.88,3.42,3.42,0,0,0,6.83-.21c0-4.54,4.32-7.77,6-12.79A20.46,20.46,0,0,0,38.33,18.82Z"/>
+      </svg>
   </div>
-  <div class="message-bubble bot-bubble">${replyContent}</div>
-`;
+    <div class="message-bubble bot-bubble">${replyContent}</div>
+    `;
 
-        typingEl.replaceWith(botWrapper);
-        Messages.scrollTop = Messages.scrollHeight;
+      typingEl.replaceWith(botWrapper);
+      Messages.scrollTop = Messages.scrollHeight;
       } catch (err) {
         console.error("Frontend fetch error:", err.message);
 
