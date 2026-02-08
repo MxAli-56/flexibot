@@ -689,7 +689,6 @@ window.addEventListener("DOMContentLoaded", async () => {
     const greetingText = `Hi there! Welcome to ${clinicName}. How can I help you today?`;
 
     appendMessage("bot", greetingText);
-}
 
       const suggestions = [
         "Which dentist is available today?",
@@ -837,4 +836,4 @@ window.addEventListener("DOMContentLoaded", async () => {
       }
     });
   } 
-);
+});
