@@ -98,67 +98,67 @@ window.addEventListener("DOMContentLoaded", async () => {
   z-index: 9999;
 }
 
-/* Header */
+/* Container adjustments */
 .flexibot-header {
   display: flex;
-  justify-content: space-between; 
+  justify-content: space-between;
   align-items: center;
-  padding: 10px;
+  padding: 15px 20px; /* More breathing room on sides */
   background: #4c0f77;
   color: white;
-  font-weight: bold;
-  font-size: 20px;
+  border-top-left-radius: 10px; /* Match window curves */
+  border-top-right-radius: 10px;
 }
 
-/* Header Icon Placeholder */
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .bot-logo-header {
-  width: 35px;
-  height: 35px;
+  width: 40px;
+  height: 40px;
+  background: white; /* Clean white background for the icon */
   border-radius: 50%;
-  background: #444; /* Darker grey placeholder */
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  border: 1px solid #555;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-/* Container for Name + Status */
 .header-info {
   display: flex;
   flex-direction: column;
-  margin-left: 8px;
+  justify-content: center;
 }
 
 .bot-name {
-  font-weight: 600;
-  font-size: 15px;
-  color: white;
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
   line-height: 1.2;
 }
 
-/* The Online indicator row */
-.online-status {
+.status-row {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   margin-top: 2px;
 }
 
 .online-dot {
   width: 8px;
   height: 8px;
-  background-color: #28a745; /* Medical Green */
+  background-color: #00ff00; /* Bright green like the example */
   border-radius: 50%;
-  box-shadow: 0 0 8px rgba(40, 167, 69, 0.8); /* The Glow */
+  border: 1.5px solid #4c0f77; /* Creates a clean gap effect */
 }
 
 .online-text {
-  font-size: 11px;
-  color: #aaa;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 400;
 }
 
 /* Messages container */
@@ -460,17 +460,22 @@ window.addEventListener("DOMContentLoaded", async () => {
     // UPDATED: Header structure for Icon + Name + Online Dot
     chatWindow.innerHTML = `
       <div class="flexibot-header">
-        <div class="header-left">
-          <div class="bot-logo-header"></div> <div class="header-info">
-            <span class="bot-name" id="flexibot-title">Loading...</span>
-            <div class="online-status">
-              <span class="online-dot"></span>
-              <span class="online-text">Online</span>
-            </div>
-          </div>
-        </div>
-        <div id="flexibot-close" style="cursor:pointer; font-size: 24px; color: white;">&times;</div>
+  <div class="header-left">
+    <div class="bot-logo-header">
+      <span style="font-size: 20px;">🤖</span> 
+    </div>
+    <div class="header-info">
+      <div class="name-row">
+        <span class="bot-name" id="flexibot-title">Smile Care AI</span>
       </div>
+      <div class="status-row">
+        <span class="online-dot"></span>
+        <span class="online-text">Online Now</span>
+      </div>
+    </div>
+  </div>
+  <div id="flexibot-close" style="cursor:pointer; font-size: 20px; color: rgba(255,255,255,0.8);">&times;</div>
+  </div>
       <div id="flexibot-messages"></div>
       <div class="flexibot-input">
         <input type="text" id="flexibot-input" placeholder="Enter your query..." />
