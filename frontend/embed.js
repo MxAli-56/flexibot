@@ -724,8 +724,10 @@ window.addEventListener("DOMContentLoaded", async () => {
       chatWindow.style.display = "flex";
       chatButton.style.display = "none";
 
-      // This is the trigger
-      sendGreeting();
+      // Set a 1-second (1000ms) delay before the greeting appears
+      setTimeout(() => {
+        sendGreeting();
+      }, 1000);
     };
 
     // Typing indicator helper
