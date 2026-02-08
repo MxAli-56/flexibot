@@ -5,6 +5,7 @@ let clientConfig = {
 
 const currentScript = document.currentScript;
 const clientId = currentScript.getAttribute("data-client-id");
+const toothIcon = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 2C4 2 3 5 3 8C3 11 4 12 5 13C5 17 6 22 9 22C10.5 22 11 21 12 21C13 21 13.5 22 15 22C18 22 19 17 19 13C20 12 21 11 21 8C21 5 20 2 17 2H7Z" fill="currentColor"/></svg>`;
 
 // ------------------- fetch client config -------------------
 async function loadClientConfig() {
@@ -273,9 +274,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   font-weight: bold;    /* ensure bold works */
 }
 
-/* Container for the Icon */
-.bot-logo-header, 
-.bot-avatar-small {
+.bot-logo-header, .bot-avatar-small {
   width: 32px;
   height: 32px;
   background: white;
@@ -284,22 +283,25 @@ window.addEventListener("DOMContentLoaded", async () => {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  color: #4c0f77; /* Set the tooth color here */
+  color: #4c0f77;
+  overflow: hidden;
 }
 
-/* The SVG itself */
-.bot-logo-header svg, 
-.bot-avatar-small svg {
-  width: 65%;   /* This is the safest way to ensure padding */
-  height: 65%;
+.bot-logo-header svg, .bot-avatar-small svg {
+  width: 18px; /* Fixed size for Sample 2 looks best at 18px */
+  height: 18px;
   display: block;
 }
 
-/* Small variation for the message bubbles */
 .bot-avatar-small {
   width: 26px;
   height: 26px;
   background: #f0f0f0;
+}
+
+.bot-avatar-small svg {
+  width: 14px; /* Scaled down for the chat bubbles */
+  height: 14px;
 }
 
 /* Layout Wrapper */
@@ -553,11 +555,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     chatWindow.innerHTML = `
       <div class="flexibot-header">
   <div class="header-left">
-    <div class="bot-logo-header" style="color: #4c0f77;">
-  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <path d="M12 2C10 2 8 3.5 8 6C8 7 8.5 8.5 9 9.5C7.5 10 6 11.5 6 14C6 17 8 22 10 22C11 22 11.5 21 12 21C12.5 21 13 22 14 22C16 22 18 17 18 14C18 11.5 16.5 10 15 9.5C15.5 8.5 16 7 16 6C16 3.5 14 2 12 2Z" fill="currentColor"/>
-</svg>
-</div>
+    <div class="bot-logo-header">${toothIcon}</div>
     <div class="header-info">
       <div class="name-row">
         <span class="bot-name" id="flexibot-title">Smile Care AI</span>
@@ -668,11 +666,7 @@ window.addEventListener("DOMContentLoaded", async () => {
       if (who === "bot") {
         wrapper.className = "bot-message-wrapper";
         wrapper.innerHTML = `
-      <div class="bot-avatar-small">
-  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <path d="M12 2C10 2 8 3.5 8 6C8 7 8.5 8.5 9 9.5C7.5 10 6 11.5 6 14C6 17 8 22 10 22C11 22 11.5 21 12 21C12.5 21 13 22 14 22C16 22 18 17 18 14C18 11.5 16.5 10 15 9.5C15.5 8.5 16 7 16 6C16 3.5 14 2 12 2Z" fill="currentColor"/>
-</svg>
-</div>
+      <div class="bot-avatar-small">${toothIcon}</div>
       <div class="message-bubble bot-bubble">${text}</div>
     `;
       } else {
@@ -801,11 +795,7 @@ window.addEventListener("DOMContentLoaded", async () => {
 
         // Look for the line where you define botWrapper.innerHTML:
         botWrapper.innerHTML = `
-      <div class="bot-avatar-small">
-      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <path d="M12 2C10 2 8 3.5 8 6C8 7 8.5 8.5 9 9.5C7.5 10 6 11.5 6 14C6 17 8 22 10 22C11 22 11.5 21 12 21C12.5 21 13 22 14 22C16 22 18 17 18 14C18 11.5 16.5 10 15 9.5C15.5 8.5 16 7 16 6C16 3.5 14 2 12 2Z" fill="currentColor"/>
-</svg>
-  </div>
+      <div class="bot-avatar-small">${toothIcon}</div>
     <div class="message-bubble bot-bubble">${replyContent}</div>
     `;
 
