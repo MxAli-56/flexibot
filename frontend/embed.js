@@ -110,6 +110,57 @@ window.addEventListener("DOMContentLoaded", async () => {
   font-size: 20px;
 }
 
+/* Header Icon Placeholder */
+.bot-logo-header {
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  background: #444; /* Darker grey placeholder */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid #555;
+}
+
+/* Container for Name + Status */
+.header-info {
+  display: flex;
+  flex-direction: column;
+  margin-left: 8px;
+}
+
+.bot-name {
+  font-weight: 600;
+  font-size: 15px;
+  color: white;
+  line-height: 1.2;
+}
+
+/* The Online indicator row */
+.online-status {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 2px;
+}
+
+.online-dot {
+  width: 8px;
+  height: 8px;
+  background-color: #28a745; /* Medical Green */
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(40, 167, 69, 0.8); /* The Glow */
+}
+
+.online-text {
+  font-size: 11px;
+  color: #aaa;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 /* Messages container */
 #flexibot-messages {
   flex: 1;
