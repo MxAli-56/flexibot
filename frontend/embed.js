@@ -273,37 +273,56 @@ window.addEventListener("DOMContentLoaded", async () => {
   font-weight: bold;    /* ensure bold works */
 }
 
-/* Keeps the tooth icon centered and perfectly sized in all circles */
-.bot-logo-header svg, 
-.bot-avatar-small svg {
-  width: 24px;   /* Fixed size so it doesn't explode */
-  height: 24px;
-  display: block;
-  fill: #4c0f77; /* The purple color */
+/* 1. Header Circle (Large) */
+.bot-logo-header {
+  width: 32px;
+  height: 32px;
+  background: white;
+  border-radius: 50%;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0;
+  overflow: hidden;
 }
 
-/* Maintain your layout wrappers */
+/* 2. Message Circle (Small) */
+.bot-avatar-small {
+  width: 24px;
+  height: 24px;
+  background: #eee;
+  border-radius: 50%;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+/* 3. Header Tooth (Large) */
+.bot-logo-header svg {
+  width: 20px !important;
+  height: 20px !important;
+  display: block;
+  fill: #4c0f77;
+}
+
+/* 4. Message Tooth (Small) */
+.bot-avatar-small svg {
+  width: 14px !important;
+  height: 14px !important;
+  display: block;
+  fill: #4c0f77;
+}
+
+/* 5. Layout Wrapper */
 .bot-message-wrapper {
   display: flex;
   align-items: flex-end; 
   gap: 8px;
   margin-bottom: 10px;
 }
-
-.bot-logo-header, 
-.bot-avatar-small {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden; /* Clips any overflow */
-}
-
-/* Message icon needs to be a bit smaller than the header icon */
-.bot-avatar-small svg {
-  width: 18px;
-  height: 18px;
-}
-
+  
 /* Typing bubble */
 .typing-bubble {
   display: inline-block;
