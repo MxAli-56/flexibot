@@ -173,28 +173,55 @@ window.addEventListener("DOMContentLoaded", async () => {
   box-sizing: border-box;
 }
 
-/* Input area */
+/* The wrapper that adds padding around the pill */
+.flexibot-input-container {
+  padding: 15px;
+  background: #1e1e1e; /* Matches your chat background */
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
+}
+
+/* The actual Pill */
 .flexibot-input {
   display: flex;
-  border-top: 1px solid #444;
-  background: #1e1e1e;
+  align-items: center;
+  background: #2c2c2c;
+  border: 1px solid #444;
+  border-radius: 25px; /* Makes it a pill */
+  padding: 5px 15px;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Glow effect when user clicks the input */
+.flexibot-input:focus-within {
+  border-color: #4c0f77;
+  box-shadow: 0 0 8px rgba(76, 15, 119, 0.4);
 }
 
 .flexibot-input input {
   flex: 1;
-  padding: 8px;
-  border: none;
-  outline: none;
-  background: #2c2c2c;
+  padding: 10px;
+  border: none !important;
+  outline: none !important;
+  background: transparent;
   color: white;
+  font-size: 14px;
 }
 
 .flexibot-input button {
-  padding: 8px 12px;
+  background: transparent;
   border: none;
-  background: #4c0f77;
-  color: white;
+  color: #4c0f77; /* Brand color for the icon */
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px;
+  transition: transform 0.2s ease;
+}
+
+.flexibot-input button:hover {
+  transform: scale(1.15) rotate(-10deg); /* Slight "takeoff" tilt */
 }
 
 /* Base bubble style */
@@ -510,10 +537,17 @@ window.addEventListener("DOMContentLoaded", async () => {
   <div id="flexibot-close" style="cursor:pointer; font-size: 20px; color: rgba(255,255,255,0.8);">&times;</div>
   </div>
       <div id="flexibot-messages"></div>
-      <div class="flexibot-input">
-        <input type="text" id="flexibot-input" placeholder="Enter your query..." />
-        <button id="flexibot-send">Send</button>
-      </div>
+      <div class="flexibot-input-container">
+  <div class="flexibot-input">
+    <input type="text" id="flexibot-input" placeholder="Enter your query..." />
+    <button id="flexibot-send">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="22" y1="2" x2="11" y2="13"></line>
+        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+      </svg>
+    </button>
+  </div>
+</div>
     `;
 
     document.body.appendChild(chatWindow);
