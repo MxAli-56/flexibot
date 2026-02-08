@@ -480,6 +480,17 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     document.body.appendChild(chatWindow);
 
+    // Target the X button we added to the header
+    const closeBtn = chatWindow.querySelector("#flexibot-close");
+
+    if (closeBtn) {
+      closeBtn.onclick = () => {
+        chatWindow.style.display = "none";
+        // If your launcher is named 'chatButton', show it again
+        chatButton.style.display = "flex";
+      };
+    }
+
     // Update chat header title after window is created
     const titleEl = document.getElementById("flexibot-title");
     if (titleEl) {
