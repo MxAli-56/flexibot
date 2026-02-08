@@ -482,6 +482,34 @@ window.addEventListener("DOMContentLoaded", async () => {
   50% { transform: scale(1.05); opacity: 1; }
   100% { transform: scale(1); opacity: 0.9; }
 }
+
+.suggestion-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 10px 0 10px 48px; /* Aligns with the message bubble text */
+      }
+
+      .suggestion-btn {
+        background: white;
+        border: 1px solid #4c0f77;
+        color: #4c0f77;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-family: inherit;
+        font-weight: 500;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      }
+
+      .suggestion-btn:hover {
+        background: #4c0f77;
+        color: white;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      }
 `;
 
   // 1️⃣ Load external libraries first
@@ -627,12 +655,12 @@ window.addEventListener("DOMContentLoaded", async () => {
       localStorage.setItem("flexibotSessionId", sessionId);
     }
 
-function appendMessage(who, text) {
-  const wrapper = document.createElement("div");
+    function appendMessage(who, text) {
+      const wrapper = document.createElement("div");
 
-  if (who === "bot") {
-    wrapper.className = "bot-message-wrapper";
-    wrapper.innerHTML = `
+      if (who === "bot") {
+        wrapper.className = "bot-message-wrapper";
+        wrapper.innerHTML = `
       <div class="bot-avatar-small">
   <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
     <path d="M38.33,18.82c-.8-5.32-3.88-8.7-8.11-9.15a10.89,10.89,0,0,0-5.46,1,1,0,0,1-1.52-.89V5a1,1,0,0,0-2,0v4.75a1,1,0,0,1-1.52.89,10.89,10.89,0,0,0-5.46-1c-4.23.45-7.31,3.83-8.11,9.15a20.46,20.46,0,0,0,.68,9c1.68,5,6,8.25,6,12.79a3.42,3.42,0,0,0,6.83.21,1,1,0,0,1,1.13-.88,11.38,11.38,0,0,0,1.9.15,11.38,11.38,0,0,0,1.9-.15,1,1,0,0,1,1.13.88,3.42,3.42,0,0,0,6.83-.21c0-4.54,4.32-7.77,6-12.79A20.46,20.46,0,0,0,38.33,18.82Z"/>
@@ -640,16 +668,65 @@ function appendMessage(who, text) {
 </div>
       <div class="message-bubble bot-bubble">${text}</div>
     `;
-  } else {
-    // User message stays simple
-    wrapper.className = "message-bubble user-bubble";
-    wrapper.style.alignSelf = "flex-end";
-    wrapper.textContent = text;
-  }
+      } else {
+        // User message stays simple
+        wrapper.className = "message-bubble user-bubble";
+        wrapper.style.alignSelf = "flex-end";
+        wrapper.textContent = text;
+      }
 
-  Messages.appendChild(wrapper);
-  Messages.scrollTop = Messages.scrollHeight;
-}
+      Messages.appendChild(wrapper);
+      Messages.scrollTop = Messages.scrollHeight;
+    }
+
+    // --- PLACE IT HERE ---
+    async function sendGreeting() {
+      // Prevent duplicate greetings if user re-opens window in same session
+      if (Messages.children.length > 0) return;
+
+      // Pulls from your config so it stays generic for all clinics
+      const clinicName = window.FlexiBotConfig?.clientName || "our clinic";
+      const greetingText = `Hi there! Welcome to ${clinicName}. How can I help you today?`;
+
+      appendMessage("bot", greetingText);
+
+      const suggestions = [
+        "Which dentist is available today?",
+        "What services do you offer?",
+        "What is the process for emergencies?",
+      ];
+
+      const buttonContainer = document.createElement("div");
+      buttonContainer.className = "suggestion-container";
+
+      suggestions.forEach((text) => {
+        const btn = document.createElement("button");
+        btn.className = "suggestion-btn";
+        btn.textContent = text;
+        btn.onclick = () => {
+          // Find the input, set value, and trigger existing sendMessage
+          const inputField = document.getElementById("flexibot-input");
+          if (inputField) {
+            inputField.value = text;
+            sendMessage();
+            buttonContainer.remove();
+          }
+        };
+        buttonContainer.appendChild(btn);
+      });
+
+      Messages.appendChild(buttonContainer);
+      Messages.scrollTop = Messages.scrollHeight;
+    }
+    // --- END OF GREETING FUNCTION ---
+
+    chatButton.onclick = () => {
+      chatWindow.style.display = "flex";
+      chatButton.style.display = "none";
+
+      // This is the trigger
+      sendGreeting();
+    };
 
     // Typing indicator helper
     function showTyping() {
@@ -716,7 +793,7 @@ function appendMessage(who, text) {
             : DOMPurify.sanitize(marked.parse(data.reply));
 
         // Look for the line where you define botWrapper.innerHTML:
-      botWrapper.innerHTML = `
+        botWrapper.innerHTML = `
       <div class="bot-avatar-small">
       <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
       <path d="M38.33,18.82c-.8-5.32-3.88-8.7-8.11-9.15a10.89,10.89,0,0,0-5.46,1,1,0,0,1-1.52-.89V5a1,1,0,0,0-2,0v4.75a1,1,0,0,1-1.52.89,10.89,10.89,0,0,0-5.46-1c-4.23.45-7.31,3.83-8.11,9.15a20.46,20.46,0,0,0,.68,9c1.68,5,6,8.25,6,12.79a3.42,3.42,0,0,0,6.83.21,1,1,0,0,1,1.13-.88,11.38,11.38,0,0,0,1.9.15,11.38,11.38,0,0,0,1.9-.15,1,1,0,0,1,1.13.88,3.42,3.42,0,0,0,6.83-.21c0-4.54,4.32-7.77,6-12.79A20.46,20.46,0,0,0,38.33,18.82Z"/>
@@ -725,8 +802,8 @@ function appendMessage(who, text) {
     <div class="message-bubble bot-bubble">${replyContent}</div>
     `;
 
-      typingEl.replaceWith(botWrapper);
-      Messages.scrollTop = Messages.scrollHeight;
+        typingEl.replaceWith(botWrapper);
+        Messages.scrollTop = Messages.scrollHeight;
       } catch (err) {
         console.error("Frontend fetch error:", err.message);
 
