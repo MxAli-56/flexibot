@@ -276,11 +276,10 @@ window.addEventListener("DOMContentLoaded", async () => {
 /* Keeps the tooth icon centered and perfectly sized in all circles */
 .bot-logo-header svg, 
 .bot-avatar-small svg {
-  width: 70%; 
-  height: 70%;
+  width: 24px;   /* Fixed size so it doesn't explode */
+  height: 24px;
   display: block;
-  /* Ensures the SVG inherits the color of the parent */
-  fill: currentColor; 
+  fill: #4c0f77; /* The purple color */
 }
 
 /* Maintain your layout wrappers */
@@ -291,16 +290,18 @@ window.addEventListener("DOMContentLoaded", async () => {
   margin-bottom: 10px;
 }
 
+.bot-logo-header, 
 .bot-avatar-small {
-  width: 28px;
-  height: 28px;
-  background: #eee;
-  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  color: #4c0f77;
+  overflow: hidden; /* Clips any overflow */
+}
+
+/* Message icon needs to be a bit smaller than the header icon */
+.bot-avatar-small svg {
+  width: 18px;
+  height: 18px;
 }
 
 /* Typing bubble */
@@ -547,7 +548,7 @@ window.addEventListener("DOMContentLoaded", async () => {
       <div class="flexibot-header">
   <div class="header-left">
     <div class="bot-logo-header" style="color: #4c0f77;">
-  <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+  <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
   <path d="M38.33,18.82c-.8-5.32-3.88-8.7-8.11-9.15a10.89,10.89,0,0,0-5.46,1,1,0,0,1-1.52-.89V5a1,1,0,0,0-2,0v4.75a1,1,0,0,1-1.52.89,10.89,10.89,0,0,0-5.46-1c-4.23.45-7.31,3.83-8.11,9.15a20.46,20.46,0,0,0,.68,9c1.68,5,6,8.25,6,12.79a3.42,3.42,0,0,0,6.83.21,1,1,0,0,1,1.13-.88,11.38,11.38,0,0,0,1.9.15,11.38,11.38,0,0,0,1.9-.15,1,1,0,0,1,1.13.88,3.42,3.42,0,0,0,6.83-.21c0-4.54,4.32-7.77,6-12.79A20.46,20.46,0,0,0,38.33,18.82Z"/>
 </svg>
 </div>
@@ -662,9 +663,9 @@ window.addEventListener("DOMContentLoaded", async () => {
         wrapper.className = "bot-message-wrapper";
         wrapper.innerHTML = `
       <div class="bot-avatar-small">
-  <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
-    <path d="M38.33,18.82c-.8-5.32-3.88-8.7-8.11-9.15a10.89,10.89,0,0,0-5.46,1,1,0,0,1-1.52-.89V5a1,1,0,0,0-2,0v4.75a1,1,0,0,1-1.52.89,10.89,10.89,0,0,0-5.46-1c-4.23.45-7.31,3.83-8.11,9.15a20.46,20.46,0,0,0,.68,9c1.68,5,6,8.25,6,12.79a3.42,3.42,0,0,0,6.83.21,1,1,0,0,1,1.13-.88,11.38,11.38,0,0,0,1.9.15,11.38,11.38,0,0,0,1.9-.15,1,1,0,0,1,1.13.88,3.42,3.42,0,0,0,6.83-.21c0-4.54,4.32-7.77,6-12.79A20.46,20.46,0,0,0,38.33,18.82Z"/>
-  </svg>
+  <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+  <path d="M38.33,18.82c-.8-5.32-3.88-8.7-8.11-9.15a10.89,10.89,0,0,0-5.46,1,1,0,0,1-1.52-.89V5a1,1,0,0,0-2,0v4.75a1,1,0,0,1-1.52.89,10.89,10.89,0,0,0-5.46-1c-4.23.45-7.31,3.83-8.11,9.15a20.46,20.46,0,0,0,.68,9c1.68,5,6,8.25,6,12.79a3.42,3.42,0,0,0,6.83.21,1,1,0,0,1,1.13-.88,11.38,11.38,0,0,0,1.9.15,11.38,11.38,0,0,0,1.9-.15,1,1,0,0,1,1.13.88,3.42,3.42,0,0,0,6.83-.21c0-4.54,4.32-7.77,6-12.79A20.46,20.46,0,0,0,38.33,18.82Z"/>
+</svg>
 </div>
       <div class="message-bubble bot-bubble">${text}</div>
     `;
@@ -795,9 +796,9 @@ window.addEventListener("DOMContentLoaded", async () => {
         // Look for the line where you define botWrapper.innerHTML:
         botWrapper.innerHTML = `
       <div class="bot-avatar-small">
-      <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
-      <path d="M38.33,18.82c-.8-5.32-3.88-8.7-8.11-9.15a10.89,10.89,0,0,0-5.46,1,1,0,0,1-1.52-.89V5a1,1,0,0,0-2,0v4.75a1,1,0,0,1-1.52.89,10.89,10.89,0,0,0-5.46-1c-4.23.45-7.31,3.83-8.11,9.15a20.46,20.46,0,0,0,.68,9c1.68,5,6,8.25,6,12.79a3.42,3.42,0,0,0,6.83.21,1,1,0,0,1,1.13-.88,11.38,11.38,0,0,0,1.9.15,11.38,11.38,0,0,0,1.9-.15,1,1,0,0,1,1.13.88,3.42,3.42,0,0,0,6.83-.21c0-4.54,4.32-7.77,6-12.79A20.46,20.46,0,0,0,38.33,18.82Z"/>
-      </svg>
+      <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+  <path d="M38.33,18.82c-.8-5.32-3.88-8.7-8.11-9.15a10.89,10.89,0,0,0-5.46,1,1,0,0,1-1.52-.89V5a1,1,0,0,0-2,0v4.75a1,1,0,0,1-1.52.89,10.89,10.89,0,0,0-5.46-1c-4.23.45-7.31,3.83-8.11,9.15a20.46,20.46,0,0,0,.68,9c1.68,5,6,8.25,6,12.79a3.42,3.42,0,0,0,6.83.21,1,1,0,0,1,1.13-.88,11.38,11.38,0,0,0,1.9.15,11.38,11.38,0,0,0,1.9-.15,1,1,0,0,1,1.13.88,3.42,3.42,0,0,0,6.83-.21c0-4.54,4.32-7.77,6-12.79A20.46,20.46,0,0,0,38.33,18.82Z"/>
+</svg>
   </div>
     <div class="message-bubble bot-bubble">${replyContent}</div>
     `;
