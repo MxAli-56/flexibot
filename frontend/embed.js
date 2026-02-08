@@ -594,15 +594,27 @@ window.addEventListener("DOMContentLoaded", async () => {
       localStorage.setItem("flexibotSessionId", sessionId);
     }
 
-    // Append message helper
-    function appendMessage(who, text) {
-      const el = document.createElement("div");
-      el.className =
-        "message-bubble " + (who === "user" ? "user-bubble" : "bot-bubble");
-      el.textContent = text;
-      Messages.appendChild(el);
-      Messages.scrollTop = Messages.scrollHeight;
-    }
+function appendMessage(who, text) {
+  const wrapper = document.createElement("div");
+
+  if (who === "bot") {
+    wrapper.className = "bot-message-wrapper";
+    wrapper.innerHTML = `
+      <div class="bot-avatar-small">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 10.1c.2-1.5.9-3 2-4.1a5.1 5.1 0 0 1 7.1 0c1.1 1.1 1.8 2.6 2 4.1.2 1.4.7 2.7 1.4 3.9.7 1.2 1 2.6 1 4a2.5 2.5 0 0 1-5 0c0-1.2-.4-2.4-1.1-3.4-.4-.5-1-.9-1.7-.9h-.4c-.7 0-1.3.4-1.7.9-.7 1-1.1 2.2-1.1 3.4a2.5 2.5 0 0 1-5 0c0-1.4.3-2.8 1-4 .7-1.2 1.2-2.5 1.4-3.9Z"/></svg>
+      </div>
+      <div class="message-bubble bot-bubble">${text}</div>
+    `;
+  } else {
+    // User message stays simple
+    wrapper.className = "message-bubble user-bubble";
+    wrapper.style.alignSelf = "flex-end";
+    wrapper.textContent = text;
+  }
+
+  Messages.appendChild(wrapper);
+  Messages.scrollTop = Messages.scrollHeight;
+}
 
     // Typing indicator helper
     function showTyping() {
@@ -659,18 +671,23 @@ window.addEventListener("DOMContentLoaded", async () => {
         }
 
         // 3️⃣ Show AI reply
-        const botMsg = document.createElement("div");
-        botMsg.className = "message-bubble bot-bubble";
+        const botWrapper = document.createElement("div");
+        botWrapper.className = "bot-message-wrapper";
 
-        if (!res.ok || data.status === "error") {
-          botMsg.textContent =
-            data.reply ||
-            "⚠️ Sorry, I couldn't process your message. Please try again.";
-        } else {
-          botMsg.innerHTML = DOMPurify.sanitize(marked.parse(data.reply));
-        }
+        // Create the inner HTML with the icon and the bubble
+        const replyContent =
+          !res.ok || data.status === "error"
+            ? data.reply || "⚠️ Sorry, I couldn't process your message."
+            : DOMPurify.sanitize(marked.parse(data.reply));
 
-        typingEl.replaceWith(botMsg);
+        botWrapper.innerHTML = `
+  <div class="bot-avatar-small">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 10.1c.2-1.5.9-3 2-4.1a5.1 5.1 0 0 1 7.1 0c1.1 1.1 1.8 2.6 2 4.1.2 1.4.7 2.7 1.4 3.9.7 1.2 1 2.6 1 4a2.5 2.5 0 0 1-5 0c0-1.2-.4-2.4-1.1-3.4-.4-.5-1-.9-1.7-.9h-.4c-.7 0-1.3.4-1.7.9-.7 1-1.1 2.2-1.1 3.4a2.5 2.5 0 0 1-5 0c0-1.4.3-2.8 1-4 .7-1.2 1.2-2.5 1.4-3.9Z"/></svg>
+  </div>
+  <div class="message-bubble bot-bubble">${replyContent}</div>
+`;
+
+        typingEl.replaceWith(botWrapper);
         Messages.scrollTop = Messages.scrollHeight;
       } catch (err) {
         console.error("Frontend fetch error:", err.message);
