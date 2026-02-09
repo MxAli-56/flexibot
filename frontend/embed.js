@@ -286,13 +286,12 @@ window.addEventListener("DOMContentLoaded", async () => {
   display: inline-block; /* Kept for user messages only */
 }
 
-/* 1. Base Bubble Style */
+/* 1. Base Bubble Style - (PROTECTED: Gap fix is here) */
 .bot-bubble {
   display: block; 
   background-color: #e9ecef;
   color: #111;
   border-bottom-left-radius: 6px;
-  /* Balanced padding: Top 12, Sides 16, Bottom 4 */
   padding: 12px 16px 4px 16px; 
   margin: 0;
   line-height: 1.5;
@@ -300,44 +299,37 @@ window.addEventListener("DOMContentLoaded", async () => {
   white-space: normal; 
 }
 
-/* 2. Structural Spacing (p, ul, ol, div) */
-/* Justification: Increased margin-bottom to 12px to prevent the "shrunk" look 
-   between paragraphs and lists. Added !important to ensure lists obey this. */
+/* 2. Structural Spacing (Blocks) */
 .bot-bubble p, 
 .bot-bubble ul, 
 .bot-bubble ol, 
 .bot-bubble div {
   margin: 0 0 12px 0 !important; 
   display: block;
-  padding: 0;
 }
 
-/* 3. List Specifics - FORCING ALIGNMENT */
-/* Justification: Keeps real <ul> tags flush with the rest of the text. */
-.bot-bubble ul, .bot-bubble ol {
-  padding-left: 0; 
-  margin-left: 0;
-  list-style-type: none; 
+/* 3. List Item & Nested Alignment - (MERGED Rules) */
+/* This ensures <li> and internal <p> tags align and space out correctly */
+.bot-bubble li, 
+.bot-bubble li p {
+  margin: 0 0 8px 0 !important;
+  padding: 0 !important;
+  display: block; /* Changed to block to ensure the manual '-' stays in line */
+  list-style: none;
 }
 
-.bot-bubble li {
-  margin-bottom: 8px; /* Slightly more space between list items for readability */
-  padding-left: 0; 
-}
-
-/* 4. Bold Styling */
+/* 4. Bold Styling - Pure Pattern */
 .bot-bubble b, .bot-bubble strong {
   font-weight: 700 !important;
   color: #000;
 }
 
-/* 5. THE GAP KILLER (Last Word) */
-/* Justification: This remains UNCHANGED to protect our previous fix. 
-   It forces the very last element in the bubble to have zero margin. */
+/* 5. THE GAP KILLER (Last Word) - (PROTECTED: Do not move) */
 .bot-bubble > *:last-child,
 .bot-bubble p:last-child,
 .bot-bubble ul:last-child,
-.bot-bubble ol:last-child {
+.bot-bubble ol:last-child,
+.bot-bubble li:last-child {
   margin-bottom: 0 !important;
   padding-bottom: 0 !important;
 }

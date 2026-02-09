@@ -151,21 +151,12 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
         "<b>Dr. $1</b>",
       );
 
-      // 8. BOLD BULLET HEADINGS & UNIFY LISTS
-      // Justification: Bolds lines starting with dashes AND forces <li> tags
-      // to include a dash so the indentation and style match perfectly.
+      // 8. BOLD BULLET HEADINGS
+      // Justification: Pure pattern matching. Bolds any text immediately
+      // following a bullet point up to the first colon or tag break.
       aiReplyText = aiReplyText.replace(
-        /(?:^|<br\s*\/?>|<li>)\s*([-•*]\s*)?(.*?)([:\n<]|$)/gi,
-        (match, bullet, content, closer) => {
-          // Only process if there's actual content and it's not a greeting
-          if (!content.trim() || content.length > 60) return match;
-
-          const isListItem = match.toLowerCase().includes("<li>");
-          const prefix = isListItem ? "<li>" : "<br/>";
-
-          // We force the dash "-" here so even real <li> tags get one
-          return `${prefix}<b>- ${content.trim()}</b>${closer}`;
-        },
+        /([-•*]\s*)([^<:\n]+)/gi,
+        "$1<b>$2</b>",
       );
 
       // 9. CONVERT MARKDOWN BOLD TO HTML
