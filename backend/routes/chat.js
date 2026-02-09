@@ -212,9 +212,10 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
       aiReplyText = aiReplyText.replace(/(<br\s*\/?>){3,}/gi, "<br/><br/>");
 
       // 17. THE ULTIMATE GAP TERMINATOR
-      // Justification: We are stripping every possible variation of a
-      // trailing break so the HTML ends exactly at the last character.
-      aiReplyText = aiReplyText.trim().replace(/(<br\s*\/?>|\n|\s)+$/gi, "");
+      // Justification: Cleans string, then specifically targets any HTML line breaks
+      // at the very end of the string.
+      aiReplyText = aiReplyText.trim();
+      aiReplyText = aiReplyText.replace(/(<br\s*\/?>|\n|\s)+$/gi, "");
     }
 
     // 8️⃣ Save & Respond (Using the now cleaned aiReplyText)
