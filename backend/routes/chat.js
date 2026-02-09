@@ -207,14 +207,14 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
         "$1<br/><br/>$2",
       );
 
-      // 16. PREVENT TRIPLE BREAKS
-      // Justification: Cleans up any accidental "gap stacking" from previous steps.
+      // 16. PREVENT TRIPLE BREAKS & CLEAN INNER BREAKS
+      // Justification: Cleans up any accidental "gap stacking".
       aiReplyText = aiReplyText.replace(/(<br\s*\/?>){3,}/gi, "<br/><br/>");
 
-      // 17. FINAL CLEANUP (THE GAP KILLER)
-      // Justification: The 'Nuclear' trim. It removes all trailing <br/> tags and
-      // whitespace so the bubble wraps perfectly around the last word.
-      aiReplyText = aiReplyText.trim().replace(/(<br\s*\/?>)+$/gi, "");
+      // 17. THE ULTIMATE GAP TERMINATOR
+      // Justification: We are stripping every possible variation of a
+      // trailing break so the HTML ends exactly at the last character.
+      aiReplyText = aiReplyText.trim().replace(/(<br\s*\/?>|\n|\s)+$/gi, "");
     }
 
     // 8️⃣ Save & Respond (Using the now cleaned aiReplyText)

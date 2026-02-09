@@ -304,13 +304,15 @@ window.addEventListener("DOMContentLoaded", async () => {
   color: #000;
 }
 
-/* 3. General Spacing for Elements */
-/* Consolidated p, ul, ol, and div to save space */
+/* 3. General Spacing & Paragraphs */
+/* Combined your two p definitions into one clean block */
 .bot-bubble p, 
 .bot-bubble ul, 
 .bot-bubble ol, 
 .bot-bubble div {
-  margin-bottom: 12px;
+  display: block;
+  margin-block-start: 0;
+  margin-bottom: 12px; 
 }
 
 /* 4. List Specifics */
@@ -323,10 +325,12 @@ window.addEventListener("DOMContentLoaded", async () => {
   margin-bottom: 8px; 
 }
 
-/* 5. THE GAP KILLER (Always keep this at the bottom) */
-/* Justification: This ensures that no matter what margins were added above, 
-   the very last element in the bubble will have zero bottom spacing. */
-.bot-bubble > *:last-child {
+/* 5. THE GAP KILLER (The Absolute Last Word) */
+/* Justification: By putting this at the bottom, we ensure it overrides 
+   everything above it for the very last element in the chat. */
+.bot-bubble > *:last-child,
+.bot-bubble p:last-child,
+.bot-bubble ul:last-child {
   margin-bottom: 0 !important;
   padding-bottom: 0 !important;
 }
