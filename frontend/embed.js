@@ -290,28 +290,35 @@ window.addEventListener("DOMContentLoaded", async () => {
   background-color: #e9ecef;
   color: #111;
   border-bottom-left-radius: 6px;
-  padding: 12px; /* Fixed your previous tight padding */
-  margin: 0;     /* Wrapper handles the spacing now */
+  padding: 12px 16px; /* Slightly wider side padding for better breathability */
+  margin: 0;
   line-height: 1.5;
   white-space: pre-wrap;
   word-wrap: break-word;
+  font-size: 14px;
 }
 
+/* FIX: Removes the gap at the bottom of every response */
+.bot-bubble > *:last-child {
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* FIX: Perfect Bullet Indentation */
 .bot-bubble ul, .bot-bubble ol {
-  padding-left: 20px;  /* indent bullets and numbers */
+  padding-left: 20px;
+  margin: 10px 0;
+  list-style-position: outside; /* Keeps text from wrapping under the bullet */
 }
 
 .bot-bubble li {
-  margin-bottom: 4px;  /* spacing between list items */
+  margin-bottom: 8px; /* Balanced spacing between items */
 }
 
-.bot-bubble h1, .bot-bubble h2, .bot-bubble h3,
-.bot-bubble h4, .bot-bubble h5, .bot-bubble h6 {
-  margin: 8px 0 4px 0;  /* spacing for headings */
-}
-
-.bot-bubble strong, .bot-bubble b {
-  font-weight: bold;    /* ensure bold works */
+/* Ensure bold tags are actually rendered heavy */
+.bot-bubble b, .bot-bubble strong {
+  font-weight: 700 !important;
+  color: #000;
 }
 
 .bot-logo-header, .bot-avatar-small {
