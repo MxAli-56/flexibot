@@ -306,6 +306,8 @@ window.addEventListener("DOMContentLoaded", async () => {
 .bot-bubble div {
   margin: 0 0 12px 0 !important; 
   display: block;
+  padding-left: 0 !important;  /* Remove left padding */
+  list-style: none !important;
 }
 
 /* 3. List Item & Nested Alignment - (MERGED Rules) */
