@@ -292,35 +292,37 @@ window.addEventListener("DOMContentLoaded", async () => {
   background-color: #e9ecef;
   color: #111;
   border-bottom-left-radius: 6px;
-  /* Top 12px, Right 16px, Bottom 4px, Left 16px */
+  /* Balanced padding: Top 12, Sides 16, Bottom 4 */
   padding: 12px 16px 4px 16px; 
   margin: 0;
   line-height: 1.5;
   font-size: 14px;
-  /* Fixed: Ignores invisible newlines in the HTML code */
   white-space: normal; 
 }
 
 /* 2. Structural Spacing (p, ul, ol, div) */
+/* Justification: Increased margin-bottom to 12px to prevent the "shrunk" look 
+   between paragraphs and lists. Added !important to ensure lists obey this. */
 .bot-bubble p, 
 .bot-bubble ul, 
 .bot-bubble ol, 
 .bot-bubble div {
-  margin: 0 0 10px 0; /* Standardized bottom margin */
+  margin: 0 0 12px 0 !important; 
   display: block;
   padding: 0;
 }
 
-/* 4. List Specifics - FORCING ALIGNMENT */
+/* 3. List Specifics - FORCING ALIGNMENT */
+/* Justification: Keeps real <ul> tags flush with the rest of the text. */
 .bot-bubble ul, .bot-bubble ol {
-  padding-left: 0; /* Resetting browser default */
+  padding-left: 0; 
   margin-left: 0;
-  list-style-type: none; /* We use manual dashes, so remove default bullets */
+  list-style-type: none; 
 }
 
 .bot-bubble li {
-  margin-bottom: 6px;
-  padding-left: 0; /* Keep it flush with the paragraphs above */
+  margin-bottom: 8px; /* Slightly more space between list items for readability */
+  padding-left: 0; 
 }
 
 /* 4. Bold Styling */
@@ -330,7 +332,8 @@ window.addEventListener("DOMContentLoaded", async () => {
 }
 
 /* 5. THE GAP KILLER (Last Word) */
-/* Targets the last child and specific last elements to force zero margin */
+/* Justification: This remains UNCHANGED to protect our previous fix. 
+   It forces the very last element in the bubble to have zero margin. */
 .bot-bubble > *:last-child,
 .bot-bubble p:last-child,
 .bot-bubble ul:last-child,

@@ -150,16 +150,21 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
         /Dr\.?\s*(Sameer Ahmed|Alizeh Shah|Faraz Khan|Sarah Mansoor)/gi,
         "<b>Dr. $1</b>",
       );
-      
-      // 8. BOLD BULLET HEADINGS (Enhanced)
-      // Justification: Bolds any text following a bullet point up to the end of the line
-      // or a colon, ensuring "Wedding Packages" etc. get bolded too.
+
+      // 8. BOLD BULLET HEADINGS & UNIFY LISTS
+      // Justification: Bolds lines starting with dashes AND forces <li> tags
+      // to include a dash so the indentation and style match perfectly.
       aiReplyText = aiReplyText.replace(
-        /(?:^|<br\s*\/?>|<li>)\s*[-•*]\s*(.*?)([:\n<]|$)/gi,
-        (match, p1, p2) => {
-          // If it's already a <li> tag from a real list, we just bold the content
-          const prefix = match.startsWith("<li>") ? "<li>" : "<br/>";
-          return `${prefix}<b>- ${p1.trim()}</b>${p2}`;
+        /(?:^|<br\s*\/?>|<li>)\s*([-•*]\s*)?(.*?)([:\n<]|$)/gi,
+        (match, bullet, content, closer) => {
+          // Only process if there's actual content and it's not a greeting
+          if (!content.trim() || content.length > 60) return match;
+
+          const isListItem = match.toLowerCase().includes("<li>");
+          const prefix = isListItem ? "<li>" : "<br/>";
+
+          // We force the dash "-" here so even real <li> tags get one
+          return `${prefix}<b>- ${content.trim()}</b>${closer}`;
         },
       );
 
