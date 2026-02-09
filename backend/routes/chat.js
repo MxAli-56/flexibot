@@ -145,92 +145,61 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
         "For more assistance",
       );
 
-      // 7. FIX DOCTOR NAMES - Bold the name only
-      aiReplyText = aiReplyText.replace(
-        /Dr\.?\s*(Sameer Ahmed|Alizeh Shah|Faraz Khan|Sarah Mansoor)/gi,
-        "<b>Dr. $1</b>",
-      );
+//7. FIX DOCTOR NAMES - Bold the name only
+aiReplyText = aiReplyText.replace(
+  /Dr\.?\s*(Sameer Ahmed|Alizeh Shah|Faraz Khan|Sarah Mansoor)/gi,
+  "<b>Dr. $1</b>"
+);
 
-      // 8. CLEAN & UNIFY LISTS
-      // 8. UNIFY LISTS AND BOLD HEADINGS
-      // Step A: Strip stars to stop the "everything is bold" glitch
-      aiReplyText = aiReplyText.replace(/\*/g, "");
+// 8. STRIP MARKDOWN STARS (prevents conflicts)
+aiReplyText = aiReplyText.replace(/\*\*/g, "");
 
-      // Step B: Force a dash and bold the heading
-      aiReplyText = aiReplyText.replace(
-        /(?:^|<br\s*\/?>|<li>)\s*([-•*]\s*)?([^<:\n]+)([:\n<]|$)/gi,
-        (match, bullet, content, closer) => {
-          if (content.trim().length > 60) return match;
+// 9. BOLD BULLET HEADINGS (short text before colon, max 50 chars)
+aiReplyText = aiReplyText.replace(
+  /^([-•*]\s*)?([A-Z][^:<\n]{2,50}):/gm,
+  "$1<b>$2</b>:"
+);
 
-          // Check if the original match had an <li> tag
-          const isLi = match.toLowerCase().includes("<li>");
-          const tag = isLi ? "<li>" : "<br/>";
+// 10. BOLD SERVICE NAMES (Pattern: ServiceName: PKR)
+aiReplyText = aiReplyText.replace(
+  /([-•*]\s*)?([A-Z&][^:]{3,60}):\s*PKR/g,
+  "$1<b>$2</b>: PKR"
+);
 
-          // Use the tag, force the dash, and bold the content
-          return `${tag}- <b>${content.trim()}</b>${closer}`;
-        },
-      );
+// 11. Fix spacing after "from" and "to"
+aiReplyText = aiReplyText.replace(/from(\d)/gi, "from $1");
+aiReplyText = aiReplyText.replace(/to(\d)/gi, "to $1");
 
-      // 9. CONVERT MARKDOWN BOLD TO HTML
-      // Justification: Your old code was deleting the bolding. This keeps the bolding
-      // by converting **text** into <b>text</b>.
-      aiReplyText = aiReplyText.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>");
+// 12. EMOJI CONTROL
+const emojiRegex = /😊|😔|👍|✨|🦷|💙/g;
+const isClosingMessage = /see you|have a (great|wonderful) day|goodbye|take care|you're welcome|thank you/i.test(aiReplyText);
+if (!isClosingMessage) {
+  aiReplyText = aiReplyText.replace(emojiRegex, "");
+} else {
+  aiReplyText = aiReplyText.replace(emojiRegex, "");
+  aiReplyText = aiReplyText.trim() + " 😊";
+}
 
-      // 10. Fix spacing after "from" and "to" (Keep your working code)
-      aiReplyText = aiReplyText.replace(/from(\d)/gi, "from $1");
-      aiReplyText = aiReplyText.replace(/to(\d)/gi, "to $1");
+// 13. DYNAMIC LINK CONVERSION
+aiReplyText = aiReplyText.replace(
+  /\[(.*?)\]\((.*?)\)/g,
+  '<a href="$2" target="_blank" style="color: #007bff; text-decoration: underline; font-weight: bold;">$1</a>'
+);
 
-      // 11. EMOJI CONTROL - YOUR ORIGINAL LOGIC - UNTOUCHED
-      const emojiRegex = /😊|😔|👍|✨|🦷|💙/g;
-      const isClosingMessage =
-        /see you|have a (great|wonderful) day|goodbye|take care|you're welcome|thank you/i.test(
-          aiReplyText,
-        );
-      if (!isClosingMessage) {
-        aiReplyText = aiReplyText.replace(emojiRegex, "");
-      } else {
-        aiReplyText = aiReplyText.replace(emojiRegex, "");
-        aiReplyText = aiReplyText.trim() + " 😊";
-      }
+// 14. PARAGRAPH SPACING - Add blank lines between sentences
+// But NOT after "Dr." to prevent name breaking
+aiReplyText = aiReplyText.replace(/([.!?])\s+(?=[A-Z])/g, "$1<br/><br/>");
+aiReplyText = aiReplyText.replace(/<b>Dr\.<\/b><br\/><br\/>/g, "<b>Dr. </b>");
 
-      // 12. DYNAMIC LINK CONVERSION - YOUR ORIGINAL LOGIC - UNTOUCHED
-      aiReplyText = aiReplyText.replace(
-        /\[(.*?)\]\((.*?)\)/g,
-        '<a href="$2" target="_blank" style="color: #007bff; text-decoration: underline; font-weight: bold;">$1</a>',
-      );
+// 15. BLANK LINE BEFORE FIRST BULLET
+aiReplyText = aiReplyText.replace(/([.:])(?!<br)(\s*[-•*]\s)/gi, "$1<br/><br/>$2");
 
-      // 13. PARAGRAPH SPACING - Add breaks ONLY at sentence ends (but NOT after "Dr.")
-      // This prevents "Dr.<br/><br/>Name" issue
-      aiReplyText = aiReplyText.replace(
-        /([.!?])\s+(?![A-Z][a-z]+\s+(?:Ahmed|Shah|Khan|Mansoor))/g,
-        "$1<br/><br/>",
-      );
+// 16. BLANK LINE BETWEEN BULLETS
+aiReplyText = aiReplyText.replace(/([-•*]\s[^\n]+)\n([-•*]\s)/g, "$1<br/><br/>$2");
 
-      // 14. BLANK LINE BEFORE FIRST BULLET
-      // Justification: Standardizes spacing before a list starts.
-      aiReplyText = aiReplyText.replace(
-        /([.:])\s*([-•*]\s)/gi,
-        "$1<br/><br/>$2",
-      );
-
-      // 15. BLANK LINE BETWEEN BULLETS
-      // Justification: Ensures list items aren't cramped together.
-      aiReplyText = aiReplyText.replace(
-        /([-•*]\s[^\n<]+)\n([-•*]\s)/g,
-        "$1<br/><br/>$2",
-      );
-
-      // 16. PREVENT TRIPLE BREAKS & CLEAN INNER BREAKS
-      // Justification: Cleans up any accidental "gap stacking".
-      aiReplyText = aiReplyText.replace(/(<br\s*\/?>){3,}/gi, "<br/><br/>");
-
-      // 17. THE ULTIMATE GAP TERMINATOR
-      // Justification: We trim the string, remove trailing breaks,
-      // AND then trim again to catch newlines that sneak in after the HTML tags.
-      aiReplyText = aiReplyText
-        .trim()
-        .replace(/(<br\s*\/?>|\n|\s)+$/gi, "")
-        .trim();
+// 17. CLEANUP - Max 2 breaks, trim trailing breaks
+aiReplyText = aiReplyText.replace(/(<br\s*\/?>){3,}/gi, "<br/><br/>");
+aiReplyText = aiReplyText.trim().replace(/(<br\s*\/?>|\n|\s)+$/gi, "").trim();
     }
 
     // 8️⃣ Save & Respond (Using the now cleaned aiReplyText)
