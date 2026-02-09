@@ -151,17 +151,17 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
         "<b>Dr. $1</b>",
       );
 
-      // 8. BOLD BULLET HEADINGS (Fixes the Bold & Dash issue)
-      // We look for optional dash/stars and capture the heading name.
-      // We force a "-" at the start to ensure all 3 headings have it.
+      // This captures ANY word followed by a colon at the start of a line/break and bolds it.
+      // Example: "- Immediate Actions:" becomes "<b>- Immediate Actions:</b>"
       aiReplyText = aiReplyText.replace(
-        /[-•*]?\s*(?:\*\*)?(Availability|Specialization|Services|Speciality)(?:\*\*)?(:)/gi,
-        "<b>- $1</b>$2",
+        /(?:^|<br\s*\/?>)\s*[-•*]\s*(.*?):/gi,
+        (match, p1) => `<br/><b>- ${p1}:</b>`,
       );
 
-      // 9. CLEAN REMAINING MARKDOWN - Moved slightly down to not interfere with headings
-      aiReplyText = aiReplyText.replace(/\*\*(.*?)\*\*/g, "$1");
-      aiReplyText = aiReplyText.replace(/\*\*/g, ""); // Catch any stray lone stars
+      // 9. CONVERT MARKDOWN BOLD TO HTML
+      // Justification: Your old code was deleting the bolding. This keeps the bolding
+      // by converting **text** into <b>text</b>.
+      aiReplyText = aiReplyText.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>");
 
       // 10. Fix spacing after "from" and "to" (Keep your working code)
       aiReplyText = aiReplyText.replace(/from(\d)/gi, "from $1");
@@ -193,26 +193,25 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
         "$1<br/><br/>",
       );
 
-      // 14. BLANK LINE BEFORE FIRST BULLET (after text ending with colon or period)
+      // 14-17. CLEAN SPACING & RE-FORMATTING
+      // Justification: Consolidates multiple spacing rules into one to prevent "gap-stacking".
+      // It also trims any trailing breaks to fix the "Unusual Bottom Gap" issue.
+
+      // Step A: Standardize spacing before bullets (ensure exactly two breaks)
       aiReplyText = aiReplyText.replace(
         /([.:])\s*([-•*]\s)/gi,
         "$1<br/><br/>$2",
       );
 
-      // 15. BLANK LINE BETWEEN BULLETS
+      // Step B: Standardize spacing between bullets
       aiReplyText = aiReplyText.replace(
-        /([-•*]\s[^\n]+)\n([-•*]\s)/g,
+        /([-•*]\s[^\n<]+)\n([-•*]\s)/g,
         "$1<br/><br/>$2",
       );
 
-      // 16. BLANK LINE AFTER LAST BULLET (before sentence starting with capital)
-      aiReplyText = aiReplyText.replace(
-        /([-•*]\s[^\n]+)\n([A-Z])/g,
-        "$1<br/><br/>$2",
-      );
-
-      // 17. FINAL CLEANUP - Remove triple breaks, keep max 2
+      // Step C: Global cleanup - prevent triple breaks and trim the very end of the message
       aiReplyText = aiReplyText.replace(/(<br\s*\/?>){3,}/gi, "<br/><br/>");
+      aiReplyText = aiReplyText.trim().replace(/(<br\s*\/?>)+$/gi, "");
     }
 
     // 8️⃣ Save & Respond (Using the now cleaned aiReplyText)
