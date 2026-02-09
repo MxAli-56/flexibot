@@ -286,48 +286,54 @@ window.addEventListener("DOMContentLoaded", async () => {
   display: inline-block; /* Kept for user messages only */
 }
 
-/* Bot bubble - Unique styles */
+/* 1. Base Bubble Style */
 .bot-bubble {
-  display: block; /* Allows internal <p> and <ul> to behave correctly */
+  display: block; 
   background-color: #e9ecef;
   color: #111;
   border-bottom-left-radius: 6px;
-  padding: 12px 16px; 
+  /* Top 12px, Right 16px, Bottom 4px, Left 16px */
+  padding: 12px 16px 4px 16px; 
   margin: 0;
   line-height: 1.5;
   font-size: 14px;
-  /* white-space: pre-wrap; <- Removed this because we use <br> and <p> now */
+  /* Fixed: Ignores invisible newlines in the HTML code */
+  white-space: normal; 
 }
 
-/* 2. Bold Text Styling */
-.bot-bubble b, .bot-bubble strong {
-  font-weight: 700 !important;
-  color: #000;
-}
-
-/* Spacing & Paragraphs */
+/* 2. Structural Spacing (p, ul, ol, div) */
 .bot-bubble p, 
 .bot-bubble ul, 
 .bot-bubble ol, 
 .bot-bubble div {
-  margin: 0 0 12px 0; /* Top 0, Bottom 12px */
+  margin: 0 0 10px 0; /* Standardized bottom margin */
+  display: block;
 }
 
-/* 4. List Specifics */
+/* 3. List Specifics */
 .bot-bubble ul, .bot-bubble ol {
   padding-left: 20px;
   list-style-position: outside; 
 }
 
 .bot-bubble li {
-  margin-bottom: 8px; 
+  margin-bottom: 6px; 
 }
 
-/* THE GAP KILLER (Keep at bottom) */
+/* 4. Bold Styling */
+.bot-bubble b, .bot-bubble strong {
+  font-weight: 700 !important;
+  color: #000;
+}
+
+/* 5. THE GAP KILLER (Last Word) */
+/* Targets the last child and specific last elements to force zero margin */
 .bot-bubble > *:last-child,
 .bot-bubble p:last-child,
-.bot-bubble ul:last-child {
+.bot-bubble ul:last-child,
+.bot-bubble ol:last-child {
   margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
 }
 
 .bot-logo-header, .bot-avatar-small {
