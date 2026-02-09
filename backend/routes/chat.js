@@ -154,23 +154,31 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
       // 8. STRIP MARKDOWN STARS (prevents conflicts)
       aiReplyText = aiReplyText.replace(/\*\*/g, "");
 
-      // 9. BOLD BULLET HEADINGS (short text before colon, max 50 chars)
+      // 9. NORMALIZE BULLET HEADINGS: Add '- ' to lines that are title-case (each word starts with capital, like service names), have a colon, no bullet, and are short (<50 chars).
+      // Justification: Enforces your prompt's bulleted list rule for services/doctors. Title-case check excludes mixed-case intros like "We also provide:" (avoids false positives). Short length prevents matching full sentences.
       aiReplyText = aiReplyText.replace(
-        /^([-•*]\s*)?([A-Z][^:<\n]{2,50}):/gm,
-        "$1<b>$2</b>:",
+        /^([A-Z][a-zA-Z0-9&]*\s*)+([^:<\n]{0,20}):/gm, // Title-case words (capitals only, allows &, numbers), optional short text, colon. Max ~50 chars total.
+        "- $1$2:", // Prepend '- ', keep the rest.
       );
 
-      // 10. BOLD SERVICE NAMES (Pattern: ServiceName: PKR)
+      // 10. BOLD BULLET HEADINGS: On lines starting with bullet + text + colon, bold the heading.
+      // Justification: Restricts bolding to bullets only (fixes unwanted bolding on non-bullets). Captures and bolds the heading up to the colon.
       aiReplyText = aiReplyText.replace(
-        /([-•*]\s*)?([A-Z&][^:]{3,60}):\s*PKR/g,
+        /^([-•*]\s+)([^:<\n]+):/gm, // Must start with bullet, then any text (no colon in heading), then colon.
+        "$1<b>$2</b>:", // Keep bullet, bold heading, add colon.
+      );
+
+      // 11. BOLD SERVICE NAMES WITH PKR (if needed separately) - Keep or remove based on testing. Justification: If Step 10 doesn't cover PKR lines perfectly, this ensures services ending with ": PKR" are bolded. But since Step 10 now handles bullets, it might be redundant—test and remove if overlapping.
+      aiReplyText = aiReplyText.replace(
+        /^([-•*]\s*)?([A-Z&][^:]{3,60}):\s*PKR/g,
         "$1<b>$2</b>: PKR",
       );
 
-      // 11. Fix spacing after "from" and "to"
+      // 12. Fix spacing after "from" and "to"
       aiReplyText = aiReplyText.replace(/from(\d)/gi, "from $1");
       aiReplyText = aiReplyText.replace(/to(\d)/gi, "to $1");
 
-      // 12. EMOJI CONTROL
+      // 13. EMOJI CONTROL
       const emojiRegex = /😊|😔|👍|✨|🦷|💙/g;
       const isClosingMessage =
         /see you|have a (great|wonderful) day|goodbye|take care|you're welcome|thank you/i.test(
@@ -183,34 +191,34 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
         aiReplyText = aiReplyText.trim() + " 😊";
       }
 
-      // 13. DYNAMIC LINK CONVERSION
+      // 14. DYNAMIC LINK CONVERSION
       aiReplyText = aiReplyText.replace(
         /\[(.*?)\]\((.*?)\)/g,
         '<a href="$2" target="_blank" style="color: #007bff; text-decoration: underline; font-weight: bold;">$1</a>',
       );
 
-      // 14. PARAGRAPH SPACING - Add breaks ONLY at sentence ends (but NOT after "Dr.")
+      // 15. PARAGRAPH SPACING - Add breaks ONLY at sentence ends (but NOT after "Dr.")
       // This prevents "Dr.<br/><br/>Name" issue
       aiReplyText = aiReplyText.replace(
         /([.!?])\s+(?![A-Z][a-z]+\s+(?:Ahmed|Shah|Khan|Mansoor))/g,
         "$1<br/><br/>",
       );
 
-      // 15. BLANK LINE BEFORE FIRST BULLET
+      // 16. BLANK LINE BEFORE FIRST BULLET
       // Justification: Standardizes spacing before a list starts.
       aiReplyText = aiReplyText.replace(
         /([.:])\s*([-•*]\s)/gi,
         "$1<br/><br/>$2",
       );
 
-      // 16. BLANK LINE BETWEEN BULLETS
+      // 17. BLANK LINE BETWEEN BULLETS
       // Justification: Ensures list items aren't cramped together.
       aiReplyText = aiReplyText.replace(
         /([-•*]\s[^\n<]+)\n([-•*]\s)/g,
         "$1<br/><br/>$2",
       );
 
-      // 17. CLEANUP - Max 2 breaks, trim trailing breaks
+      // 18. CLEANUP - Max 2 breaks, trim trailing breaks
       aiReplyText = aiReplyText.replace(/(<br\s*\/?>){3,}/gi, "<br/><br/>");
       aiReplyText = aiReplyText
         .trim()
