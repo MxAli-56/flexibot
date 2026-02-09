@@ -193,24 +193,27 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
         "$1<br/><br/>",
       );
 
-      // 14-17. CLEAN SPACING & RE-FORMATTING
-      // Justification: Consolidates multiple spacing rules into one to prevent "gap-stacking".
-      // It also trims any trailing breaks to fix the "Unusual Bottom Gap" issue.
-
-      // Step A: Standardize spacing before bullets (ensure exactly two breaks)
+      // 14. BLANK LINE BEFORE FIRST BULLET
+      // Justification: Standardizes spacing before a list starts.
       aiReplyText = aiReplyText.replace(
         /([.:])\s*([-•*]\s)/gi,
         "$1<br/><br/>$2",
       );
 
-      // Step B: Standardize spacing between bullets
+      // 15. BLANK LINE BETWEEN BULLETS
+      // Justification: Ensures list items aren't cramped together.
       aiReplyText = aiReplyText.replace(
         /([-•*]\s[^\n<]+)\n([-•*]\s)/g,
         "$1<br/><br/>$2",
       );
 
-      // Step C: Global cleanup - prevent triple breaks and trim the very end of the message
+      // 16. PREVENT TRIPLE BREAKS
+      // Justification: Cleans up any accidental "gap stacking" from previous steps.
       aiReplyText = aiReplyText.replace(/(<br\s*\/?>){3,}/gi, "<br/><br/>");
+
+      // 17. FINAL CLEANUP (THE GAP KILLER)
+      // Justification: The 'Nuclear' trim. It removes all trailing <br/> tags and
+      // whitespace so the bubble wraps perfectly around the last word.
       aiReplyText = aiReplyText.trim().replace(/(<br\s*\/?>)+$/gi, "");
     }
 

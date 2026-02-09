@@ -285,12 +285,12 @@ window.addEventListener("DOMContentLoaded", async () => {
   border-bottom-right-radius: 6px;
 }
 
-/* Bot bubble (gray, left) */
+/* 1. Base Bubble Styles */
 .bot-bubble {
   background-color: #e9ecef;
   color: #111;
   border-bottom-left-radius: 6px;
-  padding: 12px 16px; /* Slightly wider side padding for better breathability */
+  padding: 12px 16px; 
   margin: 0;
   line-height: 1.5;
   white-space: pre-wrap;
@@ -298,27 +298,37 @@ window.addEventListener("DOMContentLoaded", async () => {
   font-size: 14px;
 }
 
-/* FIX: Removes the gap at the bottom of every response */
-.bot-bubble > *:last-child {
-  margin-bottom: 0 !important;
-  padding-bottom: 0 !important;
-}
-
-/* FIX: Perfect Bullet Indentation */
-.bot-bubble ul, .bot-bubble ol {
-  padding-left: 20px;
-  margin: 10px 0;
-  list-style-position: outside; /* Keeps text from wrapping under the bullet */
-}
-
-.bot-bubble li {
-  margin-bottom: 8px; /* Balanced spacing between items */
-}
-
-/* Ensure bold tags are actually rendered heavy */
+/* 2. Bold Text Styling */
 .bot-bubble b, .bot-bubble strong {
   font-weight: 700 !important;
   color: #000;
+}
+
+/* 3. General Spacing for Elements */
+/* Consolidated p, ul, ol, and div to save space */
+.bot-bubble p, 
+.bot-bubble ul, 
+.bot-bubble ol, 
+.bot-bubble div {
+  margin-bottom: 12px;
+}
+
+/* 4. List Specifics */
+.bot-bubble ul, .bot-bubble ol {
+  padding-left: 20px;
+  list-style-position: outside; 
+}
+
+.bot-bubble li {
+  margin-bottom: 8px; 
+}
+
+/* 5. THE GAP KILLER (Always keep this at the bottom) */
+/* Justification: This ensures that no matter what margins were added above, 
+   the very last element in the bubble will have zero bottom spacing. */
+.bot-bubble > *:last-child {
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
 }
 
 .bot-logo-header, .bot-avatar-small {
