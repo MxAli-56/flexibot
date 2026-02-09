@@ -308,16 +308,19 @@ window.addEventListener("DOMContentLoaded", async () => {
 .bot-bubble div {
   margin: 0 0 10px 0; /* Standardized bottom margin */
   display: block;
+  padding: 0;
 }
 
-/* 3. List Specifics */
+/* 4. List Specifics - FORCING ALIGNMENT */
 .bot-bubble ul, .bot-bubble ol {
-  padding-left: 20px;
-  list-style-position: outside; 
+  padding-left: 0; /* Resetting browser default */
+  margin-left: 0;
+  list-style-type: none; /* We use manual dashes, so remove default bullets */
 }
 
 .bot-bubble li {
-  margin-bottom: 6px; 
+  margin-bottom: 6px;
+  padding-left: 0; /* Keep it flush with the paragraphs above */
 }
 
 /* 4. Bold Styling */
