@@ -151,27 +151,15 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
         "<b>Dr. $1</b>",
       );
 
-      // 8. STRIP MARKDOWN STARS (prevents conflicts)
-      aiReplyText = aiReplyText.replace(/\*\*/g, "");
+      // 8. STRIP MARKDOWN STARS (Stops the bolding glitch)
+      // Justification: Removes all ** so the AI's messy bolding doesn't break the UI.
+      aiReplyText = aiReplyText.replace(/\*/g, "");
 
-      // 9. NORMALIZE BULLET HEADINGS: Add '- ' to lines that are title-case (each word starts with capital, like service names), have a colon, no bullet, and are short (<50 chars).
-      // Justification: Enforces your prompt's bulleted list rule for services/doctors. Title-case check excludes mixed-case intros like "We also provide:" (avoids false positives). Short length prevents matching full sentences.
+      // 10. BOLD SERVICE TITLES (Only if they have a colon + price)
+      // Justification: Bolds "Pro-Scaling:" if followed by PKR, otherwise leaves it alone.
       aiReplyText = aiReplyText.replace(
-        /^([A-Z][a-zA-Z0-9&]*\s*)+([^:<\n]{0,20}):/gm, // Title-case words (capitals only, allows &, numbers), optional short text, colon. Max ~50 chars total.
-        "- $1$2:", // Prepend '- ', keep the rest.
-      );
-
-      // 10. BOLD BULLET HEADINGS: On lines starting with bullet + text + colon, bold the heading.
-      // Justification: Restricts bolding to bullets only (fixes unwanted bolding on non-bullets). Captures and bolds the heading up to the colon.
-      aiReplyText = aiReplyText.replace(
-        /^([-•*]\s+)([^:<\n]+):/gm, // Must start with bullet, then any text (no colon in heading), then colon.
-        "$1<b>$2</b>:", // Keep bullet, bold heading, add colon.
-      );
-
-      // 11. BOLD SERVICE NAMES WITH PKR (if needed separately) - Keep or remove based on testing. Justification: If Step 10 doesn't cover PKR lines perfectly, this ensures services ending with ": PKR" are bolded. But since Step 10 now handles bullets, it might be redundant—test and remove if overlapping.
-      aiReplyText = aiReplyText.replace(
-        /^([-•*]\s*)?([A-Z&][^:]{3,60}):\s*PKR/g,
-        "$1<b>$2</b>: PKR",
+        /^([^:<>\n]+):(?=\s*PKR)/gm,
+        "<b>$1:</b>",
       );
 
       // 12. Fix spacing after "from" and "to"

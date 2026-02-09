@@ -306,21 +306,21 @@ window.addEventListener("DOMContentLoaded", async () => {
 .bot-bubble div {
   margin: 0 0 12px 0 !important; 
   display: block;
-  padding: 0 !important;
-  list-style: none !important;
+  padding: 0 !important; /* Forces <ul> to have no default browser padding */
 }
 
 /* 3. List Item & Nested Alignment */
-/* Justification: Forces <li>, <ul> and internal <p> tags to have ZERO 
-   indentation and matching 12px bottom margins to match paragraphs. */
+/* Justification: This is the fix for the "shit indentation." 
+   It forces list items to align exactly with paragraphs. */
 .bot-bubble ul, 
 .bot-bubble li, 
 .bot-bubble li p {
-  margin: 0 0 12px 0 !important;
+  margin: 0 0 8px 0 !important;
   padding: 0 !important;
   display: block !important;
   list-style: none !important;
   text-indent: 0 !important;
+  margin-left: 0 !important; /* Fixes the shift-to-the-right issue */
 }
 
 /* 4. Bold Styling - Pure Pattern */
