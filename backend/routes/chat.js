@@ -150,12 +150,17 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
         /Dr\.?\s*(Sameer Ahmed|Alizeh Shah|Faraz Khan|Sarah Mansoor)/gi,
         "<b>Dr. $1</b>",
       );
-
-      // This captures ANY word followed by a colon at the start of a line/break and bolds it.
-      // Example: "- Immediate Actions:" becomes "<b>- Immediate Actions:</b>"
+      
+      // 8. BOLD BULLET HEADINGS (Enhanced)
+      // Justification: Bolds any text following a bullet point up to the end of the line
+      // or a colon, ensuring "Wedding Packages" etc. get bolded too.
       aiReplyText = aiReplyText.replace(
-        /(?:^|<br\s*\/?>)\s*[-•*]\s*(.*?):/gi,
-        (match, p1) => `<br/><b>- ${p1}:</b>`,
+        /(?:^|<br\s*\/?>|<li>)\s*[-•*]\s*(.*?)([:\n<]|$)/gi,
+        (match, p1, p2) => {
+          // If it's already a <li> tag from a real list, we just bold the content
+          const prefix = match.startsWith("<li>") ? "<li>" : "<br/>";
+          return `${prefix}<b>- ${p1.trim()}</b>${p2}`;
+        },
       );
 
       // 9. CONVERT MARKDOWN BOLD TO HTML
@@ -214,7 +219,10 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
       // 17. THE ULTIMATE GAP TERMINATOR
       // Justification: We trim the string, remove trailing breaks,
       // AND then trim again to catch newlines that sneak in after the HTML tags.
-      aiReplyText = aiReplyText.trim().replace(/(<br\s*\/?>|\n|\s)+$/gi, "").trim();
+      aiReplyText = aiReplyText
+        .trim()
+        .replace(/(<br\s*\/?>|\n|\s)+$/gi, "")
+        .trim();
     }
 
     // 8️⃣ Save & Respond (Using the now cleaned aiReplyText)
