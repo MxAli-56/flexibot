@@ -267,35 +267,36 @@ window.addEventListener("DOMContentLoaded", async () => {
   transform: scale(1.15) rotate(-10deg); /* Slight "takeoff" tilt */
 }
 
-/* Base bubble style */
+/* Base bubble style - SHARED by user and bot */
 .message-bubble {
-  display: inline-block;
   padding: 10px 14px;
   border-radius: 14px;
   max-width: 75%;
   word-wrap: break-word;
   white-space: pre-wrap;
   line-height: 1.3;
+  /* Removed display: inline-block to allow proper block child behavior */
 }
 
-/* User bubble (blue, right) */
+/* User bubble - Unique styles */
 .user-bubble {
   background-color: #0d6efd;
   color: #fff;
   border-bottom-right-radius: 6px;
+  display: inline-block; /* Kept for user messages only */
 }
 
-/* 1. Base Bubble Styles */
+/* Bot bubble - Unique styles */
 .bot-bubble {
+  display: block; /* Allows internal <p> and <ul> to behave correctly */
   background-color: #e9ecef;
   color: #111;
   border-bottom-left-radius: 6px;
   padding: 12px 16px; 
   margin: 0;
   line-height: 1.5;
-  white-space: pre-wrap;
-  word-wrap: break-word;
   font-size: 14px;
+  /* white-space: pre-wrap; <- Removed this because we use <br> and <p> now */
 }
 
 /* 2. Bold Text Styling */
@@ -304,15 +305,12 @@ window.addEventListener("DOMContentLoaded", async () => {
   color: #000;
 }
 
-/* 3. General Spacing & Paragraphs */
-/* Combined your two p definitions into one clean block */
+/* Spacing & Paragraphs */
 .bot-bubble p, 
 .bot-bubble ul, 
 .bot-bubble ol, 
 .bot-bubble div {
-  display: block;
-  margin-block-start: 0;
-  margin-bottom: 12px; 
+  margin: 0 0 12px 0; /* Top 0, Bottom 12px */
 }
 
 /* 4. List Specifics */
@@ -325,14 +323,11 @@ window.addEventListener("DOMContentLoaded", async () => {
   margin-bottom: 8px; 
 }
 
-/* 5. THE GAP KILLER (The Absolute Last Word) */
-/* Justification: By putting this at the bottom, we ensure it overrides 
-   everything above it for the very last element in the chat. */
+/* THE GAP KILLER (Keep at bottom) */
 .bot-bubble > *:last-child,
 .bot-bubble p:last-child,
 .bot-bubble ul:last-child {
   margin-bottom: 0 !important;
-  padding-bottom: 0 !important;
 }
 
 .bot-logo-header, .bot-avatar-small {
