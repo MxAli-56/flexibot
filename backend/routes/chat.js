@@ -204,17 +204,17 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
         "$1<br/><br/>",
       );
 
-      // 16. BLANK LINE BEFORE FIRST BULLET
-      // Justification: Standardizes spacing before a list starts.
+      // 16. BLANK LINE BEFORE FIRST BULLET (Hybrid)
+      // Justification: Detects both manual bullets and HTML <li> tags to add spacing.
       aiReplyText = aiReplyText.replace(
-        /([.:])\s*([-•*]\s)/gi,
+        /([.:])\s*(<li>|[-•*]\s)/gi,
         "$1<br/><br/>$2",
       );
 
-      // 17. BLANK LINE BETWEEN BULLETS
-      // Justification: Ensures list items aren't cramped together.
+      // 17. BLANK LINE BETWEEN BULLETS (Hybrid)
+      // Justification: Adds spacing between <li> items and manual dash items consistently.
       aiReplyText = aiReplyText.replace(
-        /([-•*]\s[^\n<]+)\n([-•*]\s)/g,
+        /(<\/li>|[-•*]\s[^\n<]+)\s*(<li>|[-•*]\s)/gi,
         "$1<br/><br/>$2",
       );
 

@@ -306,18 +306,21 @@ window.addEventListener("DOMContentLoaded", async () => {
 .bot-bubble div {
   margin: 0 0 12px 0 !important; 
   display: block;
-  padding-left: 0 !important;  /* Remove left padding */
+  padding: 0 !important;
   list-style: none !important;
 }
 
-/* 3. List Item & Nested Alignment - (MERGED Rules) */
-/* This ensures <li> and internal <p> tags align and space out correctly */
+/* 3. List Item & Nested Alignment */
+/* Justification: Forces <li>, <ul> and internal <p> tags to have ZERO 
+   indentation and matching 12px bottom margins to match paragraphs. */
+.bot-bubble ul, 
 .bot-bubble li, 
 .bot-bubble li p {
-  margin: 0 0 8px 0 !important;
+  margin: 0 0 12px 0 !important;
   padding: 0 !important;
-  display: block; /* Changed to block to ensure the manual '-' stays in line */
-  list-style: none;
+  display: block !important;
+  list-style: none !important;
+  text-indent: 0 !important;
 }
 
 /* 4. Bold Styling - Pure Pattern */
