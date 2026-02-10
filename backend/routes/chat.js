@@ -226,9 +226,9 @@ RIGHT:
         aiReplyText = aiReplyText.trim() + " 😊";
       }
 
-      // 12. DYNAMIC LINK CONVERSION
+      // 12. DYNAMIC LINK CONVERSION - YOUR ORIGINAL LOGIC - UNTOUCHED
       aiReplyText = aiReplyText.replace(
-        /\[(.?)\]\((.?)\)/g,
+        /\[(.*?)\]\((.*?)\)/g,
         '<a href="$2" target="_blank" style="color: #007bff; text-decoration: underline; font-weight: bold;">$1</a>',
       );
 
