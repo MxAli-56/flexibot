@@ -83,7 +83,40 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
 === UI INSTRUCTIONS ===
 - Always use a double newline (\n\n) between different thoughts.
 - Use **Bold** for emphasis on doctors, times, and locations.
-- For bullet lists, use simple dashes (-) with single line breaks between items.
+- When listing multiple items (services, features, doctors, etc.), you MUST use HTML bullet format:
+
+<ul>
+<li>First item</li>
+<li>Second item</li>
+<li>Third item</li>
+...
+</ul>
+
+NEVER use manual dashes (-) or asterisks (*) for lists.
+ALWAYS use proper <ul><li> HTML tags.
+
+For emphasis, use <b>text</b> for bold (NOT **text**).
+
+Examples:
+
+WRONG:
+- Service 1
+- Service 2
+- Service 3
+
+RIGHT:
+<ul>
+<li>Service 1</li>
+<li>Service 2</li>
+<li>Service 3</li>
+...
+</ul>
+
+WRONG:
+**Dr. Sameer Ahmed**
+
+RIGHT:
+<b>Dr. Sameer Ahmed</b>
 `;
 
     // 6️⃣ Assembly
@@ -157,9 +190,24 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
         "$1<b>$2</b>: PKR",
       );
 
-      // 9. STRIP ALL MARKDOWN & MANUAL DASHES
-      aiReplyText = aiReplyText.replace(/\*\*/g, ""); // Remove markdown bold
-      aiReplyText = aiReplyText.replace(/^[-•*]\s+/gm, ""); // Remove manual bullets
+      // 9. FALLBACK: Convert manual bullets to HTML lists
+      aiReplyText = aiReplyText.replace(
+        /((?:^|\n)[-•*]\s+.+(?:\n[-•*]\s+.+)*)/gm,
+        function (match) {
+          const items = match
+            .trim()
+            .split(/\n/)
+            .map((line) => {
+              const cleaned = line.replace(/^[-•*]\s+/, "").trim();
+              return `<li>${cleaned}</li>`;
+            })
+            .join("");
+          return `<ul>${items}</ul>`;
+        },
+      );
+
+      // 9.5 Convert **bold** markdown to <b>bold</b>
+      aiReplyText = aiReplyText.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>");
 
       // 10. Fix spacing after "from" and "to"
       aiReplyText = aiReplyText.replace(/from(\d)/gi, "from $1");
