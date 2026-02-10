@@ -180,12 +180,16 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
 
       // 12. DYNAMIC LINK CONVERSION
       aiReplyText = aiReplyText.replace(
-        /\[(.*?)\]\((.*?)\)/g,
+        /\[(.?)\]\((.?)\)/g,
         '<a href="$2" target="_blank" style="color: #007bff; text-decoration: underline; font-weight: bold;">$1</a>',
       );
 
-      // 13. PARAGRAPH SPACING - Single line break between sentences
-      aiReplyText = aiReplyText.replace(/([.!?])\s+(?=[A-Z])/g, "$1<br/>");
+      // 13. PARAGRAPH SPACING - Add breaks ONLY at sentence ends (but NOT after "Dr.")
+      // This prevents "Dr.<br/><br/>Name" issue
+      aiReplyText = aiReplyText.replace(
+        /([.!?])\s+(?![A-Z][a-z]+\s+(?:Ahmed|Shah|Khan|Mansoor))/g,
+        "$1<br/><br/>",
+      );
 
       // 14. FIX DR. NAME BREAKING (prevent Dr.<br/>Name)
       aiReplyText = aiReplyText.replace(/<b>Dr\.<\/b><br\/>/g, "<b>Dr. </b>");
