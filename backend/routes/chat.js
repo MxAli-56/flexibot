@@ -145,28 +145,27 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
         "For more assistance",
       );
 
-      //7. FIX DOCTOR NAMES - Bold the name only
+      // 7. FIX DOCTOR NAMES - Bold only
       aiReplyText = aiReplyText.replace(
         /Dr\.?\s*(Sameer Ahmed|Alizeh Shah|Faraz Khan|Sarah Mansoor)/gi,
         "<b>Dr. $1</b>",
       );
 
-      // 8. STRIP MARKDOWN STARS (Stops the bolding glitch)
-      // Justification: Removes all ** so the AI's messy bolding doesn't break the UI.
-      aiReplyText = aiReplyText.replace(/\*/g, "");
-
-      // 10. BOLD SERVICE TITLES (Only if they have a colon + price)
-      // Justification: Bolds "Pro-Scaling:" if followed by PKR, otherwise leaves it alone.
+      // 8. BOLD SERVICE NAMES (Pattern: "ServiceName: PKR")
       aiReplyText = aiReplyText.replace(
-        /^([^:<>\n]+):(?=\s*PKR)/gm,
-        "<b>$1:</b>",
+        /^([-•*]?\s*)([A-Z][^:]+):\s*PKR/gm,
+        "$1<b>$2</b>: PKR",
       );
 
-      // 12. Fix spacing after "from" and "to"
+      // 9. STRIP ALL MARKDOWN & MANUAL DASHES
+      aiReplyText = aiReplyText.replace(/\*\*/g, ""); // Remove markdown bold
+      aiReplyText = aiReplyText.replace(/^[-•*]\s+/gm, ""); // Remove manual bullets
+
+      // 10. Fix spacing after "from" and "to"
       aiReplyText = aiReplyText.replace(/from(\d)/gi, "from $1");
       aiReplyText = aiReplyText.replace(/to(\d)/gi, "to $1");
 
-      // 13. EMOJI CONTROL
+      // 11. EMOJI CONTROL
       const emojiRegex = /😊|😔|👍|✨|🦷|💙/g;
       const isClosingMessage =
         /see you|have a (great|wonderful) day|goodbye|take care|you're welcome|thank you/i.test(
@@ -179,35 +178,22 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
         aiReplyText = aiReplyText.trim() + " 😊";
       }
 
-      // 14. DYNAMIC LINK CONVERSION
+      // 12. DYNAMIC LINK CONVERSION
       aiReplyText = aiReplyText.replace(
         /\[(.*?)\]\((.*?)\)/g,
         '<a href="$2" target="_blank" style="color: #007bff; text-decoration: underline; font-weight: bold;">$1</a>',
       );
 
-      // 15. PARAGRAPH SPACING - Add breaks ONLY at sentence ends (but NOT after "Dr.")
-      // This prevents "Dr.<br/><br/>Name" issue
-      aiReplyText = aiReplyText.replace(
-        /([.!?])\s+(?![A-Z][a-z]+\s+(?:Ahmed|Shah|Khan|Mansoor))/g,
-        "$1<br/><br/>",
-      );
+      // 13. PARAGRAPH SPACING - Single line break between sentences
+      aiReplyText = aiReplyText.replace(/([.!?])\s+(?=[A-Z])/g, "$1<br/>");
 
-      // 16. BLANK LINE BEFORE FIRST BULLET (Hybrid)
-      // Justification: Detects both manual bullets and HTML <li> tags to add spacing.
-      aiReplyText = aiReplyText.replace(
-        /([.:])\s*(<li>|[-•*]\s)/gi,
-        "$1<br/><br/>$2",
-      );
+      // 14. FIX DR. NAME BREAKING (prevent Dr.<br/>Name)
+      aiReplyText = aiReplyText.replace(/<b>Dr\.<\/b><br\/>/g, "<b>Dr. </b>");
 
-      // 17. BLANK LINE BETWEEN BULLETS (Hybrid)
-      // Justification: Adds spacing between <li> items and manual dash items consistently.
-      aiReplyText = aiReplyText.replace(
-        /(<\/li>|[-•*]\s[^\n<]+)\s*(<li>|[-•*]\s)/gi,
-        "$1<br/><br/>$2",
-      );
-
-      // 18. CLEANUP - Max 2 breaks, trim trailing breaks
+      // 15. REMOVE EXCESSIVE LINE BREAKS (max 2 = 1 blank line)
       aiReplyText = aiReplyText.replace(/(<br\s*\/?>){3,}/gi, "<br/><br/>");
+
+      // 16. FINAL CLEANUP
       aiReplyText = aiReplyText
         .trim()
         .replace(/(<br\s*\/?>|\n|\s)+$/gi, "")
