@@ -62,10 +62,6 @@ window.addEventListener("DOMContentLoaded", async () => {
   transition: transform 0.3s ease; /* Added for hover effect */
 }
 
-.flexibot-bubble > * {
-  position: relative;  /* Children position relative to bubble */
-}
-
 /* Added: Hover effect */
 .flexibot-bubble:hover {
   transform: scale(1.1);
@@ -531,7 +527,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   right: 60px;
   top: 50%;
   transform: translateY(-50%);
-  padding: 4px 10px;  /* ✅ Reduced vertical padding */
+  padding: 2px 10px;  /* ✅ Reduced vertical padding */
   font-size: 11px;    /* ✅ Slightly smaller font */
   white-space: nowrap;
   bottom: auto;
