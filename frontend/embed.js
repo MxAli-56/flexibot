@@ -525,21 +525,6 @@ window.addEventListener("DOMContentLoaded", async () => {
     bottom: auto;
   }
 
-/* Ultra-small phones (<380px) */
-@media (max-width: 380px) {
-  .flexibot-cta {
-    right: auto;
-    left: 50%;
-    transform: translateX(-50%);
-    top: auto;
-    bottom: 70px;
-    white-space: nowrap;  /* Keep text on one line */
-    max-width: calc(100vw - 40px); /* Prevent overflow */
-    text-overflow: ellipsis; /* Add ... if still too long */
-    overflow: hidden;
-  }
-}
-
   /* Chat window - SINGLE SOURCE OF TRUTH */
   .flexibot-window {
     width: 90%;
