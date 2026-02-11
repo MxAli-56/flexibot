@@ -504,25 +504,47 @@ window.addEventListener("DOMContentLoaded", async () => {
 
 /* ---------------- MOBILE (max-width: 480px) ---------------- */
 @media (max-width: 480px) {
-.flexibot-bubble {
-    width: 50px; /* Slightly larger than before for better thumb-target */
+  .flexibot-bubble {
+    width: 50px;
     height: 50px;
     font-size: 20px;
     bottom: 15px;
     right: 15px;
   }
   
+  /* ✅ FIXED: CTA is now VISIBLE on mobile with proper sizing */
   .flexibot-cta {
-    display: none; /* Hide pill on mobile for clean look */
+    display: block;
+    right: 70px; /* Closer to bubble on smaller screen */
+    padding: 6px 12px; /* Slightly smaller padding for mobile */
+    font-size: 12px; /* Slightly smaller text for mobile */
+    white-space: nowrap;
+    top: 50%;
+    transform: translateY(-50%);
+    bottom: auto;
+  }
+
+  /* ✅ NEW: For ultra-small phones (<380px) */
+  @media (max-width: 380px) {
+    .flexibot-cta {
+      right: auto;
+      left: 50%;
+      transform: translateX(-50%);
+      top: auto;
+      bottom: 70px; /* Above the bubble */
+    }
   }
 
   .flexibot-window {
     width: 90%;
     max-width: 320px;
-    height: 55%;
+    height: 60vh;
     max-height: 400px;
     bottom: 70px;
-    right: 5%;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    max-width: none;
   }
 
   #flexibot-messages {
@@ -547,11 +569,11 @@ window.addEventListener("DOMContentLoaded", async () => {
   }
 
   .flexibot-header {
-    font-size: 16px; /* prevent overflow on tiny screens */
+    font-size: 16px;
   }
 }
 
-/* ✅ Fix overflow & positioning */
+/* ✅ Fix overflow & positioning - KEEP THIS EXACTLY AS IS */
 .flexibot-bubble,
 .flexibot-window {
   position: fixed;
@@ -746,34 +768,34 @@ window.addEventListener("DOMContentLoaded", async () => {
       localStorage.setItem("flexibotSessionId", sessionId);
     }
 
-function appendMessage(who, text) {
-  const wrapper = document.createElement("div");
+    function appendMessage(who, text) {
+      const wrapper = document.createElement("div");
 
-  if (who === "bot") {
-    wrapper.className = "bot-message-wrapper";
-    wrapper.innerHTML = `
+      if (who === "bot") {
+        wrapper.className = "bot-message-wrapper";
+        wrapper.innerHTML = `
       <div class="bot-avatar-small">${toothIcon}</div>
       <div class="message-bubble bot-bubble">${text}</div>
     `;
-  } else {
-    // FIX: Give the user message a wrapper so the animation triggers
-    wrapper.className = "user-message-wrapper";
-    wrapper.innerHTML = `<div class="message-bubble user-bubble">${text}</div>`;
-  }
+      } else {
+        // FIX: Give the user message a wrapper so the animation triggers
+        wrapper.className = "user-message-wrapper";
+        wrapper.innerHTML = `<div class="message-bubble user-bubble">${text}</div>`;
+      }
 
-  Messages.appendChild(wrapper);
-  Messages.scrollTop = Messages.scrollHeight;
-}
+      Messages.appendChild(wrapper);
+      Messages.scrollTop = Messages.scrollHeight;
+    }
 
     // --- PLACE IT HERE ---
     async function sendGreeting() {
-    // Prevent duplicate greetings if user re-opens window in same session
-    if (Messages.children.length > 0) return;
+      // Prevent duplicate greetings if user re-opens window in same session
+      if (Messages.children.length > 0) return;
 
-    const clinicName = clientConfig.botName || "our clinic"; 
-    const greetingText = `Hi there! Welcome to ${clinicName}. How can I help you today?`;
+      const clinicName = clientConfig.botName || "our clinic";
+      const greetingText = `Hi there! Welcome to ${clinicName}. How can I help you today?`;
 
-    appendMessage("bot", greetingText);
+      appendMessage("bot", greetingText);
 
       const suggestions = [
         "Which dentist is available today?",
@@ -911,6 +933,74 @@ function appendMessage(who, text) {
         Messages.scrollTop = Messages.scrollHeight;
       }
     }
+
+    // ============================================
+    // MOBILE KEYBOARD HANDLER - Fixes keyboard hiding chat window
+    // ============================================
+    (function setupMobileKeyboardHandler() {
+      // Only run on mobile devices
+      if (window.innerWidth > 768) return;
+
+      // Try to get elements, retry if not found
+      function init() {
+        const chatWindow = document.querySelector(".flexibot-window");
+        const chatInput = document.querySelector(".flexibot-input input");
+        const chatBubble = document.querySelector(".flexibot-bubble");
+
+        if (!chatWindow || !chatInput) {
+          setTimeout(init, 500);
+          return;
+        }
+
+        // When input is focused (keyboard opens)
+        function onFocus() {
+          if (window.innerWidth > 768) return;
+
+          // Lift chat window up
+          chatWindow.style.bottom = "10px";
+          chatWindow.style.height = "50vh";
+
+          // Lift bubble up too
+          if (chatBubble) {
+            chatBubble.style.bottom = "10px";
+          }
+
+          console.log("📱 Mobile keyboard: window lifted");
+        }
+
+        // When input loses focus (keyboard closes)
+        function onBlur() {
+          if (window.innerWidth > 768) return;
+
+          // Restore original positions (empty string = use CSS default)
+          chatWindow.style.bottom = "";
+          chatWindow.style.height = "";
+
+          if (chatBubble) {
+            chatBubble.style.bottom = "";
+          }
+
+          console.log("📱 Mobile keyboard: window restored");
+        }
+
+        // Add listeners
+        chatInput.addEventListener("focus", onFocus);
+        chatInput.addEventListener("blur", onBlur);
+
+        // Handle orientation changes
+        window.addEventListener("resize", function () {
+          if (
+            window.innerWidth <= 768 &&
+            document.activeElement === chatInput
+          ) {
+            onFocus();
+          }
+        });
+      }
+
+      // Start the init process
+      init();
+    })();
 
     // Send on button click
     Send.addEventListener("click", sendMessage);
