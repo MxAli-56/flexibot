@@ -504,6 +504,7 @@ window.addEventListener("DOMContentLoaded", async () => {
 
 /* ---------------- MOBILE (max-width: 480px) ---------------- */
 @media (max-width: 480px) {
+  /* Bubble button */
   .flexibot-bubble {
     width: 50px;
     height: 50px;
@@ -512,86 +513,83 @@ window.addEventListener("DOMContentLoaded", async () => {
     right: 15px;
   }
   
-  /* ✅ FIXED: CTA is now VISIBLE on mobile with proper sizing */
+  /* CTA - visible on mobile */
   .flexibot-cta {
     display: block;
-    right: 70px; /* Closer to bubble on smaller screen */
-    padding: 6px 12px; /* Slightly smaller padding for mobile */
-    font-size: 12px; /* Slightly smaller text for mobile */
+    right: 70px;
+    padding: 6px 12px;
+    font-size: 12px;
     white-space: nowrap;
     top: 50%;
     transform: translateY(-50%);
     bottom: auto;
   }
 
-  /* ✅ NEW: For ultra-small phones (<380px) */
-  @media (max-width: 380px) {
-    .flexibot-cta {
-      right: auto;
-      left: 50%;
-      transform: translateX(-50%);
-      top: auto;
-      bottom: 70px; /* Above the bubble */
-    }
+/* Ultra-small phones (<380px) */
+@media (max-width: 380px) {
+  .flexibot-cta {
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
+    top: auto;
+    bottom: 70px;
+    white-space: nowrap;  /* Keep text on one line */
+    max-width: calc(100vw - 40px); /* Prevent overflow */
+    text-overflow: ellipsis; /* Add ... if still too long */
+    overflow: hidden;
   }
+}
 
+  /* Chat window - SINGLE SOURCE OF TRUTH */
   .flexibot-window {
     width: 90%;
     max-width: 320px;
     height: 60vh;
     max-height: 400px;
-    bottom: 70px;
+    bottom: 70px;  /* ← ONLY ONE bottom value */
     left: 50%;
     right: auto;
     transform: translateX(-50%);
-    max-width: none;
   }
 
+  /* Messages container */
   #flexibot-messages {
     padding: 8px;
     gap: 5px;
   }
 
+  /* Input area */
   .flexibot-input input,
   .flexibot-input button {
     font-size: 13px;
     padding: 5px 6px;
   }
 
+  /* Typing indicator */
   .typing-bubble {
     min-width: 45px;
     padding: 5px 8px;
   }
 
+  /* Message bubbles */
   .user-bubble,
   .bot-bubble {
     padding: 6px 10px;
   }
 
+  /* Header */
   .flexibot-header {
     font-size: 16px;
   }
 }
 
-/* ✅ Fix overflow & positioning - KEEP THIS EXACTLY AS IS */
+/* ✅ Fix overflow & positioning - KEEP THIS */
 .flexibot-bubble,
 .flexibot-window {
   position: fixed;
   max-width: 100vw;
   max-height: 100vh;
   box-sizing: border-box;
-}
-
-@media (max-width: 480px) {
-  .flexibot-window {
-    width: 90%;
-    height: 60vh;       
-    bottom: 60px;
-    left: 50%;          
-    right: auto;
-    transform: translateX(-50%);
-    max-width: none; /* remove limit so it adapts */
-  }
 }
 
 @keyframes cta-pulse {
@@ -935,13 +933,12 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
 
     // ============================================
-    // MOBILE KEYBOARD HANDLER - Fixes keyboard hiding chat window
+    // MOBILE KEYBOARD HANDLER - FIXED VERSION
     // ============================================
     (function setupMobileKeyboardHandler() {
       // Only run on mobile devices
       if (window.innerWidth > 768) return;
 
-      // Try to get elements, retry if not found
       function init() {
         const chatWindow = document.querySelector(".flexibot-window");
         const chatInput = document.querySelector(".flexibot-input input");
@@ -952,27 +949,29 @@ window.addEventListener("DOMContentLoaded", async () => {
           return;
         }
 
-        // When input is focused (keyboard opens)
         function onFocus() {
           if (window.innerWidth > 768) return;
 
-          // Lift chat window up
+          // ✅ FIXED: Use the SAME bottom value your CSS uses
+          // Your CSS says bottom: 70px on mobile
+          // When keyboard opens, move it to 10px
           chatWindow.style.bottom = "10px";
+
+          // ✅ Reduce height slightly to ensure it fits
           chatWindow.style.height = "50vh";
 
-          // Lift bubble up too
+          // ✅ Move bubble up too
           if (chatBubble) {
             chatBubble.style.bottom = "10px";
           }
 
-          console.log("📱 Mobile keyboard: window lifted");
+          console.log("📱 Keyboard open: window at bottom:10px");
         }
 
-        // When input loses focus (keyboard closes)
         function onBlur() {
           if (window.innerWidth > 768) return;
 
-          // Restore original positions (empty string = use CSS default)
+          // ✅ FIXED: Restore to CSS default (70px)
           chatWindow.style.bottom = "";
           chatWindow.style.height = "";
 
@@ -980,10 +979,14 @@ window.addEventListener("DOMContentLoaded", async () => {
             chatBubble.style.bottom = "";
           }
 
-          console.log("📱 Mobile keyboard: window restored");
+          console.log("📱 Keyboard closed: restored to CSS default");
         }
 
-        // Add listeners
+        // Clean up any existing listeners first (prevents duplicates)
+        chatInput.removeEventListener("focus", onFocus);
+        chatInput.removeEventListener("blur", onBlur);
+
+        // Add fresh listeners
         chatInput.addEventListener("focus", onFocus);
         chatInput.addEventListener("blur", onBlur);
 
@@ -998,7 +1001,6 @@ window.addEventListener("DOMContentLoaded", async () => {
         });
       }
 
-      // Start the init process
       init();
     })();
 
