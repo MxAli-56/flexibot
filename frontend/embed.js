@@ -101,6 +101,15 @@ window.addEventListener("DOMContentLoaded", async () => {
   z-index: 9999;
 }
 
+/* ✅ CRITICAL: Fix overflow & positioning - DO NOT REMOVE */
+.flexibot-bubble,
+.flexibot-window {
+  position: fixed;
+  max-width: 100vw;
+  max-height: 100vh;
+  box-sizing: border-box;
+}
+
 /* Container adjustments */
 .flexibot-header {
   display: flex;
@@ -504,7 +513,7 @@ window.addEventListener("DOMContentLoaded", async () => {
 
 /* ---------------- MOBILE (max-width: 480px) ---------------- */
 @media (max-width: 480px) {
-  /* Bubble button */
+  /* Bubble button - exactly like laptop, just smaller */
   .flexibot-bubble {
     width: 50px;
     height: 50px;
@@ -513,25 +522,25 @@ window.addEventListener("DOMContentLoaded", async () => {
     right: 15px;
   }
   
-  /* CTA - visible on mobile */
+  /* CTA - EXACT same positioning as laptop, just scaled */
   .flexibot-cta {
     display: block;
-    right: 70px;
+    right: 75px;        /* ← SAME as laptop */
+    top: 50%;           /* ← SAME as laptop */
+    transform: translateY(-50%); /* ← SAME as laptop */
     padding: 6px 12px;
     font-size: 12px;
     white-space: nowrap;
-    top: 50%;
-    transform: translateY(-50%);
     bottom: auto;
   }
 
-  /* Chat window - SINGLE SOURCE OF TRUTH */
+  /* Chat window */
   .flexibot-window {
     width: 90%;
     max-width: 320px;
     height: 60vh;
     max-height: 400px;
-    bottom: 70px;  /* ← ONLY ONE bottom value */
+    bottom: 70px;
     left: 50%;
     right: auto;
     transform: translateX(-50%);
@@ -566,15 +575,6 @@ window.addEventListener("DOMContentLoaded", async () => {
   .flexibot-header {
     font-size: 16px;
   }
-}
-
-/* ✅ Fix overflow & positioning - KEEP THIS */
-.flexibot-bubble,
-.flexibot-window {
-  position: fixed;
-  max-width: 100vw;
-  max-height: 100vh;
-  box-sizing: border-box;
 }
 
 @keyframes cta-pulse {
