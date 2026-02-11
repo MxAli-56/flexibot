@@ -526,16 +526,17 @@ window.addEventListener("DOMContentLoaded", async () => {
   }
   
   /* CTA - EXACT same positioning as laptop, just scaled */
-  .flexibot-cta {
-    display: block;
-    right: 75px;        /* ← SAME as laptop */
-    top: 50%;           /* ← SAME as laptop */
-    transform: translateY(-50%); /* ← SAME as laptop */
-    padding: 6px 12px;
-    font-size: 12px;
-    white-space: nowrap;
-    bottom: auto;
-  }
+.flexibot-cta {
+  display: block;
+  right: 60px;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 4px 10px;  /* ✅ Reduced vertical padding */
+  font-size: 11px;    /* ✅ Slightly smaller font */
+  white-space: nowrap;
+  bottom: auto;
+  line-height: 1.2;   /* ✅ Tighter line height */
+}
 
   /* Chat window */
   .flexibot-window {
