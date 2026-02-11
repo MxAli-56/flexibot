@@ -55,7 +55,6 @@ window.addEventListener("DOMContentLoaded", async () => {
   color: white;
   display: flex;
   align-items: center;
-  justify-content: center;
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(0,0,0,0.2); /* Updated shadow for depth */
   z-index: 2147483647;
