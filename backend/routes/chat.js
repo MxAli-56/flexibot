@@ -178,10 +178,11 @@ RIGHT:
         "For more assistance",
       );
 
-      // 7. FIX DOCTOR NAMES - Bold only
+      // 7. FIX DOCTOR NAMES - Dynamic pattern, no hardcoding
+      // Matches Dr/Dr. followed by 1-3 capitalized words (with optional initials)
       aiReplyText = aiReplyText.replace(
-        /Dr\.?\s*(Sameer Ahmed|Alizeh Shah|Faraz Khan|Sarah Mansoor)/gi,
-        "<b>Dr. $1</b>",
+        /Dr\.?\s+([A-Z][a-z]*\.?\s+){1,3}/gi,
+        (match) => `<b>${match}</b>`,
       );
 
       // 8. BOLD SERVICE NAMES (Pattern: "ServiceName: PKR")
