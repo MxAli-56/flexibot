@@ -120,6 +120,18 @@ window.addEventListener("DOMContentLoaded", async () => {
   border-radius: 0;
 }
 
+#flexibot-expand {
+ background: none; 
+ border: none; 
+ cursor: pointer; 
+ display: none; 
+ padding: 0; 
+ width: 36px; 
+ height: 36px; 
+ align-items: center; 
+ justify-content: center;">
+}
+
 /* Precise Close Button Styling */
 #flexibot-close {
     font-size: 28px !important;
@@ -667,7 +679,11 @@ window.addEventListener("DOMContentLoaded", async () => {
       </div>
     </div>
     <div style="display: flex; align-items: center; gap: 8px;">
-      <button id="flexibot-expand" style="background: none; border: none; color: white; font-size: 20px; cursor: pointer; display: none; padding: 0; width: 32px; height: 32px; align-items: center; justify-content: center;">⤢</button>
+      <button id="flexibot-expand">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M15 3h6v6M14 10l6-6M9 21H3v-6M10 14l-6 6"/>
+        </svg>
+        </button>
       <div id="flexibot-close" style="font-size: 28px; cursor: pointer; line-height: 1;">&times;</div>
     </div>
   </div>
@@ -691,41 +707,42 @@ window.addEventListener("DOMContentLoaded", async () => {
     const closeBtn = chatWindow.querySelector("#flexibot-close");
 
     // ============================================
-    // EXPAND BUTTON - Mobile only
+    // EXPAND BUTTON - Mobile only with SVG toggle
     // ============================================
     const expandBtn = document.getElementById("flexibot-expand");
 
     if (expandBtn) {
+      // Store original SVG HTML
+      const expandSVG = expandBtn.innerHTML;
+      const minimizeSVG = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14h6v6M10 10L4 4M20 10h-6V4M14 14l6 6"/></svg>`;
+
       // ✅ ONLY show on mobile
       if (window.innerWidth <= 768) {
         expandBtn.style.display = "flex";
       }
 
-      // Expand to 70vh on click
+      // Toggle between expand and minimize
       const handleExpandClick = (e) => {
         e.stopPropagation();
         e.preventDefault();
 
         const chatWindow = document.querySelector(".flexibot-window");
         if (chatWindow) {
-          chatWindow.style.height = "70vh";
+          if (chatWindow.style.height === "70vh") {
+            // Minimize
+            chatWindow.style.height = "50vh";
+            expandBtn.innerHTML = expandSVG; // Back to expand icon
+          } else {
+            // Expand
+            chatWindow.style.height = "70vh";
+            expandBtn.innerHTML = minimizeSVG; // Show minimize icon
+          }
           chatWindow.style.maxHeight = "none";
         }
       };
 
       expandBtn.onclick = handleExpandClick;
       expandBtn.ontouchstart = handleExpandClick;
-
-      // Hide during typing
-      const chatInput = document.querySelector(".flexibot-input input");
-      if (chatInput) {
-        chatInput.addEventListener("focus", () => {
-          if (window.innerWidth <= 768) expandBtn.style.display = "none";
-        });
-        chatInput.addEventListener("blur", () => {
-          if (window.innerWidth <= 768) expandBtn.style.display = "flex";
-        });
-      }
     }
 
     // ============================================
