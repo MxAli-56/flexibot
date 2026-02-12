@@ -698,7 +698,11 @@ window.addEventListener("DOMContentLoaded", async () => {
       if (!chatWindow || chatWindow.style.display !== "flex") return;
 
       // Check if click is outside chat window AND outside bubble button
-      if (!chatWindow.contains(e.target) && !chatButton.contains(e.target)) {
+      // Also allow clicking on suggestion buttons without closing
+      const suggestionContainer = document.querySelector(".suggestion-container");
+      const isSuggestionClick = suggestionContainer && suggestionContainer.contains(e.target);
+
+      if (!chatWindow.contains(e.target) && !chatButton.contains(e.target) && !isSuggestionClick) {
         chatWindow.style.display = "none";
         chatButton.style.display = "flex";
 
@@ -1034,6 +1038,37 @@ window.addEventListener("DOMContentLoaded", async () => {
       }
 
       init();
+    })();
+
+    (function setupBackGestureDetection() {
+      if (window.innerWidth > 768) return;
+
+      let lastViewportHeight = window.innerHeight;
+
+      function checkViewportChange() {
+        const currentHeight = window.innerHeight;
+        const viewportChanged =
+          Math.abs(currentHeight - lastViewportHeight) > 100;
+
+        if (viewportChanged && currentHeight > lastViewportHeight) {
+          const chatWindow = document.querySelector(".flexibot-window");
+          const chatInput = document.querySelector(".flexibot-input input");
+
+          if (chatWindow && chatInput && document.activeElement !== chatInput) {
+            chatWindow.style.height = "70vh";
+            console.log("📱 Back gesture detected: height 70vh");
+          }
+        }
+
+        lastViewportHeight = currentHeight;
+      }
+
+      window.addEventListener("resize", checkViewportChange);
+      document.addEventListener("visibilitychange", function () {
+        if (!document.hidden) {
+          lastViewportHeight = window.innerHeight;
+        }
+      });
     })();
 
     // Send on button click - FIXED for mobile one-tap
