@@ -691,15 +691,6 @@ window.addEventListener("DOMContentLoaded", async () => {
     // CLICK OUTSIDE TO CLOSE (Desktop only)
     // ============================================
     document.addEventListener("click", function (e) {
-      console.log("🎯 Click target:", e.target);
-      console.log("🎯 Target classes:", e.target.className);
-      console.log("🎯 Is inside chatWindow:", chatWindow?.contains(e.target));
-      console.log(
-        "🎯 Is suggestion container:",
-        e.target.closest(".suggestion-container"),
-      );
-      console.log("🎯 Is suggestion btn:", e.target.closest(".suggestion-btn"));
-
       // Only on desktop/tablet
       if (window.innerWidth <= 768) return;
 
@@ -1060,13 +1051,12 @@ window.addEventListener("DOMContentLoaded", async () => {
     })();
 
     // ============================================
-    // SCROLL TO EXPAND - SIMPLE TEST VERSION
+    // SCROLL TO EXPAND - DIRECT VERSION
     // ============================================
     (function setupScrollExpand() {
       // Only on mobile
       if (window.innerWidth > 768) return;
 
-      // Find elements
       const messagesContainer = document.getElementById("flexibot-messages");
       const chatWindow = document.querySelector(".flexibot-window");
 
@@ -1075,41 +1065,21 @@ window.addEventListener("DOMContentLoaded", async () => {
         return;
       }
 
-      // CHANGE HEADER COLOR WHEN SCROLL DETECTED
       messagesContainer.addEventListener("scroll", function () {
-        // Turn header PINK immediately when you scroll
+        // DIRECT SET - NO CONDITIONS, NO CHECKS
+        chatWindow.style.height = "70vh";
+        chatWindow.style.maxHeight = "none";
+        console.log("📱 Scroll: height set to 70vh");
+
+        // Visual feedback - flash green
         const header = document.querySelector(".flexibot-header");
         if (header) {
-          header.style.backgroundColor = "hotpink";
-          header.style.transition = "none";
-        }
-
-        console.log("📜 SCROLL WORKING!"); // This won't show but keep it
-
-        // After 1 second, restore original color
-        clearTimeout(window.scrollTestTimeout);
-        window.scrollTestTimeout = setTimeout(() => {
-          if (header) {
-            header.style.backgroundColor = "#4c0f77"; // Back to purple
-          }
-        }, 1000);
-      });
-
-      // Make header GREEN when chat opens so you know it's running
-      const chatButton = document.querySelector(".flexibot-bubble");
-      if (chatButton) {
-        chatButton.addEventListener("click", function () {
+          header.style.backgroundColor = "#00aa00";
           setTimeout(() => {
-            const header = document.querySelector(".flexibot-header");
-            if (header) {
-              header.style.backgroundColor = "#00aa00"; // Green = script loaded
-              setTimeout(() => {
-                header.style.backgroundColor = "#4c0f77"; // Back to purple
-              }, 2000);
-            }
-          }, 500);
-        });
-      }
+            header.style.backgroundColor = "#4c0f77";
+          }, 300);
+        }
+      });
     })();
 
     // Send on button click - FIXED for mobile one-tap
