@@ -573,6 +573,15 @@ window.addEventListener("DOMContentLoaded", async () => {
   .flexibot-header {
     font-size: 16px;
   }
+  .suggestion-btn {
+    font-size: 12px;  /* Slightly smaller on mobile */
+    padding: 5px 10px; /* Slightly less padding */
+    white-space: nowrap; /* Prevents text wrapping */
+  }
+  
+  .suggestion-container {
+    margin-left: 40px; /* Adjust for smaller bubble */
+  }
 }
 
 @keyframes cta-pulse {
@@ -679,11 +688,20 @@ window.addEventListener("DOMContentLoaded", async () => {
     const closeBtn = chatWindow.querySelector("#flexibot-close");
 
     if (closeBtn) {
-      closeBtn.onclick = () => {
+      const handleCloseClick = (e) => {
+        e.preventDefault(); // Prevent any default behavior
+        e.stopPropagation(); // Stop event from bubbling
+
         chatWindow.style.display = "none";
-        // If your launcher is named 'chatButton', show it again
         chatButton.style.display = "flex";
+
+        // ✅ Force remove focus from input to prevent blur issues
+        const input = document.getElementById("flexibot-input");
+        if (input) input.blur();
       };
+
+      closeBtn.onclick = handleCloseClick;
+      closeBtn.ontouchstart = handleCloseClick; // ✅ Immediate on mobile
     }
 
     // Update chat header title after window is created
@@ -943,7 +961,6 @@ window.addEventListener("DOMContentLoaded", async () => {
           chatWindow.style.bottom = "10px";
 
           chatWindow.style.height = "50vh";
-          chatWindow.style.maxHeight = "350px";
 
           // ✅ Move bubble up too
           if (chatBubble) {
@@ -962,7 +979,6 @@ window.addEventListener("DOMContentLoaded", async () => {
           chatWindow.style.bottom = "";
 
           chatWindow.style.height = "70vh"; 
-          chatWindow.style.maxHeight = "450px";
 
           if (chatBubble) {
             chatBubble.style.bottom = "";
