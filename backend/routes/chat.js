@@ -178,20 +178,30 @@ RIGHT:
         "For more assistance",
       );
 
-      // 7. FIX DOCTOR NAMES - Dynamic pattern, no hardcoding
+      // 7. PARAGRAPH SPACING - Add breaks ONLY at sentence ends (but NOT after "Dr.")
+      // This prevents "Dr.<br/><br/>Name" issue
+      aiReplyText = aiReplyText.replace(
+        /([.!?])\s+(?![A-Z][a-z]+\s+(?:Ahmed|Shah|Khan|Mansoor))/g,
+        "$1<br/><br/>",
+      );
+
+      // 8. FIX DR. NAME BREAKING (prevent Dr.<br/>Name)
+      aiReplyText = aiReplyText.replace(/<b>Dr\.<\/b><br\/>/g, "<b>Dr. </b>");
+
+      // 9. FIX DOCTOR NAMES - Dynamic pattern, no hardcoding
       // Matches Dr/Dr. followed by 1-3 capitalized words (with optional initials)
       aiReplyText = aiReplyText.replace(
         /Dr\.?\s+([A-Z][a-z]*\.?\s+){1,3}/gi,
         (match) => `<b>${match}</b>`,
       );
 
-      // 8. BOLD SERVICE NAMES (Pattern: "ServiceName: PKR")
+      // 10. BOLD SERVICE NAMES (Pattern: "ServiceName: PKR")
       aiReplyText = aiReplyText.replace(
         /^([-•*]?\s*)([A-Z][^:]+):\s*PKR/gm,
         "$1<b>$2</b>: PKR",
       );
 
-      // 9. FALLBACK: Convert manual bullets to HTML lists
+      // 11. FALLBACK: Convert manual bullets to HTML lists
       aiReplyText = aiReplyText.replace(
         /((?:^|\n)[-•*]\s+.+(?:\n[-•*]\s+.+)*)/gm,
         function (match) {
@@ -207,14 +217,14 @@ RIGHT:
         },
       );
 
-      // 9.5 Convert **bold** markdown to <b>bold</b>
+      // 11.5 Convert **bold** markdown to <b>bold</b>
       aiReplyText = aiReplyText.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>");
 
-      // 10. Fix spacing after "from" and "to"
+      // 12. Fix spacing after "from" and "to"
       aiReplyText = aiReplyText.replace(/from(\d)/gi, "from $1");
       aiReplyText = aiReplyText.replace(/to(\d)/gi, "to $1");
 
-      // 11. EMOJI CONTROL
+      // 13. EMOJI CONTROL
       const emojiRegex = /😊|😔|👍|✨|🦷|💙/g;
       const isClosingMessage =
         /see you|have a (great|wonderful) day|goodbye|take care|you're welcome|thank you/i.test(
@@ -227,21 +237,11 @@ RIGHT:
         aiReplyText = aiReplyText.trim() + " 😊";
       }
 
-      // 12. DYNAMIC LINK CONVERSION - YOUR ORIGINAL LOGIC - UNTOUCHED
+      // 14. DYNAMIC LINK CONVERSION - YOUR ORIGINAL LOGIC - UNTOUCHED
       aiReplyText = aiReplyText.replace(
         /\[(.*?)\]\((.*?)\)/g,
         '<a href="$2" target="_blank" style="color: #007bff; text-decoration: underline; font-weight: bold;">$1</a>',
       );
-
-      // 13. PARAGRAPH SPACING - Add breaks ONLY at sentence ends (but NOT after "Dr.")
-      // This prevents "Dr.<br/><br/>Name" issue
-      aiReplyText = aiReplyText.replace(
-        /([.!?])\s+(?![A-Z][a-z]+\s+(?:Ahmed|Shah|Khan|Mansoor))/g,
-        "$1<br/><br/>",
-      );
-
-      // 14. FIX DR. NAME BREAKING (prevent Dr.<br/>Name)
-      aiReplyText = aiReplyText.replace(/<b>Dr\.<\/b><br\/>/g, "<b>Dr. </b>");
 
       // 15. REMOVE EXCESSIVE LINE BREAKS (max 2 = 1 blank line)
       aiReplyText = aiReplyText.replace(/(<br\s*\/?>){3,}/gi, "<br/><br/>");
