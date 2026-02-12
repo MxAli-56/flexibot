@@ -691,6 +691,12 @@ window.addEventListener("DOMContentLoaded", async () => {
     // CLICK OUTSIDE TO CLOSE (Desktop only)
     // ============================================
     document.addEventListener("click", function (e) {
+      console.log("🎯 Click target:", e.target);
+      console.log("🎯 Target classes:", e.target.className);
+      console.log("🎯 Is inside chatWindow:", chatWindow?.contains(e.target));
+      console.log("🎯 Is suggestion container:", e.target.closest('.suggestion-container'));
+      console.log("🎯 Is suggestion btn:", e.target.closest('.suggestion-btn'));
+
       // Only on desktop/tablet
       if (window.innerWidth <= 768) return;
 
@@ -699,10 +705,17 @@ window.addEventListener("DOMContentLoaded", async () => {
 
       // Check if click is outside chat window AND outside bubble button
       // Also allow clicking on suggestion buttons without closing
-      const suggestionContainer = document.querySelector(".suggestion-container");
-      const isSuggestionClick = suggestionContainer && suggestionContainer.contains(e.target);
+      const suggestionContainer = document.querySelector(
+        ".suggestion-container",
+      );
+      const isSuggestionClick =
+        suggestionContainer && suggestionContainer.contains(e.target);
 
-      if (!chatWindow.contains(e.target) && !chatButton.contains(e.target) && !isSuggestionClick) {
+      if (
+        !chatWindow.contains(e.target) &&
+        !chatButton.contains(e.target) &&
+        !isSuggestionClick
+      ) {
         chatWindow.style.display = "none";
         chatButton.style.display = "flex";
 
@@ -1009,9 +1022,9 @@ window.addEventListener("DOMContentLoaded", async () => {
           // ✅ FIXED: Restore to CSS default (70px)
           chatWindow.style.bottom = "";
 
-            if (chatWindow.style.height !== "70vh") {
-              chatWindow.style.height = "70vh";
-            }
+          if (chatWindow.style.height !== "70vh") {
+            chatWindow.style.height = "70vh";
+          }
 
           if (chatBubble) {
             chatBubble.style.bottom = "";
@@ -1040,34 +1053,52 @@ window.addEventListener("DOMContentLoaded", async () => {
       init();
     })();
 
-    (function setupBackGestureDetection() {
+    // ============================================
+    // SCROLL TO EXPAND - Mobile only
+    // If user scrolls when keyboard is closed, expand to 70vh
+    // ============================================
+    (function setupScrollExpand() {
       if (window.innerWidth > 768) return;
 
-      let lastViewportHeight = window.innerHeight;
-
-      function checkViewportChange() {
-        const currentHeight = window.innerHeight;
-        const viewportChanged =
-          Math.abs(currentHeight - lastViewportHeight) > 100;
-
-        if (viewportChanged && currentHeight > lastViewportHeight) {
-          const chatWindow = document.querySelector(".flexibot-window");
-          const chatInput = document.querySelector(".flexibot-input input");
-
-          if (chatWindow && chatInput && document.activeElement !== chatInput) {
-            chatWindow.style.height = "70vh";
-            console.log("📱 Back gesture detected: height 70vh");
-          }
-        }
-
-        lastViewportHeight = currentHeight;
+      const messagesContainer = document.getElementById("flexibot-messages");
+      if (!messagesContainer) {
+        setTimeout(setupScrollExpand, 500);
+        return;
       }
 
-      window.addEventListener("resize", checkViewportChange);
-      document.addEventListener("visibilitychange", function () {
-        if (!document.hidden) {
-          lastViewportHeight = window.innerHeight;
-        }
+      let isKeyboardOpen = false;
+      let lastScrollTop = 0;
+      let scrollTimeout;
+
+      // Track keyboard state
+      const chatInput = document.querySelector(".flexibot-input input");
+      if (chatInput) {
+        chatInput.addEventListener("focus", () => {
+          isKeyboardOpen = true;
+        });
+        chatInput.addEventListener("blur", () => {
+          isKeyboardOpen = false;
+        });
+      }
+
+      messagesContainer.addEventListener("scroll", function () {
+        // Only when keyboard is closed
+        if (isKeyboardOpen) return;
+
+        const chatWindow = document.querySelector(".flexibot-window");
+        if (!chatWindow) return;
+
+        // Clear previous timeout
+        clearTimeout(scrollTimeout);
+
+        // Don't expand if already at 70vh
+        if (chatWindow.style.height === "70vh") return;
+
+        // User scrolled - they want to see more content
+        scrollTimeout = setTimeout(() => {
+          chatWindow.style.height = "70vh";
+          console.log("📱 Scroll detected - expanding to 70vh");
+        }, 150); // Small delay to avoid rapid firing
       });
     })();
 
