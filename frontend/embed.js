@@ -653,39 +653,80 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     // UPDATED: Header structure for Icon + Name + Online Dot
     chatWindow.innerHTML = `
-      <div class="flexibot-header">
-  <div class="header-left">
-    <div class="bot-logo-header">${toothIcon}</div>
-    <div class="header-info">
-      <div class="name-row">
-        <span class="bot-name" id="flexibot-title">Smile Care AI</span>
-      </div>
-      <div class="status-row">
-        <span class="online-dot"></span>
-        <span class="online-text">Online Now</span>
+  <div class="flexibot-header">
+    <div class="header-left">
+      <div class="bot-logo-header">${toothIcon}</div>
+      <div class="header-info">
+        <div class="name-row">
+          <span class="bot-name" id="flexibot-title">Smile Care AI</span>
+        </div>
+        <div class="status-row">
+          <span class="online-dot"></span>
+          <span class="online-text">Online Now</span>
+        </div>
       </div>
     </div>
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <button id="flexibot-expand" style="background: none; border: none; color: white; font-size: 20px; cursor: pointer; display: none; padding: 0; width: 32px; height: 32px; align-items: center; justify-content: center;">⤢</button>
+      <div id="flexibot-close" style="font-size: 28px; cursor: pointer; line-height: 1;">&times;</div>
+    </div>
   </div>
-  <div id="flexibot-close">&times;</div>
+  <div id="flexibot-messages"></div>
+  <div class="flexibot-input-container">
+    <div class="flexibot-input">
+      <input type="text" id="flexibot-input" placeholder="Enter your query..." />
+      <button id="flexibot-send">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13"></line>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+        </svg>
+      </button>
+    </div>
   </div>
-      <div id="flexibot-messages"></div>
-      <div class="flexibot-input-container">
-  <div class="flexibot-input">
-    <input type="text" id="flexibot-input" placeholder="Enter your query..." />
-    <button id="flexibot-send">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="22" y1="2" x2="11" y2="13"></line>
-        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-      </svg>
-    </button>
-  </div>
-</div>
-    `;
+`;
 
     document.body.appendChild(chatWindow);
 
     // Target the X button we added to the header
     const closeBtn = chatWindow.querySelector("#flexibot-close");
+
+    // ============================================
+    // EXPAND BUTTON - Mobile only
+    // ============================================
+    const expandBtn = document.getElementById("flexibot-expand");
+
+    if (expandBtn) {
+      // ✅ ONLY show on mobile
+      if (window.innerWidth <= 768) {
+        expandBtn.style.display = "flex";
+      }
+
+      // Expand to 70vh on click
+      const handleExpandClick = (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+
+        const chatWindow = document.querySelector(".flexibot-window");
+        if (chatWindow) {
+          chatWindow.style.height = "70vh";
+          chatWindow.style.maxHeight = "none";
+        }
+      };
+
+      expandBtn.onclick = handleExpandClick;
+      expandBtn.ontouchstart = handleExpandClick;
+
+      // Hide during typing
+      const chatInput = document.querySelector(".flexibot-input input");
+      if (chatInput) {
+        chatInput.addEventListener("focus", () => {
+          if (window.innerWidth <= 768) expandBtn.style.display = "none";
+        });
+        chatInput.addEventListener("blur", () => {
+          if (window.innerWidth <= 768) expandBtn.style.display = "flex";
+        });
+      }
+    }
 
     // ============================================
     // CLICK OUTSIDE TO CLOSE (Desktop only)
@@ -1048,64 +1089,6 @@ window.addEventListener("DOMContentLoaded", async () => {
       }
 
       init();
-    })();
-
-    // ============================================
-    // SCROLL TO EXPAND - PRODUCTION VERSION
-    // ============================================
-    (function setupScrollExpand() {
-      // Only on mobile
-      if (window.innerWidth > 768) return;
-
-      const messagesContainer = document.getElementById("flexibot-messages");
-      const chatWindow = document.querySelector(".flexibot-window");
-
-      if (!messagesContainer || !chatWindow) {
-        setTimeout(setupScrollExpand, 500);
-        return;
-      }
-
-      let isKeyboardOpen = false;
-
-      // Track keyboard state
-      const chatInput = document.querySelector(".flexibot-input input");
-      if (chatInput) {
-        chatInput.addEventListener("focus", () => {
-          isKeyboardOpen = true;
-        });
-        chatInput.addEventListener("blur", () => {
-          isKeyboardOpen = false;
-        });
-      }
-
-      // Flag to block the automatic initial scroll
-      let hasUserScrolled = false;
-
-      messagesContainer.addEventListener("scroll", function () {
-        // 🚫 BLOCK: First automatic scroll when chat opens
-        if (!hasUserScrolled) {
-          hasUserScrolled = true;
-          return; // Ignore the automatic scroll
-        }
-
-        // 🚫 BLOCK: Don't expand when keyboard is open
-        if (isKeyboardOpen) return;
-
-        // 🚫 BLOCK: Don't expand if already at 70vh
-        if (chatWindow.style.height === "70vh") return;
-
-        // ✅ EXPAND: User intentionally scrolled
-        chatWindow.style.height = "70vh";
-
-        // ✨ Visual feedback (smooth)
-        chatWindow.style.transition = "height 0.3s ease";
-        chatWindow.style.backgroundColor = "#1a1a1a";
-
-        setTimeout(() => {
-          chatWindow.style.backgroundColor = "";
-          chatWindow.style.transition = "";
-        }, 1000);
-      });
     })();
 
     // Send on button click - FIXED for mobile one-tap
