@@ -707,21 +707,17 @@ window.addEventListener("DOMContentLoaded", async () => {
     const closeBtn = chatWindow.querySelector("#flexibot-close");
 
     // ============================================
-    // EXPAND BUTTON - Mobile only with SVG toggle
+    // EXPAND BUTTON - Mobile only, single icon
     // ============================================
     const expandBtn = document.getElementById("flexibot-expand");
 
     if (expandBtn) {
-      // Store original SVG HTML
-      const expandSVG = expandBtn.innerHTML;
-      const minimizeSVG = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14h6v6M10 10L4 4M20 10h-6V4M14 14l6 6"/></svg>`;
-
       // ✅ ONLY show on mobile
       if (window.innerWidth <= 768) {
         expandBtn.style.display = "flex";
       }
 
-      // Toggle between expand and minimize
+      // Toggle between 50vh and 70vh, same icon always
       const handleExpandClick = (e) => {
         e.stopPropagation();
         e.preventDefault();
@@ -729,13 +725,9 @@ window.addEventListener("DOMContentLoaded", async () => {
         const chatWindow = document.querySelector(".flexibot-window");
         if (chatWindow) {
           if (chatWindow.style.height === "70vh") {
-            // Minimize
-            chatWindow.style.height = "50vh";
-            expandBtn.innerHTML = expandSVG; // Back to expand icon
+            chatWindow.style.height = "50vh"; // Minimize
           } else {
-            // Expand
-            chatWindow.style.height = "70vh";
-            expandBtn.innerHTML = minimizeSVG; // Show minimize icon
+            chatWindow.style.height = "70vh"; // Expand
           }
           chatWindow.style.maxHeight = "none";
         }
