@@ -538,8 +538,6 @@ window.addEventListener("DOMContentLoaded", async () => {
   .flexibot-window {
     width: 90%;
     max-width: 320px;
-    height: 60vh;
-    max-height: 400px;
     bottom: 70px;
     left: 50%;
     right: auto;
@@ -795,8 +793,8 @@ window.addEventListener("DOMContentLoaded", async () => {
         const btn = document.createElement("button");
         btn.className = "suggestion-btn";
         btn.textContent = text;
-        btn.onclick = () => {
-          // Find the input, set value, and trigger existing sendMessage
+        // Handle both click (desktop) and touch (mobile) immediately
+        const handleSuggestionClick = () => {
           const inputField = document.getElementById("flexibot-input");
           if (inputField) {
             inputField.value = text;
@@ -804,6 +802,9 @@ window.addEventListener("DOMContentLoaded", async () => {
             buttonContainer.remove();
           }
         };
+
+        btn.onclick = handleSuggestionClick;
+        btn.ontouchstart = handleSuggestionClick; // ✅ Immediate on mobile
         buttonContainer.appendChild(btn);
       });
 
@@ -939,20 +940,19 @@ window.addEventListener("DOMContentLoaded", async () => {
         function onFocus() {
           if (window.innerWidth > 768) return;
 
-          // ✅ FIXED: Use the SAME bottom value your CSS uses
-          // Your CSS says bottom: 70px on mobile
-          // When keyboard opens, move it to 10px
           chatWindow.style.bottom = "10px";
 
-          // ✅ Reduce height slightly to ensure it fits
           chatWindow.style.height = "50vh";
+          chatWindow.style.maxHeight = "350px";
 
           // ✅ Move bubble up too
           if (chatBubble) {
             chatBubble.style.bottom = "10px";
           }
-
-          console.log("📱 Keyboard open: window at bottom:10px");
+          // ✅ Force scroll to bottom so latest message is visible
+          setTimeout(() => {
+            Messages.scrollTop = Messages.scrollHeight;
+          }, 100);
         }
 
         function onBlur() {
@@ -960,13 +960,13 @@ window.addEventListener("DOMContentLoaded", async () => {
 
           // ✅ FIXED: Restore to CSS default (70px)
           chatWindow.style.bottom = "";
-          chatWindow.style.height = "";
+
+          chatWindow.style.height = "70vh"; 
+          chatWindow.style.maxHeight = "450px";
 
           if (chatBubble) {
             chatBubble.style.bottom = "";
           }
-
-          console.log("📱 Keyboard closed: restored to CSS default");
         }
 
         // Clean up any existing listeners first (prevents duplicates)
