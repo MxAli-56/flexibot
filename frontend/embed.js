@@ -1051,7 +1051,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     })();
 
     // ============================================
-    // SCROLL TO EXPAND - DIRECT VERSION
+    // SCROLL TO EXPAND - FINAL VERSION
     // ============================================
     (function setupScrollExpand() {
       // Only on mobile
@@ -1065,20 +1065,29 @@ window.addEventListener("DOMContentLoaded", async () => {
         return;
       }
 
-      messagesContainer.addEventListener("scroll", function () {
-        // DIRECT SET - NO CONDITIONS, NO CHECKS
-        chatWindow.style.height = "70vh";
-        chatWindow.style.maxHeight = "none";
-        console.log("📱 Scroll: height set to 70vh");
+      let isKeyboardOpen = false;
 
-        // Visual feedback - flash green
-        const header = document.querySelector(".flexibot-header");
-        if (header) {
-          header.style.backgroundColor = "#00aa00";
-          setTimeout(() => {
-            header.style.backgroundColor = "#4c0f77";
-          }, 300);
-        }
+      // Track keyboard state
+      const chatInput = document.querySelector(".flexibot-input input");
+      if (chatInput) {
+        chatInput.addEventListener("focus", () => {
+          isKeyboardOpen = true;
+        });
+        chatInput.addEventListener("blur", () => {
+          isKeyboardOpen = false;
+        });
+      }
+
+      messagesContainer.addEventListener("scroll", function () {
+        // ❌ NEVER expand when keyboard is open
+        if (isKeyboardOpen) return;
+
+        // ❌ Don't expand if already at 70vh
+        if (chatWindow.style.height === "70vh") return;
+
+        // ✅ Expand to 70vh on scroll (keyboard closed)
+        chatWindow.style.height = "70vh";
+        console.log("📱 Scroll: expanded to 70vh");
       });
     })();
 
