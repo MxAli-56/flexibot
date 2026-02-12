@@ -1051,7 +1051,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     })();
 
     // ============================================
-    // SCROLL TO EXPAND - ALERT TEST VERSION
+    // SCROLL TO EXPAND - PRODUCTION VERSION
     // ============================================
     (function setupScrollExpand() {
       // Only on mobile
@@ -1078,33 +1078,33 @@ window.addEventListener("DOMContentLoaded", async () => {
         });
       }
 
+      // Flag to block the automatic initial scroll
+      let hasUserScrolled = false;
+
       messagesContainer.addEventListener("scroll", function () {
-        // STEP 1: Scroll detected
-        alert("1️⃣ Scroll detected");
-
-        // STEP 2: Check keyboard state
-        alert("2️⃣ Keyboard open? " + (isKeyboardOpen ? "YES ❌" : "NO ✅"));
-        if (isKeyboardOpen) return;
-
-        // STEP 3: Check current height
-        alert("3️⃣ Current height: " + (chatWindow.style.height || "not set"));
-        if (chatWindow.style.height === "70vh") {
-          alert("⏭️ Already at 70vh, exiting");
-          return;
+        // 🚫 BLOCK: First automatic scroll when chat opens
+        if (!hasUserScrolled) {
+          hasUserScrolled = true;
+          return; // Ignore the automatic scroll
         }
 
-        // STEP 4: Add border
-        chatWindow.style.border = "5px solid blue";
-        alert("4️⃣ Blue border added");
+        // 🚫 BLOCK: Don't expand when keyboard is open
+        if (isKeyboardOpen) return;
 
-        // STEP 5: Set height
+        // 🚫 BLOCK: Don't expand if already at 70vh
+        if (chatWindow.style.height === "70vh") return;
+
+        // ✅ EXPAND: User intentionally scrolled
         chatWindow.style.height = "70vh";
-        alert("5️⃣ Height set to: " + chatWindow.style.height);
 
-        // STEP 6: Verify
+        // ✨ Visual feedback (smooth)
+        chatWindow.style.transition = "height 0.3s ease";
+        chatWindow.style.backgroundColor = "#1a1a1a";
+
         setTimeout(() => {
-          alert("6️⃣ Final height: " + chatWindow.style.height);
-        }, 100);
+          chatWindow.style.backgroundColor = "";
+          chatWindow.style.transition = "";
+        }, 1000);
       });
     })();
 
