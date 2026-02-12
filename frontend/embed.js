@@ -936,6 +936,12 @@ window.addEventListener("DOMContentLoaded", async () => {
         typingEl.replaceWith(fallback);
         Messages.scrollTop = Messages.scrollHeight;
       }
+      if (window.innerWidth <= 768) {
+        const chatWindow = document.querySelector(".flexibot-window");
+        if (chatWindow) {
+          chatWindow.style.height = "70vh";
+        }
+      }
     }
 
     // ============================================
@@ -978,8 +984,6 @@ window.addEventListener("DOMContentLoaded", async () => {
           // ✅ FIXED: Restore to CSS default (70px)
           chatWindow.style.bottom = "";
 
-          chatWindow.style.height = "70vh"; 
-
           if (chatBubble) {
             chatBubble.style.bottom = "";
           }
@@ -1007,8 +1011,21 @@ window.addEventListener("DOMContentLoaded", async () => {
       init();
     })();
 
-    // Send on button click
-    Send.addEventListener("click", sendMessage);
+    // Send on button click - FIXED for mobile one-tap
+    const handleSendClick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      // Force remove focus from input to prevent blur from interfering
+      const input = document.getElementById("flexibot-input");
+      if (input) input.blur();
+
+      // Now call sendMessage
+      sendMessage();
+    };
+
+    Send.addEventListener("click", handleSendClick);
+    Send.ontouchstart = handleSendClick;
 
     // Send on Enter key (Shift+Enter = newline)
     Input.addEventListener("keydown", (e) => {
