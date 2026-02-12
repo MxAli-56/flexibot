@@ -1060,63 +1060,56 @@ window.addEventListener("DOMContentLoaded", async () => {
     })();
 
     // ============================================
-    // SCROLL TO EXPAND - Mobile only
-    // If user scrolls when keyboard is closed, expand to 70vh
+    // SCROLL TO EXPAND - SIMPLE TEST VERSION
     // ============================================
     (function setupScrollExpand() {
-      // Only run on mobile
+      // Only on mobile
       if (window.innerWidth > 768) return;
 
+      // Find elements
       const messagesContainer = document.getElementById("flexibot-messages");
-      if (!messagesContainer) {
+      const chatWindow = document.querySelector(".flexibot-window");
+
+      if (!messagesContainer || !chatWindow) {
         setTimeout(setupScrollExpand, 500);
         return;
       }
 
-      let isKeyboardOpen = false;
-      let scrollTimeout;
+      // CHANGE HEADER COLOR WHEN SCROLL DETECTED
+      messagesContainer.addEventListener("scroll", function () {
+        // Turn header PINK immediately when you scroll
+        const header = document.querySelector(".flexibot-header");
+        if (header) {
+          header.style.backgroundColor = "hotpink";
+          header.style.transition = "none";
+        }
 
-      // Track keyboard state
-      const chatInput = document.querySelector(".flexibot-input input");
-      if (chatInput) {
-        chatInput.addEventListener("focus", () => {
-          isKeyboardOpen = true;
-        });
-        chatInput.addEventListener("blur", () => {
-          isKeyboardOpen = false;
+        console.log("📜 SCROLL WORKING!"); // This won't show but keep it
+
+        // After 1 second, restore original color
+        clearTimeout(window.scrollTestTimeout);
+        window.scrollTestTimeout = setTimeout(() => {
+          if (header) {
+            header.style.backgroundColor = "#4c0f77"; // Back to purple
+          }
+        }, 1000);
+      });
+
+      // Make header GREEN when chat opens so you know it's running
+      const chatButton = document.querySelector(".flexibot-bubble");
+      if (chatButton) {
+        chatButton.addEventListener("click", function () {
+          setTimeout(() => {
+            const header = document.querySelector(".flexibot-header");
+            if (header) {
+              header.style.backgroundColor = "#00aa00"; // Green = script loaded
+              setTimeout(() => {
+                header.style.backgroundColor = "#4c0f77"; // Back to purple
+              }, 2000);
+            }
+          }, 500);
         });
       }
-
-      messagesContainer.addEventListener("scroll", function () {
-        // Only expand when keyboard is closed
-        if (isKeyboardOpen) return;
-
-        const chatWindow = document.querySelector(".flexibot-window");
-        if (!chatWindow) return;
-
-        clearTimeout(scrollTimeout);
-
-        // Check current height
-        const currentHeight = chatWindow.style.height;
-        const computedHeight = window.getComputedStyle(chatWindow).height;
-
-        // VISUAL DEBUG - Red border means scroll detected but not at 70vh yet
-        if (currentHeight !== "70vh" && computedHeight !== "448px") {
-          chatWindow.style.border = "3px solid red";
-        }
-
-        // Don't expand if already at 70vh
-        if (currentHeight === "70vh" || computedHeight === "448px") {
-          return;
-        }
-
-        // User scrolled - expand to 70vh
-        scrollTimeout = setTimeout(() => {
-          chatWindow.style.height = "70vh";
-          chatWindow.style.border = ""; // Remove red border
-          console.log("📱 Scroll detected - expanded to 70vh");
-        }, 150);
-      });
     })();
 
     // Send on button click - FIXED for mobile one-tap
