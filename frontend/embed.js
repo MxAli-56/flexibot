@@ -1085,6 +1085,8 @@ window.addEventListener("DOMContentLoaded", async () => {
         // ❌ Don't expand if already at 70vh
         if (chatWindow.style.height === "70vh") return;
 
+        chatWindow.style.border = "2px solid lime";
+
         // ✅ Expand to 70vh on scroll (keyboard closed)
         chatWindow.style.height = "70vh";
         console.log("📱 Scroll: expanded to 70vh");
