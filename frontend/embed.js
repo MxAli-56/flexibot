@@ -694,8 +694,11 @@ window.addEventListener("DOMContentLoaded", async () => {
       console.log("🎯 Click target:", e.target);
       console.log("🎯 Target classes:", e.target.className);
       console.log("🎯 Is inside chatWindow:", chatWindow?.contains(e.target));
-      console.log("🎯 Is suggestion container:", e.target.closest('.suggestion-container'));
-      console.log("🎯 Is suggestion btn:", e.target.closest('.suggestion-btn'));
+      console.log(
+        "🎯 Is suggestion container:",
+        e.target.closest(".suggestion-container"),
+      );
+      console.log("🎯 Is suggestion btn:", e.target.closest(".suggestion-btn"));
 
       // Only on desktop/tablet
       if (window.innerWidth <= 768) return;
@@ -850,7 +853,10 @@ window.addEventListener("DOMContentLoaded", async () => {
         btn.className = "suggestion-btn";
         btn.textContent = text;
         // Handle both click (desktop) and touch (mobile) immediately
-        const handleSuggestionClick = () => {
+        const handleSuggestionClick = (e) => {
+          e.stopPropagation(); // ✅ ADD THIS - prevents event from reaching click listener
+          e.preventDefault(); // ✅ ADD THIS - safe practice
+
           const inputField = document.getElementById("flexibot-input");
           if (inputField) {
             inputField.value = text;
@@ -1058,6 +1064,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     // If user scrolls when keyboard is closed, expand to 70vh
     // ============================================
     (function setupScrollExpand() {
+      // Only run on mobile
       if (window.innerWidth > 768) return;
 
       const messagesContainer = document.getElementById("flexibot-messages");
@@ -1067,7 +1074,6 @@ window.addEventListener("DOMContentLoaded", async () => {
       }
 
       let isKeyboardOpen = false;
-      let lastScrollTop = 0;
       let scrollTimeout;
 
       // Track keyboard state
@@ -1082,23 +1088,34 @@ window.addEventListener("DOMContentLoaded", async () => {
       }
 
       messagesContainer.addEventListener("scroll", function () {
-        // Only when keyboard is closed
+        // Only expand when keyboard is closed
         if (isKeyboardOpen) return;
 
         const chatWindow = document.querySelector(".flexibot-window");
         if (!chatWindow) return;
 
-        // Clear previous timeout
         clearTimeout(scrollTimeout);
 
-        // Don't expand if already at 70vh
-        if (chatWindow.style.height === "70vh") return;
+        // Check current height
+        const currentHeight = chatWindow.style.height;
+        const computedHeight = window.getComputedStyle(chatWindow).height;
 
-        // User scrolled - they want to see more content
+        // VISUAL DEBUG - Red border means scroll detected but not at 70vh yet
+        if (currentHeight !== "70vh" && computedHeight !== "448px") {
+          chatWindow.style.border = "3px solid red";
+        }
+
+        // Don't expand if already at 70vh
+        if (currentHeight === "70vh" || computedHeight === "448px") {
+          return;
+        }
+
+        // User scrolled - expand to 70vh
         scrollTimeout = setTimeout(() => {
           chatWindow.style.height = "70vh";
-          console.log("📱 Scroll detected - expanding to 70vh");
-        }, 150); // Small delay to avoid rapid firing
+          chatWindow.style.border = ""; // Remove red border
+          console.log("📱 Scroll detected - expanded to 70vh");
+        }, 150);
       });
     })();
 
