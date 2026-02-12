@@ -1051,7 +1051,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     })();
 
     // ============================================
-    // SCROLL TO EXPAND - FINAL VERSION
+    // SCROLL TO EXPAND - ALERT TEST VERSION
     // ============================================
     (function setupScrollExpand() {
       // Only on mobile
@@ -1079,17 +1079,32 @@ window.addEventListener("DOMContentLoaded", async () => {
       }
 
       messagesContainer.addEventListener("scroll", function () {
-        // ❌ NEVER expand when keyboard is open
+        // STEP 1: Scroll detected
+        alert("1️⃣ Scroll detected");
+
+        // STEP 2: Check keyboard state
+        alert("2️⃣ Keyboard open? " + (isKeyboardOpen ? "YES ❌" : "NO ✅"));
         if (isKeyboardOpen) return;
 
-        // ❌ Don't expand if already at 70vh
-        if (chatWindow.style.height === "70vh") return;
+        // STEP 3: Check current height
+        alert("3️⃣ Current height: " + (chatWindow.style.height || "not set"));
+        if (chatWindow.style.height === "70vh") {
+          alert("⏭️ Already at 70vh, exiting");
+          return;
+        }
 
-        chatWindow.style.border = "2px solid lime";
+        // STEP 4: Add border
+        chatWindow.style.border = "5px solid blue";
+        alert("4️⃣ Blue border added");
 
-        // ✅ Expand to 70vh on scroll (keyboard closed)
+        // STEP 5: Set height
         chatWindow.style.height = "70vh";
-        console.log("📱 Scroll: expanded to 70vh");
+        alert("5️⃣ Height set to: " + chatWindow.style.height);
+
+        // STEP 6: Verify
+        setTimeout(() => {
+          alert("6️⃣ Final height: " + chatWindow.style.height);
+        }, 100);
       });
     })();
 
