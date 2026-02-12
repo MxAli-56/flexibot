@@ -687,6 +687,27 @@ window.addEventListener("DOMContentLoaded", async () => {
     // Target the X button we added to the header
     const closeBtn = chatWindow.querySelector("#flexibot-close");
 
+    // ============================================
+    // CLICK OUTSIDE TO CLOSE (Desktop only)
+    // ============================================
+    document.addEventListener("click", function (e) {
+      // Only on desktop/tablet
+      if (window.innerWidth <= 768) return;
+
+      // Only if chat is open
+      if (!chatWindow || chatWindow.style.display !== "flex") return;
+
+      // Check if click is outside chat window AND outside bubble button
+      if (!chatWindow.contains(e.target) && !chatButton.contains(e.target)) {
+        chatWindow.style.display = "none";
+        chatButton.style.display = "flex";
+
+        // Also blur input if needed
+        const input = document.getElementById("flexibot-input");
+        if (input) input.blur();
+      }
+    });
+
     if (closeBtn) {
       const handleCloseClick = (e) => {
         e.preventDefault(); // Prevent any default behavior
@@ -983,6 +1004,10 @@ window.addEventListener("DOMContentLoaded", async () => {
 
           // ✅ FIXED: Restore to CSS default (70px)
           chatWindow.style.bottom = "";
+
+            if (chatWindow.style.height !== "70vh") {
+              chatWindow.style.height = "70vh";
+            }
 
           if (chatBubble) {
             chatBubble.style.bottom = "";
