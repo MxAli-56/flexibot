@@ -36,6 +36,92 @@ router.post("/message", async (req, res) => {
     // 1️⃣ Fetch Client Knowledge Base
     const clientData = await Client.findOne({ clientId });
 
+    // ============================================
+    // 🚨 1.5️⃣ CLINIC HOURS ENFORCEMENT - 100% ACCURATE, MULTI-TENANT
+    // ============================================
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinutes = now.getMinutes();
+    const currentTimeDecimal = currentHour + currentMinutes / 60;
+
+    let isAnyDoctorAvailableNow = false;
+    let nextOpenTime = "tomorrow during business hours"; 
+    let availableDoctorsNow = [];
+    let upcomingDoctorsToday = [];
+
+    if (clientData?.siteContext) {
+      const siteContext = clientData.siteContext;
+
+      // Parse doctor schedules - works for ANY clinic's format
+      const doctorRegex =
+        /Dr\.\s*([^:]+):\s*([^.]+)\.?\s*(?:\(Unavailable.*?\))?/g;
+      let match;
+
+      while ((match = doctorRegex.exec(siteContext)) !== null) {
+        const doctorName = match[1].trim();
+        const schedule = match[2];
+
+        // Check if doctor works today
+        const today = now.toLocaleDateString("en-US", { weekday: "long" });
+        if (
+          schedule.includes(today.substring(0, 3)) ||
+          schedule.includes(today)
+        ) {
+          // Extract times - handles "9:00 AM - 2:00 PM" format
+          const timeMatch = schedule.match(
+            /(\d+):(\d+)\s*(AM|PM)\s*-\s*(\d+):(\d+)\s*(AM|PM)/i,
+          );
+          if (timeMatch) {
+            let startHour = parseInt(timeMatch[1]);
+            const startMinute = parseInt(timeMatch[2]);
+            const startAmPm = timeMatch[3];
+            let endHour = parseInt(timeMatch[4]);
+            const endMinute = parseInt(timeMatch[5]);
+            const endAmPm = timeMatch[6];
+
+            // Convert to 24-hour format
+            if (startAmPm === "PM" && startHour !== 12) startHour += 12;
+            if (startAmPm === "AM" && startHour === 12) startHour = 0;
+            if (endAmPm === "PM" && endHour !== 12) endHour += 12;
+            if (endAmPm === "AM" && endHour === 12) endHour = 0;
+
+            const startDecimal = startHour + startMinute / 60;
+            const endDecimal = endHour + endMinute / 60;
+
+            // Check if available NOW
+            if (
+              currentTimeDecimal >= startDecimal &&
+              currentTimeDecimal <= endDecimal
+            ) {
+              isAnyDoctorAvailableNow = true;
+              availableDoctorsNow.push({ name: doctorName, schedule });
+            }
+
+            // Check if coming later today
+            if (currentTimeDecimal < startDecimal) {
+              const displayTime = `${startHour % 12 || 12}:${startMinute.toString().padStart(2, "0")} ${startAmPm}`;
+              upcomingDoctorsToday.push({
+                name: doctorName,
+                time: startDecimal,
+                displayTime,
+              });
+            }
+          }
+        }
+      }
+
+      // Determine next open time
+      if (upcomingDoctorsToday.length > 0) {
+        upcomingDoctorsToday.sort((a, b) => a.time - b.time);
+        nextOpenTime = `today at ${upcomingDoctorsToday[0].displayTime}`;
+      }
+    }
+
+    // Create instruction for AI - 100% accurate, no guessing
+    const clinicStatusInstruction = isAnyDoctorAvailableNow
+      ? `IMPORTANT - CLINIC STATUS: The clinic is CURRENTLY OPEN. Do NOT say "clinic is closed" or "currently closed" in your response.`
+      : `IMPORTANT - CLINIC STATUS: The clinic is CURRENTLY CLOSED. Your response MUST begin with EXACTLY: "Our clinic is currently closed. We reopen ${nextOpenTime}. You can message me anytime for information as I am available 24/7." Do NOT provide phone numbers, maps links, "call us", or "visit us" in your response.`;
+
     // 2️⃣ Create or find session
     let session = await Session.findOne({ sessionId });
     if (!session) {
@@ -118,37 +204,10 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
     **Dr. Sameer Ahmed**
 
     RIGHT:
-    <b>Dr. Sameer Ahmed</b>
-    
-    2. CLINIC HOURS ENFORCEMENT:
+    <b>Dr. Sameer Ahmed</b>`;
 
-IF user asks about dentist availability:
-   - You MUST check CURRENT CONTEXT time against doctor schedules
-   - IF current time is BEFORE a doctor's start time OR AFTER their end time:
-     → That doctor is NOT available NOW
-   
-   IF NO doctors are available at the current time:
-   - Your response MUST begin with: "Our clinic is currently closed."
-   - THEN provide the requested information
-   - Do NOT offer follow-up about today's dentists
-   - Instead, automatically ask: "Would you like to know tomorrow's availability?"
-
-✅ EXAMPLE — Friday 11:50 AM (OPEN):
-User: "Which dentist is available today?"
-AI: "For Friday (today), Dr. Sameer Ahmed is available 9:00 AM - 2:00 PM and Dr. Faraz Khan will be available 5:00 PM - 10:00 PM.
-
-Would you like details about their specializations or services?"
-
-✅ EXAMPLE — Friday 3:00 PM (CLOSED):
-User: "Which dentist is available today?"
-AI: "Our clinic is currently closed.
-
-For Friday (today), Dr. Sameer Ahmed was available 9:00 AM - 2:00 PM and Dr. Faraz Khan will be available 5:00 PM - 10:00 PM.
-
-Would you like to know tomorrow's availability?"`;
-
-    // 6️⃣ Assembly
-    const prompt = `${finalSystemPrompt}\n\n${history
+    // 6️⃣ Assembly - INJECT the clinic status instruction
+    const prompt = `${finalSystemPrompt}\n\n${clinicStatusInstruction}\n\n${history
       .map((m) => `${m.role}: ${m.content}`)
       .join("\n")}\nassistant:`;
 
@@ -271,10 +330,16 @@ Would you like to know tomorrow's availability?"`;
         '<a href="$2" target="_blank" style="color: #007bff; text-decoration: underline; font-weight: bold;">$1</a>',
       );
 
-      // 15. REMOVE EXCESSIVE LINE BREAKS (max 2 = 1 blank line)
+      // 15 📞 CONVERT PHONE NUMBER TO CLICKABLE TEL LINK
+      aiReplyText = aiReplyText.replace(
+        /021-34XXXXXX/g,
+        '<a href="tel:02134XXXXXX" style="color: #007bff; text-decoration: underline; font-weight: bold;">021-34XXXXXX</a>',
+      );
+
+      // 16. REMOVE EXCESSIVE LINE BREAKS (max 2 = 1 blank line)
       aiReplyText = aiReplyText.replace(/(<br\s*\/?>){3,}/gi, "<br/><br/>");
 
-      // 16. FINAL CLEANUP
+      // 17. FINAL CLEANUP
       aiReplyText = aiReplyText
         .trim()
         .replace(/(<br\s*\/?>|\n|\s)+$/gi, "")
