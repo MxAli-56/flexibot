@@ -6,7 +6,7 @@ const Message = require("../models/Message");
 const Client = require("../models/Clients");
 
 const { chatWithMistral } = require("../providers/mistral");
-const { chatWithBytez } = require("../providers/bytez");
+const { chatWithQwen } = require("../providers/qwen");
 
 const router = express.Router();
 
@@ -319,26 +319,34 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
       .map((m) => `${m.role}: ${m.content}`)
       .join("\n")}\n\nUser: ${text}\nassistant:`;
 
-    // 7️⃣ Dual AI Provider Handling
+    // 7️⃣ Primary: Qwen 2.5-72B (with Mistral fallback)
     let aiReplyText = "";
+
     try {
-      console.log(`💎 Mistral calling for: ${clientData?.name || clientId}`);
-      const mistralRes = await chatWithMistral(prompt);
-      if (mistralRes.status === "success") {
-        aiReplyText = mistralRes.reply;
+      console.log(`🤖 Qwen primary for: ${clientData?.name || clientId}`);
+      const qwenRes = await chatWithQwen(prompt);
+
+      if (qwenRes.status === "success" && qwenRes.reply) {
+        aiReplyText = qwenRes.reply;
+        console.log("✅ Qwen successful");
       } else {
-        throw new Error("Mistral failed");
+        throw new Error("Qwen failed");
       }
     } catch (error) {
-      console.warn("⚠️ Fallback to Bytez...");
+      console.warn("⚠️ Qwen failed, falling back to Mistral...");
+
       try {
-        const bytezRes = await chatWithBytez(prompt);
-        aiReplyText =
-          bytezRes.status === "success"
-            ? bytezRes.reply
-            : "Service temporarily busy.";
+        console.log(`💎 Mistral fallback for: ${clientData?.name || clientId}`);
+        const mistralRes = await chatWithMistral(prompt);
+
+        if (mistralRes.status === "success" && mistralRes.reply) {
+          aiReplyText = mistralRes.reply;
+          console.log("✅ Mistral fallback successful");
+        } else {
+          throw new Error("Mistral also failed");
+        }
       } catch (e) {
-        aiReplyText = "Connection error. Please refresh.";
+        aiReplyText = "Service temporarily busy. Please try again.";
       }
     }
 
