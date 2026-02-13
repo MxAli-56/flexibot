@@ -37,7 +37,7 @@ router.post("/message", async (req, res) => {
     const clientData = await Client.findOne({ clientId });
 
     // ============================================
-    // 🚨 1.5️⃣ CLINIC HOURS ENFORCEMENT - 100% ACCURATE, MULTI-TENANT
+    // 🚨 5️⃣ CLINIC HOURS ENFORCEMENT - FLEXIBLE MULTI-TENANT PARSER
     // ============================================
     const now = new Date();
     const currentHour = now.getHours();
@@ -45,67 +45,117 @@ router.post("/message", async (req, res) => {
     const currentTimeDecimal = currentHour + currentMinutes / 60;
 
     let isAnyDoctorAvailableNow = false;
-    let nextOpenTime = "tomorrow during business hours"; 
-    let availableDoctorsNow = [];
+    let nextOpenTime = "tomorrow during business hours"; // Neutral fallback
     let upcomingDoctorsToday = [];
 
     if (clientData?.siteContext) {
       const siteContext = clientData.siteContext;
 
-      // Parse doctor schedules - works for ANY clinic's format
-      const doctorRegex =
-        /Dr\.\s*([^:]+):\s*([^.]+)\.?\s*(?:\(Unavailable.*?\))?/g;
-      let match;
+      // STEP 1: Split into doctor blocks (handles Dr., Doctor, or just name followed by colon)
+      const doctorBlocks = siteContext.split(
+        /\n(?=(?:Dr\.?|Doctor)\s+[A-Z]|[A-Z][a-z]+ [A-Z][a-z]+:)/g,
+      );
 
-      while ((match = doctorRegex.exec(siteContext)) !== null) {
-        const doctorName = match[1].trim();
-        const schedule = match[2];
+      for (const block of doctorBlocks) {
+        if (!block.includes(":")) continue;
 
-        // Check if doctor works today
-        const today = now.toLocaleDateString("en-US", { weekday: "long" });
-        if (
-          schedule.includes(today.substring(0, 3)) ||
-          schedule.includes(today)
-        ) {
-          // Extract times - handles "9:00 AM - 2:00 PM" format
-          const timeMatch = schedule.match(
-            /(\d+):(\d+)\s*(AM|PM)\s*-\s*(\d+):(\d+)\s*(AM|PM)/i,
-          );
-          if (timeMatch) {
-            let startHour = parseInt(timeMatch[1]);
-            const startMinute = parseInt(timeMatch[2]);
-            const startAmPm = timeMatch[3];
-            let endHour = parseInt(timeMatch[4]);
-            const endMinute = parseInt(timeMatch[5]);
-            const endAmPm = timeMatch[6];
+        // Extract doctor name
+        const nameMatch = block.match(
+          /^(?:Dr\.?|Doctor)?\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\s*:/,
+        );
+        if (!nameMatch) continue;
+        const doctorName = nameMatch[1].trim();
 
-            // Convert to 24-hour format
-            if (startAmPm === "PM" && startHour !== 12) startHour += 12;
-            if (startAmPm === "AM" && startHour === 12) startHour = 0;
-            if (endAmPm === "PM" && endHour !== 12) endHour += 12;
-            if (endAmPm === "AM" && endHour === 12) endHour = 0;
+        // Extract schedule part (after colon, before Unavailable)
+        const schedulePart = block
+          .split(":")[1]
+          .split(/\(Unavailable|Off|Closed|Not available/i)[0]
+          .trim();
 
-            const startDecimal = startHour + startMinute / 60;
-            const endDecimal = endHour + endMinute / 60;
+        // Check if doctor works today (flexible day matching)
+        const today = now
+          .toLocaleDateString("en-US", { weekday: "long" })
+          .toLowerCase();
+        const todayAbbr = today.substring(0, 3);
+        const todayShort = today.substring(0, 3).replace(".", "");
 
-            // Check if available NOW
-            if (
-              currentTimeDecimal >= startDecimal &&
-              currentTimeDecimal <= endDecimal
-            ) {
-              isAnyDoctorAvailableNow = true;
-              availableDoctorsNow.push({ name: doctorName, schedule });
+        const dayPatterns = [
+          today, // "monday"
+          todayAbbr, // "mon"
+          todayShort, // "mon" (no dot)
+          today.replace("wed", "weds?"), // handle Wed/ Wednesday
+          `\\b${todayAbbr}\\b`, // word boundary "mon"
+          `\\b${todayShort}\\b`,
+        ];
+
+        const dayRegex = new RegExp(dayPatterns.join("|"), "i");
+        const worksToday =
+          dayRegex.test(schedulePart) && !/sun|sat/i.test(schedulePart); // Quick weekend check
+
+        if (!worksToday) continue;
+
+        // STEP 3: Extract time range - handles ALL these formats:
+        // - 9:00 AM - 2:00 PM
+        // - 9am-2pm
+        // - 9-2
+        // - 9:00-14:00
+        // - 9 AM to 2 PM
+        // - 9am to 2pm
+        const timeRegex =
+          /(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\s*(?:-|to)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i;
+        const timeMatch = schedulePart.match(timeRegex);
+
+        if (timeMatch) {
+          // Parse start time
+          let startHour = parseInt(timeMatch[1]);
+          const startMinute = parseInt(timeMatch[2]) || 0;
+          const startAmPm = timeMatch[3] ? timeMatch[3].toLowerCase() : null;
+
+          // Parse end time
+          let endHour = parseInt(timeMatch[4]);
+          const endMinute = parseInt(timeMatch[5]) || 0;
+          const endAmPm = timeMatch[6] ? timeMatch[6].toLowerCase() : null;
+
+          // Convert to 24-hour format intelligently
+          const convertTo24Hour = (hour, ampm) => {
+            if (ampm) {
+              // 12-hour format with am/pm
+              if (ampm === "pm" && hour !== 12) return hour + 12;
+              if (ampm === "am" && hour === 12) return 0;
+              return hour;
+            } else {
+              // Assume 24-hour format if >12 or if no am/pm
+              return hour;
             }
+          };
 
-            // Check if coming later today
-            if (currentTimeDecimal < startDecimal) {
-              const displayTime = `${startHour % 12 || 12}:${startMinute.toString().padStart(2, "0")} ${startAmPm}`;
-              upcomingDoctorsToday.push({
-                name: doctorName,
-                time: startDecimal,
-                displayTime,
-              });
-            }
+          startHour = convertTo24Hour(startHour, startAmPm);
+          endHour = convertTo24Hour(endHour, endAmPm);
+
+          const startDecimal = startHour + startMinute / 60;
+          const endDecimal = endHour + endMinute / 60;
+
+          // Check if available NOW
+          if (
+            currentTimeDecimal >= startDecimal &&
+            currentTimeDecimal <= endDecimal
+          ) {
+            isAnyDoctorAvailableNow = true;
+          }
+
+          // Check if coming later today
+          if (currentTimeDecimal < startDecimal) {
+            // Format display time nicely
+            const displayHour = startHour % 12 || 12;
+            const displayMinute = startMinute.toString().padStart(2, "0");
+            const displayAmPm = startHour >= 12 ? "PM" : "AM";
+            const displayTime = `${displayHour}:${displayMinute} ${displayAmPm}`;
+
+            upcomingDoctorsToday.push({
+              name: doctorName,
+              time: startDecimal,
+              displayTime,
+            });
           }
         }
       }
@@ -120,7 +170,7 @@ router.post("/message", async (req, res) => {
     // Create instruction for AI - 100% accurate, no guessing
     const clinicStatusInstruction = isAnyDoctorAvailableNow
       ? `IMPORTANT - CLINIC STATUS: The clinic is CURRENTLY OPEN. Do NOT say "clinic is closed" or "currently closed" in your response.`
-      : `IMPORTANT - CLINIC STATUS: The clinic is CURRENTLY CLOSED. Your response MUST begin with EXACTLY: "Our clinic is currently closed. We reopen ${nextOpenTime}. You can message me anytime for information as I am available 24/7." Do NOT provide phone numbers, maps links, "call us", or "visit us" in your response.`;
+      : `IMPORTANT - CLINIC STATUS: The clinic is CURRENTLY CLOSED. Your response MUST begin with EXACTLY: "Our clinic is currently closed. We reopen ${nextOpenTime}. You can message me anytime for information as I am available 24/7" Do NOT provide phone numbers, maps links, "call us", or "visit us" in your response.`;
 
     // 2️⃣ Create or find session
     let session = await Session.findOne({ sessionId });
