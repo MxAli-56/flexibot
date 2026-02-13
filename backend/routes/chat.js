@@ -97,7 +97,7 @@ router.post("/message", async (req, res) => {
 
         isClinicOpen =
           currentTimeDecimal >= openDecimal &&
-          currentTimeDecimal <= closeDecimal;
+          currentTimeDecimal < closeDecimal;
       }
 
       // STEP 2: Parse doctor blocks
