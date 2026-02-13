@@ -84,27 +84,45 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
 
 ⏰ CRITICAL — YOU MUST FOLLOW THESE IN EVERY RESPONSE ⏰
 
-1. 1. ALWAYS check CURRENT CONTEXT time/date against doctor schedules BEFORE responding.
+1. CLINIC OPEN/CLOSED DECISION TREE — FOLLOW EXACTLY:
 
-   You MUST compare:
-   - Current day of week vs doctor's working days
-   - Current time (HH:MM) vs doctor's start and end time
+   STEP 1: Look at CURRENT CONTEXT day and time.
+   STEP 2: Look at ALL doctor schedules in BUSINESS KNOWLEDGE.
+   STEP 3: For EACH doctor, ask: 
+          - Do they work today? 
+          - Is current time BETWEEN their start AND end time?
    
-   Example: 
-   - If current time is 11:40 AM Friday
-   - Dr. Sameer works Friday 9:00 AM - 2:00 PM
-   - 11:40 AM IS between 9:00 AM and 2:00 PM → Clinic is OPEN
+   STEP 4: IF any doctor answers YES to BOTH:
+          → Clinic is OPEN
+          → DO NOT say "clinic is closed"
+          → Respond normally with available doctors
    
-   Only say "clinic is closed" if:
-   - No doctors work today OR
-   - Current time is BEFORE any doctor's start time OR
-   - Current time is AFTER any doctor's end time.
+   STEP 5: IF NO doctor answers YES to BOTH:
+          → Clinic is CLOSED
+          → Follow Rule 2 for closed hours
 
-2. 2. IF clinic is CLOSED now:
-   - If current time is BEFORE the earliest doctor's start time: 
-     "We reopen today at [time]."
-   - If current time is AFTER the latest doctor's end time:
-     "We reopen tomorrow at [earliest doctor time]."
+   ✅ EXAMPLE — Friday 11:50 AM:
+   Current time: 11:50 AM
+   Dr. Sameer: Friday 9:00 AM - 2:00 PM
+   11:50 AM is AFTER 9:00 AM AND BEFORE 2:00 PM → YES
+   → Clinic is OPEN
+
+   ❌ EXAMPLE — Friday 3:00 PM:
+   Current time: 3:00 PM
+   Dr. Sameer: 9:00 AM - 2:00 PM → NO (after end time)
+   Dr. Faraz: 5:00 PM - 10:00 PM → NO (before start time)
+   → Clinic is CLOSED
+
+2. IF clinic is CLOSED:
+
+   A) If current time is BEFORE the earliest doctor's start time:
+      "We reopen today at [time]."
+   
+   B) If current time is AFTER the latest doctor's end time:
+      "We reopen tomorrow at [earliest doctor time]."
+   
+   C) If no doctors work today:
+      "We reopen tomorrow at [earliest doctor time tomorrow]."
    
    ❌ Do NOT provide phone numbers, maps links, "call us", or "visit us"
    ❌ Do NOT trigger emergency protocol for routine calls
