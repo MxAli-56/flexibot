@@ -207,21 +207,35 @@ router.post("/message", async (req, res) => {
     // ============================================
     let clinicFacts = "";
 
-    // ONLY show full context on first message
     if (history.length === 0) {
       clinicFacts = `
-    === CURRENT CLINIC CONTEXT ===
-    Current time: ${currentHour}:${currentMinutes.toString().padStart(2, "0")}
-    Clinic is ${isClinicOpen ? "OPEN" : "CLOSED"} based on operating hours
-    ${isAnyDoctorAvailableNow ? "Doctors are available now" : "No doctors are available at this moment"}
-    Next doctor available: ${nextOpenTime}
-    `;
+=== CURRENT CLINIC CONTEXT ===
+Current time: ${currentHour}:${currentMinutes.toString().padStart(2, "0")}
+Clinic is ${isClinicOpen ? "OPEN" : "CLOSED"}
+${isAnyDoctorAvailableNow ? "Doctors available now" : "No doctors at this moment"}
+Next doctor: ${nextOpenTime}
+`;
     } else {
-      // On subsequent messages, ONLY show status if clinic is CLOSED
-      if (!isClinicOpen) {
-        clinicFacts = `NOTE: The clinic is currently CLOSED. If user asks about today's availability, start with "Our clinic is currently closed."`;
+      // Check if doctor list was already provided
+      const doctorListProvided = history.some(
+        (msg) =>
+          msg.role === "assistant" &&
+          (msg.content.includes("available dentists are:") ||
+            msg.content.includes("Dr. Sameer") ||
+            msg.content.includes("Dr. Faraz")),
+      );
+
+      if (doctorListProvided) {
+        clinicFacts = `
+REMINDER: You have already provided the doctor list. Do NOT repeat it. Only answer the current question.
+`;
       }
-      // If clinic is open, inject NOTHING - let conversation flow naturally
+
+      if (!isClinicOpen) {
+        clinicFacts += `
+NOTE: Clinic is CLOSED. If user asks about today's availability, start with "Our clinic is currently closed."
+`;
+      }
     }
 
     const getCurrentDateTime = () => {
