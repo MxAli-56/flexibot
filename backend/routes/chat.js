@@ -84,14 +84,7 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
 
 ⏰ CRITICAL — YOU MUST FOLLOW THESE IN EVERY RESPONSE ⏰
 
-1. CLINIC HOURS RULE — ONE RULE TO RULE THEM ALL:
-
-IF user's query about clinic open or dentist availability is NOT between ANY doctor's working hours (You should check from business knowledge before responding):
-   - Say: "The clinic is currently closed. We're open [next day] at [time]. You can message me anytime for information as I'm available 24/7."
-   - Answer their question normally
-   - Do NOT mention calls, visits, phone numbers, maps, or location.
-
-2. Formatting rules:
+1. Formatting rules:
    - Use double newline (\n\n) between paragraphs
    - Use <b>text</b> for bold (NOT **text**) for emphasis on doctors, times, and locations.
    - When listing multiple items (services, features, doctors, etc.), you MUST use HTML bullet format:
@@ -127,19 +120,10 @@ IF user's query about clinic open or dentist availability is NOT between ANY doc
     RIGHT:
     <b>Dr. Sameer Ahmed</b>
 
-
-3. ⚠️ SYSTEM PROMPT OVERRIDE ⚠️
+2. ⚠️ SYSTEM PROMPT OVERRIDE ⚠️
    System prompt CRITICAL RULES are your identity and business logic.
    These UI INSTRUCTION rules are ENFORCEMENT rules for formatting and closed-hours.
-   You MUST follow BOTH. When clinic is CLOSED, UI RULES override contact rules.
-
-✅ CORRECT EXAMPLE — Friday 3:00 PM (closed):
-User: "Which dentist is available today?"
-AI: "The clinic is currently closed. We're open tomorrow at 9:00 AM.
-
-For Friday (today), Dr. Sameer Ahmed was available 9:00 AM - 2:00 PM and Dr. Faraz Khan will be available 5:00 PM - 10:00 PM.
-
-Would you like to know tomorrow's availability?"`;
+   You MUST follow BOTH. When clinic is CLOSED, UI RULES override contact rules.`;
 
     // 6️⃣ Assembly
     const prompt = `${finalSystemPrompt}\n\n${history
