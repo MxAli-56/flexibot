@@ -456,25 +456,22 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
         },
       );
 
-      // 16. REMOVE EXCESSIVE LINE BREAKS (max 2 = 1 blank line)
-      aiReplyText = aiReplyText.replace(/(<br\s*\/?>){3,}/gi, "<br/><br/>");
-
-      // 17. FINAL CLEANUP
+      // 16. FINAL CLEANUP
       aiReplyText = aiReplyText
         .trim()
         .replace(/(<br\s*\/?>|\n|\s)+$/gi, "")
         .trim();
 
-      // 18. 🚨 REMOVE REPEATED CONTENT - NO HARDCODING
+      // 17. REMOVE EXCESSIVE LINE BREAKS (max 2 = 1 blank line) - MOVED FROM 16
+      aiReplyText = aiReplyText.replace(/(<br\s*\/?>){3,}/gi, "<br/><br/>");
+
+      // 18. 🚨 REMOVE REPEATED CONTENT - MOVED TO END
       if (history.length > 0) {
-        // Get the last bot message
         const lastBotMessage = history
           .filter((m) => m.role === "assistant")
           .pop();
 
         if (lastBotMessage) {
-          // Find the longest common substring between last response and current response
-          // This is the repeated part we want to remove
           const lastText = lastBotMessage.content;
           const currentText = aiReplyText;
 
@@ -486,7 +483,6 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
             firstSentenceLast === firstSentenceCurrent &&
             firstSentenceLast.length > 20
           ) {
-            // Remove the first sentence from current response
             aiReplyText = currentText
               .replace(firstSentenceCurrent + ".", "")
               .trim();
@@ -499,14 +495,17 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
           const currentMatches = currentText.match(doctorListPattern) || [];
 
           if (lastMatches.length > 0 && currentMatches.length > 0) {
-            // Remove doctor list from current response
             currentMatches.forEach((match) => {
               aiReplyText = aiReplyText.replace(match, "");
             });
           }
 
-          // Clean up extra spaces and newlines
-          aiReplyText = aiReplyText.replace(/\n{3,}/g, "\n\n").trim();
+          // Final cleanup of any formatting broken by removal
+          aiReplyText = aiReplyText
+            .replace(/\n{3,}/g, "\n\n")
+            .replace(/Dr\.\s+<br\/?>/g, "Dr. ")
+            .replace(/Dr\.<br\/?>/g, "Dr. ")
+            .trim();
         }
       }
     }
