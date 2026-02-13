@@ -249,7 +249,7 @@ ${reminders.join("\n")}
 `;
       }
     }
-    
+
     const getCurrentDateTime = () => {
       const now = new Date();
       const options = {
@@ -456,6 +456,51 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
         .trim()
         .replace(/(<br\s*\/?>|\n|\s)+$/gi, "")
         .trim();
+
+      // 18. 🚨 REMOVE REPEATED CONTENT - NO HARDCODING
+      if (history.length > 0) {
+        // Get the last bot message
+        const lastBotMessage = history
+          .filter((m) => m.role === "assistant")
+          .pop();
+
+        if (lastBotMessage) {
+          // Find the longest common substring between last response and current response
+          // This is the repeated part we want to remove
+          const lastText = lastBotMessage.content;
+          const currentText = aiReplyText;
+
+          // Simple approach: if current response starts with the exact same sentence as last response
+          const firstSentenceLast = lastText.split(".")[0];
+          const firstSentenceCurrent = currentText.split(".")[0];
+
+          if (
+            firstSentenceLast === firstSentenceCurrent &&
+            firstSentenceLast.length > 20
+          ) {
+            // Remove the first sentence from current response
+            aiReplyText = currentText
+              .replace(firstSentenceCurrent + ".", "")
+              .trim();
+          }
+
+          // If the full doctor list appears in both, remove it from current
+          const doctorListPattern =
+            /(?:Dr\.\s*[A-Za-z]+\s+[A-Za-z]+:\s*\d[^n]+)/g;
+          const lastMatches = lastText.match(doctorListPattern) || [];
+          const currentMatches = currentText.match(doctorListPattern) || [];
+
+          if (lastMatches.length > 0 && currentMatches.length > 0) {
+            // Remove doctor list from current response
+            currentMatches.forEach((match) => {
+              aiReplyText = aiReplyText.replace(match, "");
+            });
+          }
+
+          // Clean up extra spaces and newlines
+          aiReplyText = aiReplyText.replace(/\n{3,}/g, "\n\n").trim();
+        }
+      }
     }
 
     // 8️⃣ Save & Respond (Using the now cleaned aiReplyText)
