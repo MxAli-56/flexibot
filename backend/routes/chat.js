@@ -118,12 +118,7 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
     **Dr. Sameer Ahmed**
 
     RIGHT:
-    <b>Dr. Sameer Ahmed</b>
-
-2. ⚠️ SYSTEM PROMPT OVERRIDE ⚠️
-   System prompt CRITICAL RULES are your identity and business logic.
-   These UI INSTRUCTION rules are ENFORCEMENT rules for formatting and closed-hours.
-   You MUST follow BOTH. When clinic is CLOSED, UI RULES override contact rules.`;
+    <b>Dr. Sameer Ahmed</b>`;
 
     // 6️⃣ Assembly
     const prompt = `${finalSystemPrompt}\n\n${history
