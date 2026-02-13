@@ -455,51 +455,7 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
       // 16. REMOVE EXCESSIVE LINE BREAKS (max 2 = 1 blank line) - MOVED FROM 16
       aiReplyText = aiReplyText.replace(/(<br\s*\/?>){3,}/gi, "<br/><br/>");
 
-      // 17. 🚨 REMOVE REPEATED CONTENT - MOVED TO END
-      if (history.length > 0) {
-        const lastBotMessage = history
-          .filter((m) => m.role === "assistant")
-          .pop();
-
-        if (lastBotMessage) {
-          const lastText = lastBotMessage.content;
-          const currentText = aiReplyText;
-
-          // Simple approach: if current response starts with the exact same sentence as last response
-          const firstSentenceLast = lastText.split(".")[0];
-          const firstSentenceCurrent = currentText.split(".")[0];
-
-          if (
-            firstSentenceLast === firstSentenceCurrent &&
-            firstSentenceLast.length > 20
-          ) {
-            aiReplyText = currentText
-              .replace(firstSentenceCurrent + ".", "")
-              .trim();
-          }
-
-          // If the full doctor list appears in both, remove it from current
-          const doctorListPattern =
-            /(?:Dr\.\s*[A-Za-z]+\s+[A-Za-z]+:\s*\d[^n]+)/g;
-          const lastMatches = lastText.match(doctorListPattern) || [];
-          const currentMatches = currentText.match(doctorListPattern) || [];
-
-          if (lastMatches.length > 0 && currentMatches.length > 0) {
-            currentMatches.forEach((match) => {
-              aiReplyText = aiReplyText.replace(match, "");
-            });
-          }
-
-          // Final cleanup of any formatting broken by removal
-          aiReplyText = aiReplyText
-            .replace(/\n{3,}/g, "\n\n")
-            .replace(/Dr\.\s+<br\/?>/g, "Dr. ")
-            .replace(/Dr\.<br\/?>/g, "Dr. ")
-            .trim();
-        }
-      }
-
-      // 18 📞 CONVERT ANY PHONE NUMBER TO CLICKABLE TEL LINK
+      // 17. 📞 CONVERT ANY PHONE NUMBER TO CLICKABLE TEL LINK
       aiReplyText = aiReplyText.replace(
         /(?:0\d{2,3}[-\s]?\d{5,7}|\+92[-\s]?\d{10})/g,
         (match) => {
