@@ -36,6 +36,26 @@ router.post("/message", async (req, res) => {
     // 1️⃣ Fetch Client Knowledge Base
     const clientData = await Client.findOne({ clientId });
 
+    // 2️⃣ Create or find session
+    let session = await Session.findOne({ sessionId });
+    if (!session) {
+      session = await Session.create({
+        sessionId: sessionId || randomUUID(),
+        clientId,
+      });
+    }
+
+    // 3️⃣ Save user message
+    await Message.create({
+      sessionId: session.sessionId,
+      clientId,
+      role: "user",
+      text,
+    });
+
+    // 4️⃣ Get Chat History
+    const history = await fetchConversation(session.sessionId, 12);
+
     // ============================================
     // 🚨 1.5️⃣ CLINIC HOURS ENFORCEMENT - MULTI-TENANT PARSER
     // ============================================
@@ -189,15 +209,13 @@ router.post("/message", async (req, res) => {
 
     // ONLY show full context on first message
     if (history.length === 0) {
-
-    clinicFacts = `
+      clinicFacts = `
     === CURRENT CLINIC CONTEXT ===
     Current time: ${currentHour}:${currentMinutes.toString().padStart(2, "0")}
     Clinic is ${isClinicOpen ? "OPEN" : "CLOSED"} based on operating hours
     ${isAnyDoctorAvailableNow ? "Doctors are available now" : "No doctors are available at this moment"}
     Next doctor available: ${nextOpenTime}
     `;
-    
     } else {
       // On subsequent messages, ONLY show status if clinic is CLOSED
       if (!isClinicOpen) {
@@ -205,26 +223,6 @@ router.post("/message", async (req, res) => {
       }
       // If clinic is open, inject NOTHING - let conversation flow naturally
     }
-
-    // 2️⃣ Create or find session
-    let session = await Session.findOne({ sessionId });
-    if (!session) {
-      session = await Session.create({
-        sessionId: sessionId || randomUUID(),
-        clientId,
-      });
-    }
-
-    // 3️⃣ Save user message
-    await Message.create({
-      sessionId: session.sessionId,
-      clientId,
-      role: "user",
-      text,
-    });
-
-    // 4️⃣ Get Chat History
-    const history = await fetchConversation(session.sessionId, 12);
 
     const getCurrentDateTime = () => {
       const now = new Date();
