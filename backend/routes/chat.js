@@ -183,16 +183,28 @@ router.post("/message", async (req, res) => {
     }
 
     // ============================================
-    // ✅ INJECT CLINIC FACTS (ONCE, CONCISELY)
+    // ✅ INJECT CLINIC FACTS - WITH REPETITION CONTROL
     // ============================================
-    const clinicFacts = `
-=== CURRENT CLINIC CONTEXT ===
-Current time: ${currentHour}:${currentMinutes.toString().padStart(2, "0")}
-Clinic status: ${isClinicOpen ? "OPEN" : "CLOSED"}
-${isAnyDoctorAvailableNow ? "Doctors available now" : "No doctors at this moment"}
-Next doctor: ${nextOpenTime}
-${!isClinicOpen ? "IMPORTANT: If user asks about TODAY'S availability, start response with 'Our clinic is currently closed.'" : ""}
-`;
+    let clinicFacts = "";
+
+    // ONLY show full context on first message
+    if (history.length === 0) {
+
+    clinicFacts = `
+    === CURRENT CLINIC CONTEXT ===
+    Current time: ${currentHour}:${currentMinutes.toString().padStart(2, "0")}
+    Clinic is ${isClinicOpen ? "OPEN" : "CLOSED"} based on operating hours
+    ${isAnyDoctorAvailableNow ? "Doctors are available now" : "No doctors are available at this moment"}
+    Next doctor available: ${nextOpenTime}
+    `;
+    
+    } else {
+      // On subsequent messages, ONLY show status if clinic is CLOSED
+      if (!isClinicOpen) {
+        clinicFacts = `NOTE: The clinic is currently CLOSED. If user asks about today's availability, start with "Our clinic is currently closed."`;
+      }
+      // If clinic is open, inject NOTHING - let conversation flow naturally
+    }
 
     // 2️⃣ Create or find session
     let session = await Session.findOne({ sessionId });
