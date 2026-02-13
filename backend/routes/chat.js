@@ -446,26 +446,16 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
         '<a href="$2" target="_blank" style="color: #007bff; text-decoration: underline; font-weight: bold;">$1</a>',
       );
 
-      // 15 📞 CONVERT ANY PHONE NUMBER TO CLICKABLE TEL LINK
-      aiReplyText = aiReplyText.replace(
-        /(?:0\d{2,3}[-\s]?\d{5,7}|\+92[-\s]?\d{10})/g,
-        (match) => {
-          // Remove all non-digit characters for the tel: link
-          const cleanNumber = match.replace(/[-\s]/g, "");
-          return `<a href="tel:${cleanNumber}" style="color: #007bff; text-decoration: underline; font-weight: bold;">${match}</a>`;
-        },
-      );
-
-      // 16. FINAL CLEANUP
+      // 15. FINAL CLEANUP
       aiReplyText = aiReplyText
         .trim()
         .replace(/(<br\s*\/?>|\n|\s)+$/gi, "")
         .trim();
 
-      // 17. REMOVE EXCESSIVE LINE BREAKS (max 2 = 1 blank line) - MOVED FROM 16
+      // 16. REMOVE EXCESSIVE LINE BREAKS (max 2 = 1 blank line) - MOVED FROM 16
       aiReplyText = aiReplyText.replace(/(<br\s*\/?>){3,}/gi, "<br/><br/>");
 
-      // 18. 🚨 REMOVE REPEATED CONTENT - MOVED TO END
+      // 17. 🚨 REMOVE REPEATED CONTENT - MOVED TO END
       if (history.length > 0) {
         const lastBotMessage = history
           .filter((m) => m.role === "assistant")
@@ -508,6 +498,16 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
             .trim();
         }
       }
+
+      // 18 📞 CONVERT ANY PHONE NUMBER TO CLICKABLE TEL LINK
+      aiReplyText = aiReplyText.replace(
+        /(?:0\d{2,3}[-\s]?\d{5,7}|\+92[-\s]?\d{10})/g,
+        (match) => {
+          // Remove all non-digit characters for the tel: link
+          const cleanNumber = match.replace(/[-\s]/g, "");
+          return `<a href="tel:${cleanNumber}" style="color: #007bff; text-decoration: underline; font-weight: bold;">${match}</a>`;
+        },
+      );
     }
 
     // 8️⃣ Save & Respond (Using the now cleaned aiReplyText)
