@@ -37,7 +37,7 @@ router.post("/message", async (req, res) => {
     const clientData = await Client.findOne({ clientId });
 
     // ============================================
-    // 🚨 5️⃣ CLINIC HOURS ENFORCEMENT - FLEXIBLE MULTI-TENANT PARSER
+    // 🚨 1.5️⃣ CLINIC HOURS ENFORCEMENT - MULTI-TENANT PARSER
     // ============================================
     const now = new Date();
     const currentHour = now.getHours();
@@ -45,13 +45,42 @@ router.post("/message", async (req, res) => {
     const currentTimeDecimal = currentHour + currentMinutes / 60;
 
     let isAnyDoctorAvailableNow = false;
-    let nextOpenTime = "tomorrow during business hours"; // Neutral fallback
-    let upcomingDoctorsToday = [];
+    let isClinicOpen = false;
+    let nextOpenTime = "tomorrow during business hours";
+    let upcomingDoctorsToday = []; // ✅ FIXED: was missing
 
     if (clientData?.siteContext) {
       const siteContext = clientData.siteContext;
 
-      // STEP 1: Split into doctor blocks (handles Dr., Doctor, or just name followed by colon)
+      // STEP 1: Parse Clinic Hours
+      const clinicHoursMatch = siteContext.match(
+        /Clinic Hours:?\s*([^-]+)-?\s*(\d+):(\d+)\s*(AM|PM)?\s*(?:-|to)\s*(\d+):(\d+)\s*(AM|PM)/i,
+      );
+
+      if (clinicHoursMatch) {
+        let openHour = parseInt(clinicHoursMatch[2]);
+        const openMinute = parseInt(clinicHoursMatch[3]) || 0;
+        const openAmPm = clinicHoursMatch[4];
+        let closeHour = parseInt(clinicHoursMatch[5]);
+        const closeMinute = parseInt(clinicHoursMatch[6]) || 0;
+        const closeAmPm = clinicHoursMatch[7];
+
+        if (openAmPm?.toLowerCase() === "pm" && openHour !== 12) openHour += 12;
+        if (openAmPm?.toLowerCase() === "am" && openHour === 12) openHour = 0;
+        if (closeAmPm?.toLowerCase() === "pm" && closeHour !== 12)
+          closeHour += 12;
+        if (closeAmPm?.toLowerCase() === "am" && closeHour === 12)
+          closeHour = 0;
+
+        const openDecimal = openHour + openMinute / 60;
+        const closeDecimal = closeHour + closeMinute / 60;
+
+        isClinicOpen =
+          currentTimeDecimal >= openDecimal &&
+          currentTimeDecimal <= closeDecimal;
+      }
+
+      // STEP 2: Parse doctor blocks
       const doctorBlocks = siteContext.split(
         /\n(?=(?:Dr\.?|Doctor)\s+[A-Z]|[A-Z][a-z]+ [A-Z][a-z]+:)/g,
       );
@@ -72,7 +101,7 @@ router.post("/message", async (req, res) => {
           .split(/\(Unavailable|Off|Closed|Not available/i)[0]
           .trim();
 
-        // Check if doctor works today (flexible day matching)
+        // Check if doctor works today
         const today = now
           .toLocaleDateString("en-US", { weekday: "long" })
           .toLowerCase();
@@ -80,51 +109,40 @@ router.post("/message", async (req, res) => {
         const todayShort = today.substring(0, 3).replace(".", "");
 
         const dayPatterns = [
-          today, // "monday"
-          todayAbbr, // "mon"
-          todayShort, // "mon" (no dot)
-          today.replace("wed", "weds?"), // handle Wed/ Wednesday
-          `\\b${todayAbbr}\\b`, // word boundary "mon"
+          today,
+          todayAbbr,
+          todayShort,
+          today.replace("wed", "weds?"),
+          `\\b${todayAbbr}\\b`,
           `\\b${todayShort}\\b`,
         ];
 
         const dayRegex = new RegExp(dayPatterns.join("|"), "i");
         const worksToday =
-          dayRegex.test(schedulePart) && !/sun|sat/i.test(schedulePart); // Quick weekend check
+          dayRegex.test(schedulePart) && !/sun|sat/i.test(schedulePart);
 
         if (!worksToday) continue;
 
-        // STEP 3: Extract time range - handles ALL these formats:
-        // - 9:00 AM - 2:00 PM
-        // - 9am-2pm
-        // - 9-2
-        // - 9:00-14:00
-        // - 9 AM to 2 PM
-        // - 9am to 2pm
+        // Extract time range
         const timeRegex =
           /(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\s*(?:-|to)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i;
         const timeMatch = schedulePart.match(timeRegex);
 
         if (timeMatch) {
-          // Parse start time
           let startHour = parseInt(timeMatch[1]);
           const startMinute = parseInt(timeMatch[2]) || 0;
           const startAmPm = timeMatch[3] ? timeMatch[3].toLowerCase() : null;
 
-          // Parse end time
           let endHour = parseInt(timeMatch[4]);
           const endMinute = parseInt(timeMatch[5]) || 0;
           const endAmPm = timeMatch[6] ? timeMatch[6].toLowerCase() : null;
 
-          // Convert to 24-hour format intelligently
           const convertTo24Hour = (hour, ampm) => {
             if (ampm) {
-              // 12-hour format with am/pm
               if (ampm === "pm" && hour !== 12) return hour + 12;
               if (ampm === "am" && hour === 12) return 0;
               return hour;
             } else {
-              // Assume 24-hour format if >12 or if no am/pm
               return hour;
             }
           };
@@ -135,7 +153,6 @@ router.post("/message", async (req, res) => {
           const startDecimal = startHour + startMinute / 60;
           const endDecimal = endHour + endMinute / 60;
 
-          // Check if available NOW
           if (
             currentTimeDecimal >= startDecimal &&
             currentTimeDecimal <= endDecimal
@@ -143,9 +160,7 @@ router.post("/message", async (req, res) => {
             isAnyDoctorAvailableNow = true;
           }
 
-          // Check if coming later today
           if (currentTimeDecimal < startDecimal) {
-            // Format display time nicely
             const displayHour = startHour % 12 || 12;
             const displayMinute = startMinute.toString().padStart(2, "0");
             const displayAmPm = startHour >= 12 ? "PM" : "AM";
@@ -167,10 +182,17 @@ router.post("/message", async (req, res) => {
       }
     }
 
-    // Create instruction for AI - 100% accurate, no guessing
-    const clinicStatusInstruction = isAnyDoctorAvailableNow
-      ? `IMPORTANT - CLINIC STATUS: The clinic is CURRENTLY OPEN. Do NOT say "clinic is closed" or "currently closed" in your response.`
-      : `IMPORTANT - CLINIC STATUS: The clinic is CURRENTLY CLOSED. Your response MUST begin with EXACTLY: "Our clinic is currently closed. We reopen ${nextOpenTime}. You can message me anytime for information as I am available 24/7" Do NOT provide phone numbers, maps links, "call us", or "visit us" in your response.`;
+    // ============================================
+    // ✅ INJECT CLINIC FACTS (SILENTLY) FOR THE BOT
+    // ============================================
+    const clinicFacts = `
+=== CURRENT CLINIC FACTS (FOR YOUR AWARENESS) ===
+- Current time: ${currentHour}:${currentMinutes.toString().padStart(2, "0")}
+- Clinic is ${isClinicOpen ? "OPEN" : "CLOSED"} based on operating hours
+- ${isAnyDoctorAvailableNow ? "Doctors are available now" : "No doctors are available at this moment"}
+- Next doctor available: ${nextOpenTime}
+- If user asks about TODAY'S availability and clinic is CLOSED, you MUST start response with "Our clinic is currently closed."
+`;
 
     // 2️⃣ Create or find session
     let session = await Session.findOne({ sessionId });
@@ -256,8 +278,8 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
     RIGHT:
     <b>Dr. Sameer Ahmed</b>`;
 
-    // 6️⃣ Assembly - INJECT the clinic status instruction
-    const prompt = `${finalSystemPrompt}\n\n${clinicStatusInstruction}\n\n${history
+    // 6️⃣ Assembly - Inject clinic facts
+    const prompt = `${finalSystemPrompt}\n\n${clinicFacts}\n\n${history
       .map((m) => `${m.role}: ${m.content}`)
       .join("\n")}\nassistant:`;
 
