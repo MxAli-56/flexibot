@@ -183,15 +183,15 @@ router.post("/message", async (req, res) => {
     }
 
     // ============================================
-    // ✅ INJECT CLINIC FACTS (SILENTLY) FOR THE BOT
+    // ✅ INJECT CLINIC FACTS (ONCE, CONCISELY)
     // ============================================
     const clinicFacts = `
-=== CURRENT CLINIC FACTS (FOR YOUR AWARENESS) ===
-- Current time: ${currentHour}:${currentMinutes.toString().padStart(2, "0")}
-- Clinic is ${isClinicOpen ? "OPEN" : "CLOSED"} based on operating hours
-- ${isAnyDoctorAvailableNow ? "Doctors are available now" : "No doctors are available at this moment"}
-- Next doctor available: ${nextOpenTime}
-- If user asks about TODAY'S availability and clinic is CLOSED, you MUST start response with "Our clinic is currently closed."
+=== CURRENT CLINIC CONTEXT ===
+Current time: ${currentHour}:${currentMinutes.toString().padStart(2, "0")}
+Clinic status: ${isClinicOpen ? "OPEN" : "CLOSED"}
+${isAnyDoctorAvailableNow ? "Doctors available now" : "No doctors at this moment"}
+Next doctor: ${nextOpenTime}
+${!isClinicOpen ? "IMPORTANT: If user asks about TODAY'S availability, start response with 'Our clinic is currently closed.'" : ""}
 `;
 
     // 2️⃣ Create or find session
@@ -278,10 +278,10 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
     RIGHT:
     <b>Dr. Sameer Ahmed</b>`;
 
-    // 6️⃣ Assembly - Inject clinic facts
-    const prompt = `${finalSystemPrompt}\n\n${clinicFacts}\n\n${history
+    // 6️⃣ Assembly - Inject clinic facts ONCE
+    const prompt = `${finalSystemPrompt}\n\n${clinicFacts}\n\nPrevious conversation:\n${history
       .map((m) => `${m.role}: ${m.content}`)
-      .join("\n")}\nassistant:`;
+      .join("\n")}\n\nUser: ${text}\nassistant:`;
 
     // 7️⃣ Dual AI Provider Handling
     let aiReplyText = "";
@@ -402,10 +402,14 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
         '<a href="$2" target="_blank" style="color: #007bff; text-decoration: underline; font-weight: bold;">$1</a>',
       );
 
-      // 15 📞 CONVERT PHONE NUMBER TO CLICKABLE TEL LINK
+      // 15 📞 CONVERT ANY PHONE NUMBER TO CLICKABLE TEL LINK
       aiReplyText = aiReplyText.replace(
-        /021-34XXXXXX/g,
-        '<a href="tel:02134XXXXXX" style="color: #007bff; text-decoration: underline; font-weight: bold;">021-34XXXXXX</a>',
+        /(?:0\d{2,3}[-\s]?\d{5,7}|\+92[-\s]?\d{10})/g,
+        (match) => {
+          // Remove all non-digit characters for the tel: link
+          const cleanNumber = match.replace(/[-\s]/g, "");
+          return `<a href="tel:${cleanNumber}" style="color: #007bff; text-decoration: underline; font-weight: bold;">${match}</a>`;
+        },
       );
 
       // 16. REMOVE EXCESSIVE LINE BREAKS (max 2 = 1 blank line)
