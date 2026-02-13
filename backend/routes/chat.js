@@ -203,21 +203,26 @@ router.post("/message", async (req, res) => {
     }
 
     // ============================================
-    // ✅ INJECT CLINIC FACTS - WITH CONVERSATION STATE
+    // ✅ INJECT CLINIC FACTS - WITH CLOSED/OPEN PRIORITY
     // ============================================
     let clinicFacts = "";
 
-    if (history.length === 0) {
-      // First message - give full context
-      clinicFacts = `
-=== CURRENT CLINIC CONTEXT ===
-Current time: ${currentHour}:${currentMinutes.toString().padStart(2, "0")}
-Clinic is ${isClinicOpen ? "OPEN" : "CLOSED"} based on operating hours
-${isAnyDoctorAvailableNow ? "Doctors are available now" : "No doctors are available at this moment"}
-Next doctor available: ${nextOpenTime}
-`;
+    // 👇👇👇 NEW: ALWAYS include clinic status FIRST
+    if (!isClinicOpen) {
+      clinicFacts = `🚨 CRITICAL INSTRUCTION: The clinic is CURRENTLY CLOSED. Today's hours are ${openHour % 12 || 12}:${openMinute.toString().padStart(2, "0")} ${openAmPm?.toUpperCase() || "AM"} - ${closeHour % 12 || 12}:${closeMinute.toString().padStart(2, "0")} ${closeAmPm?.toUpperCase() || "PM"}.
+
+IMPORTANT: If the user asks about TODAY'S availability (doctors, services, etc.), you MUST begin your response with: "Our clinic is currently closed." THEN you may provide the information they requested. After providing today's info, ask if they'd like to know about tomorrow's availability.`;
     } else {
-      // Check if doctor list was already provided in last 2 bot messages
+      clinicFacts = `✅ Clinic is CURRENTLY OPEN. Today's hours are ${openHour % 12 || 12}:${openMinute.toString().padStart(2, "0")} ${openAmPm?.toUpperCase() || "AM"} - ${closeHour % 12 || 12}:${closeMinute.toString().padStart(2, "0")} ${closeAmPm?.toUpperCase() || "PM"}.`;
+    }
+
+    // Add current context
+    clinicFacts += `\nCurrent time: ${currentHour}:${currentMinutes.toString().padStart(2, "0")}`;
+    clinicFacts += `\n${isAnyDoctorAvailableNow ? "Doctors are available now" : "No doctors are at this moment"}`;
+    clinicFacts += `\nNext doctor available: ${nextOpenTime}`;
+
+    // Add conversation reminders (your existing logic)
+    if (history.length > 0) {
       const botMessages = history
         .filter((msg) => msg.role === "assistant")
         .slice(-2);
@@ -228,25 +233,8 @@ Next doctor available: ${nextOpenTime}
           msg.content.includes("Dr. Faraz"),
       );
 
-      let reminders = [];
-
       if (doctorListAlreadyProvided) {
-        reminders.push(
-          "REMINDER: You have already provided the doctor list. Do NOT repeat the full list. Only answer the current question.",
-        );
-      }
-
-      if (!isClinicOpen) {
-        reminders.push(
-          "REMINDER: Clinic is CLOSED. If user asks about today's availability, start with 'Our clinic is currently closed.'",
-        );
-      }
-
-      if (reminders.length > 0) {
-        clinicFacts = `
-=== CONVERSATION REMINDERS ===
-${reminders.join("\n")}
-`;
+        clinicFacts += `\n\nREMINDER: You have already provided the doctor list. Do NOT repeat it. Only answer the current question.`;
       }
     }
 
@@ -457,9 +445,8 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
 
       // 17. 📞 CONVERT ANY PHONE NUMBER TO CLICKABLE TEL LINK
       aiReplyText = aiReplyText.replace(
-        /(?:0\d{2,3}[-\s]?\d{5,7}|\+92[-\s]?\d{10})/g,
+        /(?:0\d{2,3}[-\s]?\d{5,8}|\+92[-\s]?\d{9,10})/g, // Allow 5-8 digits
         (match) => {
-          // Remove all non-digit characters for the tel: link
           const cleanNumber = match.replace(/[-\s]/g, "");
           return `<a href="tel:${cleanNumber}" style="color: #007bff; text-decoration: underline; font-weight: bold;">${match}</a>`;
         },
