@@ -203,41 +203,53 @@ router.post("/message", async (req, res) => {
     }
 
     // ============================================
-    // ✅ INJECT CLINIC FACTS - WITH REPETITION CONTROL
+    // ✅ INJECT CLINIC FACTS - WITH CONVERSATION STATE
     // ============================================
     let clinicFacts = "";
 
     if (history.length === 0) {
+      // First message - give full context
       clinicFacts = `
 === CURRENT CLINIC CONTEXT ===
 Current time: ${currentHour}:${currentMinutes.toString().padStart(2, "0")}
-Clinic is ${isClinicOpen ? "OPEN" : "CLOSED"}
-${isAnyDoctorAvailableNow ? "Doctors available now" : "No doctors at this moment"}
-Next doctor: ${nextOpenTime}
+Clinic is ${isClinicOpen ? "OPEN" : "CLOSED"} based on operating hours
+${isAnyDoctorAvailableNow ? "Doctors are available now" : "No doctors are available at this moment"}
+Next doctor available: ${nextOpenTime}
 `;
     } else {
-      // Check if doctor list was already provided
-      const doctorListProvided = history.some(
+      // Check if doctor list was already provided in last 2 bot messages
+      const botMessages = history
+        .filter((msg) => msg.role === "assistant")
+        .slice(-2);
+      const doctorListAlreadyProvided = botMessages.some(
         (msg) =>
-          msg.role === "assistant" &&
-          (msg.content.includes("available dentists are:") ||
-            msg.content.includes("Dr. Sameer") ||
-            msg.content.includes("Dr. Faraz")),
+          msg.content.includes("available dentists are:") ||
+          msg.content.includes("Dr. Sameer") ||
+          msg.content.includes("Dr. Faraz"),
       );
 
-      if (doctorListProvided) {
-        clinicFacts = `
-REMINDER: You have already provided the doctor list. Do NOT repeat it. Only answer the current question.
-`;
+      let reminders = [];
+
+      if (doctorListAlreadyProvided) {
+        reminders.push(
+          "REMINDER: You have already provided the doctor list. Do NOT repeat the full list. Only answer the current question.",
+        );
       }
 
       if (!isClinicOpen) {
-        clinicFacts += `
-NOTE: Clinic is CLOSED. If user asks about today's availability, start with "Our clinic is currently closed."
+        reminders.push(
+          "REMINDER: Clinic is CLOSED. If user asks about today's availability, start with 'Our clinic is currently closed.'",
+        );
+      }
+
+      if (reminders.length > 0) {
+        clinicFacts = `
+=== CONVERSATION REMINDERS ===
+${reminders.join("\n")}
 `;
       }
     }
-
+    
     const getCurrentDateTime = () => {
       const now = new Date();
       const options = {
