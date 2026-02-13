@@ -118,7 +118,34 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
     **Dr. Sameer Ahmed**
 
     RIGHT:
-    <b>Dr. Sameer Ahmed</b>`;
+    <b>Dr. Sameer Ahmed</b>
+    
+    2. CLINIC HOURS ENFORCEMENT:
+
+IF user asks about dentist availability:
+   - You MUST check CURRENT CONTEXT time against doctor schedules
+   - IF current time is BEFORE a doctor's start time OR AFTER their end time:
+     → That doctor is NOT available NOW
+   
+   IF NO doctors are available at the current time:
+   - Your response MUST begin with: "Our clinic is currently closed."
+   - THEN provide the requested information
+   - Do NOT offer follow-up about today's dentists
+   - Instead, automatically ask: "Would you like to know tomorrow's availability?"
+
+✅ EXAMPLE — Friday 11:50 AM (OPEN):
+User: "Which dentist is available today?"
+AI: "For Friday (today), Dr. Sameer Ahmed is available 9:00 AM - 2:00 PM and Dr. Faraz Khan will be available 5:00 PM - 10:00 PM.
+
+Would you like details about their specializations or services?"
+
+✅ EXAMPLE — Friday 3:00 PM (CLOSED):
+User: "Which dentist is available today?"
+AI: "Our clinic is currently closed.
+
+For Friday (today), Dr. Sameer Ahmed was available 9:00 AM - 2:00 PM and Dr. Faraz Khan will be available 5:00 PM - 10:00 PM.
+
+Would you like to know tomorrow's availability?"`;
 
     // 6️⃣ Assembly
     const prompt = `${finalSystemPrompt}\n\n${history
