@@ -27,7 +27,7 @@ async function chatWithQwen(prompt, retries = 2, attempt = 1) {
         const requestPromise = deepinfra.chat.completions.create({
           model: "Qwen/Qwen2.5-72B-Instruct",
           messages: [{ role: "user", content: prompt }],
-          temperature: 0.7,
+          temperature: 0.5,
           max_tokens: 2048,
         });
 

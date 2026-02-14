@@ -367,12 +367,17 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
       // 16. REMOVE EXCESSIVE LINE BREAKS (max 2 = 1 blank line) - MOVED FROM 16
       aiReplyText = aiReplyText.replace(/(<br\s*\/?>){3,}/gi, "<br/><br/>");
 
-      // 17. 📞 CONVERT ANY PHONE NUMBER TO CLICKABLE TEL LINK
+      // 17. 📞 CONVERT PHONE NUMBER TO CLICKABLE TEL LINK (with space formatting)
       aiReplyText = aiReplyText.replace(
-        /(?:0\d{2,3}[-\s]?\d{5,8}|\+92[-\s]?\d{9,10})/g,
+        /(?:0\d{2,3}[-\s]?\d{5,8}|\+?92[-\s]?\d{9,12}|\+\d{1,3}[-\s]?\d{4,14})/g,
         (match) => {
+          // Remove all non‑digit characters for the tel: link, but keep leading '+' if present
           const cleanNumber = match.replace(/[-\s]/g, "");
-          return `<a href="tel:${cleanNumber}" style="color: #007bff; text-decoration: underline; font-weight: bold;">${match}</a>`;
+          // Only convert if the number is long enough to be plausible (≥10 digits)
+          if (cleanNumber.length < 10) return match;
+          // Create a display version: replace dashes with spaces
+          const displayNumber = match.replace(/-/g, " ");
+          return `<a href="tel:${cleanNumber}" style="color: #007bff; text-decoration: underline; font-weight: bold;">${displayNumber}</a>`;
         },
       );
     }
