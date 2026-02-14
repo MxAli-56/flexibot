@@ -931,6 +931,14 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
 
     async function sendMessage(networkRetries = 2) {
+      // Remove suggestion buttons if present (first message)
+       const suggestionContainer = document.querySelector(
+         ".suggestion-container",
+       );
+       if (suggestionContainer) {
+         suggestionContainer.remove();
+       }
+
       const text = Input.value.trim();
       if (!text) return;
 
