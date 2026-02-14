@@ -352,14 +352,15 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
         aiReplyText = aiReplyText.trim() + " 😊";
       }
 
-      // 14. 📞 CONVERT PHONE NUMBER TO MARKDOWN LINK (step 14 will turn it into HTML)
+      // 14. 📞 DIRECT PHONE LINK CONVERSION (AFTER all other text processing)
       aiReplyText = aiReplyText.replace(
         /(?:0\d{2,3}[-\s]?\d{5,8}|\+?92[-\s]?\d{9,12}|\+\d{1,3}[-\s]?\d{4,14})/g,
         (match) => {
           const cleanNumber = match.replace(/[-\s]/g, "");
           if (cleanNumber.length < 10) return match; // ignore short numbers
           const displayNumber = match.replace(/-/g, " "); // show with spaces
-          return `[${displayNumber}](tel:${cleanNumber})`;
+          // Use a simple, clean style – no target="_blank" for tel: links
+          return `<a href="tel:${cleanNumber}" style="color: #007bff; text-decoration: underline; font-weight: bold;">${displayNumber}</a>`;
         },
       );
 
