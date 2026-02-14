@@ -841,15 +841,9 @@ window.addEventListener("DOMContentLoaded", async () => {
       if (e.key === "Escape") closeChat();
     });
 
-    // ✅ Session ID (same as flexibot.js)
-    let sessionId = localStorage.getItem("flexibotSessionId");
-    if (!sessionId) {
-      sessionId =
-        Date.now().toString() +
-        "-" +
-        Math.random().toString(36).substring(2, 8);
-      localStorage.setItem("flexibotSessionId", sessionId);
-    }
+    // Always create a new session on page load
+    const sessionId = Date.now().toString() + "-" + Math.random().toString(36).substring(2, 8);
+    localStorage.setItem("flexibotSessionId", sessionId);
 
     function appendMessage(who, text) {
       const wrapper = document.createElement("div");

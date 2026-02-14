@@ -67,7 +67,6 @@ router.post("/message", async (req, res) => {
     let isAnyDoctorAvailableNow = false; // will be updated by doctor parsing (if any)
     let isClinicOpen = false;
     let nextOpenTime = "tomorrow during business hours";
-    let upcomingDoctorsToday = [];
 
     let openDisplayHour, openDisplayMinute, openDisplayAmPm;
     let closeDisplayHour, closeDisplayMinute, closeDisplayAmPm;
@@ -307,6 +306,10 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
         (match) => `<b>${match}</b>`,
       );
 
+      // 9.5 Fix any remaining Dr. line breaks (from model output)
+      aiReplyText = aiReplyText.replace(/Dr\.\s*\n\s*/g, "Dr. ");
+      aiReplyText = aiReplyText.replace(/Dr\.\s*<br\s*\/?>\s*/g, "Dr. ");
+
       // 10. BOLD SERVICE NAMES (Pattern: "ServiceName: PKR")
       aiReplyText = aiReplyText.replace(
         /^([-•*]?\s*)([A-Z][^:]+):\s*PKR/gm,
@@ -366,7 +369,7 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
 
       // 17. 📞 CONVERT ANY PHONE NUMBER TO CLICKABLE TEL LINK
       aiReplyText = aiReplyText.replace(
-        /(?:0\d{2,3}[-\s]?\d{5,8}|\+92[-\s]?\d{9,10})/g, // Allow 5-8 digits
+        /(?:0\d{2,3}[-\s]?\d{5,8}|\+92[-\s]?\d{9,10})/g,
         (match) => {
           const cleanNumber = match.replace(/[-\s]/g, "");
           return `<a href="tel:${cleanNumber}" style="color: #007bff; text-decoration: underline; font-weight: bold;">${match}</a>`;
