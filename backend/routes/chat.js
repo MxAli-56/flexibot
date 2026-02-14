@@ -64,20 +64,19 @@ router.post("/message", async (req, res) => {
     const currentMinutes = now.getMinutes();
     const currentTimeDecimal = currentHour + currentMinutes / 60;
 
-    let isAnyDoctorAvailableNow = false;
+    let isAnyDoctorAvailableNow = false; // will be updated by doctor parsing (if any)
     let isClinicOpen = false;
     let nextOpenTime = "tomorrow during business hours";
     let upcomingDoctorsToday = [];
 
-    // Variables for clinic hours display (remain undefined until parsed)
     let openDisplayHour, openDisplayMinute, openDisplayAmPm;
     let closeDisplayHour, closeDisplayMinute, closeDisplayAmPm;
-    let clinicHoursExist = false; // flag
+    let clinicHoursExist = false;
 
     if (clientData?.siteContext) {
       const siteContext = clientData.siteContext;
 
-      // STEP 1: Parse Clinic Hours
+      // STEP 1: Parse Clinic Hours (keep this)
       const clinicHoursMatch = siteContext.match(
         /Clinic Hours:?\s*([A-Za-z, -]+?)\s*(\d+):(\d+)\s*(AM|PM)?\s*(?:-|to)\s*(\d+):(\d+)\s*(AM|PM)/i,
       );
@@ -92,7 +91,6 @@ router.post("/message", async (req, res) => {
         const closeMinute = parseInt(clinicHoursMatch[6]) || 0;
         const closeAmPm = clinicHoursMatch[7];
 
-        // Store display values (original 12-hour format)
         openDisplayHour = openHour;
         openDisplayMinute = openMinute;
         openDisplayAmPm = openAmPm;
@@ -100,7 +98,6 @@ router.post("/message", async (req, res) => {
         closeDisplayMinute = closeMinute;
         closeDisplayAmPm = closeAmPm;
 
-        // Convert to 24-hour for comparison
         if (openAmPm?.toLowerCase() === "pm" && openHour !== 12) openHour += 12;
         if (openAmPm?.toLowerCase() === "am" && openHour === 12) openHour = 0;
         if (closeAmPm?.toLowerCase() === "pm" && closeHour !== 12)
@@ -115,132 +112,27 @@ router.post("/message", async (req, res) => {
           currentTimeDecimal >= openDecimal &&
           currentTimeDecimal < closeDecimal;
 
-        console.log("📅 Parsed hours:", { openHour, openMinute, openAmPm, closeHour, closeMinute, closeAmPm });
-        console.log("⏰ 24h conversion:", { openDecimal, closeDecimal, currentTimeDecimal });
+        console.log("📅 Parsed hours:", {
+          openHour,
+          openMinute,
+          openAmPm,
+          closeHour,
+          closeMinute,
+          closeAmPm,
+        });
+        console.log("⏰ 24h conversion:", {
+          openDecimal,
+          closeDecimal,
+          currentTimeDecimal,
+        });
         console.log("🏥 isClinicOpen:", isClinicOpen);
       }
 
-// STEP 2: Parse doctor blocks
-const doctorBlocks = siteContext.split(
-  /\n(?=(?:Dr\.?|Doctor)\s+[A-Z]|[A-Z][a-z]+ [A-Z][a-z]+:)/g,
-);
-
-// Array to store all doctors working today (for display)
-let doctorsTodayList = [];
-
-for (const block of doctorBlocks) {
-  if (!block.includes(":")) continue;
-
-  // Extract doctor name
-  const nameMatch = block.match(
-    /^(?:Dr\.?|Doctor)?\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\s*:/,
-  );
-  if (!nameMatch) continue;
-  const doctorName = nameMatch[1].trim();
-
-  // Extract schedule part (after colon, before Unavailable)
-  const schedulePart = block
-    .split(":")[1]
-    .split(/\(Unavailable|Off|Closed|Not available/i)[0]
-    .trim();
-
-  // Check if doctor works today
-  const today = now
-    .toLocaleDateString("en-US", { weekday: "long" })
-    .toLowerCase();
-  const todayAbbr = today.substring(0, 3);
-  const todayShort = today.substring(0, 3).replace(".", "");
-
-  const dayPatterns = [
-    today,
-    todayAbbr,
-    todayShort,
-    today.replace("wed", "weds?"),
-    `\\b${todayAbbr}\\b`,
-    `\\b${todayShort}\\b`,
-  ];
-
-  const dayRegex = new RegExp(dayPatterns.join("|"), "i");
-  const worksToday = dayRegex.test(schedulePart); // removed incorrect !/sun|sat/
-
-  if (!worksToday) continue;
-
-  // Extract time range
-  const timeRegex =
-    /(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\s*(?:-|to)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i;
-  const timeMatch = schedulePart.match(timeRegex);
-
-  if (timeMatch) {
-    let startHour = parseInt(timeMatch[1]);
-    const startMinute = parseInt(timeMatch[2]) || 0;
-    const startAmPm = timeMatch[3] ? timeMatch[3].toLowerCase() : null;
-
-    let endHour = parseInt(timeMatch[4]);
-    const endMinute = parseInt(timeMatch[5]) || 0;
-    const endAmPm = timeMatch[6] ? timeMatch[6].toLowerCase() : null;
-
-    const convertTo24Hour = (hour, ampm) => {
-      if (ampm) {
-        if (ampm === "pm" && hour !== 12) return hour + 12;
-        if (ampm === "am" && hour === 12) return 0;
-        return hour;
-      } else {
-        // If no am/pm, assume 24-hour format (e.g., 14:00)
-        return hour;
-      }
-    };
-
-    startHour = convertTo24Hour(startHour, startAmPm);
-    endHour = convertTo24Hour(endHour, endAmPm);
-
-    const startDecimal = startHour + startMinute / 60;
-    const endDecimal = endHour + endMinute / 60;
-
-    // Check if available NOW
-    if (
-      currentTimeDecimal >= startDecimal &&
-      currentTimeDecimal <= endDecimal
-    ) {
-      isAnyDoctorAvailableNow = true;
+      // (Optional) You could still parse a simple "isAnyDoctorAvailableNow" if you want,
+      // but Qwen can figure it out from the full BUSINESS KNOWLEDGE.
+      // For now, leave isAnyDoctorAvailableNow as false (or you can parse a quick flag).
+      // I'd suggest leaving it false and let the model decide.
     }
-
-    // If doctor starts later today, add to upcoming list
-    if (currentTimeDecimal < startDecimal) {
-      const displayHour = startHour % 12 || 12;
-      const displayMinute = startMinute.toString().padStart(2, "0");
-      const displayAmPm = startHour >= 12 ? "PM" : "AM";
-      const displayTime = `${displayHour}:${displayMinute} ${displayAmPm}`;
-
-      upcomingDoctorsToday.push({
-        name: doctorName,
-        time: startDecimal,
-        displayTime,
-      });
-    }
-
-    // ----- Build display strings for this doctor (for doctorsTodayList) -----
-    const startDisplay = `${startHour % 12 || 12}:${startMinute.toString().padStart(2, "0")} ${startHour >= 12 ? "PM" : "AM"}`;
-    const endDisplay = `${endHour % 12 || 12}:${endMinute.toString().padStart(2, "0")} ${endHour >= 12 ? "PM" : "AM"}`;
-    const timingStr = `${startDisplay} - ${endDisplay}`;
-
-    // Add to doctorsTodayList (every doctor that works today)
-    doctorsTodayList.push({
-      name: doctorName,
-      timings: timingStr,
-      startDecimal: startDecimal,
-    });
-  }
-}
-
-// Sort doctorsTodayList by start time
-doctorsTodayList.sort((a, b) => a.startDecimal - b.startDecimal);
-
-// Determine next open time (from upcomingDoctorsToday)
-  if (upcomingDoctorsToday.length > 0) {
-    upcomingDoctorsToday.sort((a, b) => a.time - b.time);
-    nextOpenTime = `today at ${upcomingDoctorsToday[0].displayTime}`;
-  }
-}
 
     // ============================================
     // ✅ INJECT CLINIC FACTS - ONLY ON FIRST MESSAGE
@@ -248,7 +140,6 @@ doctorsTodayList.sort((a, b) => a.startDecimal - b.startDecimal);
     let clinicFacts = "";
 
     if (history.length === 0) {
-      // ----- Build clinic hours string -----
       let hoursStr = "";
       if (clinicHoursExist) {
         const openTime = `${openDisplayHour % 12 || 12}:${openDisplayMinute.toString().padStart(2, "0")} ${openDisplayAmPm?.toUpperCase() || "AM"}`;
@@ -256,17 +147,6 @@ doctorsTodayList.sort((a, b) => a.startDecimal - b.startDecimal);
         hoursStr = ` Today's hours are ${openTime} - ${closeTime}.`;
       }
 
-      // ----- Build today's doctor list from parsed data -----
-      let doctorsTodayStr = "";
-      if (upcomingDoctorsToday.length > 0 || isAnyDoctorAvailableNow) {
-        if (doctorsTodayList.length > 0) {
-          doctorsTodayStr =
-            "\n\nDoctors available today:\n" +
-            doctorsTodayList.map((d) => `- ${d.name}: ${d.timings}`).join("\n");
-        }
-      }
-
-      // ----- Status line -----
       let statusLine = isClinicOpen
         ? "✅ Clinic is CURRENTLY OPEN."
         : "🚨 CRITICAL INSTRUCTION: The clinic is CURRENTLY CLOSED.";
@@ -276,28 +156,7 @@ doctorsTodayList.sort((a, b) => a.startDecimal - b.startDecimal);
       clinicFacts += `\nCurrent time: ${currentHour}:${currentMinutes.toString().padStart(2, "0")}`;
       clinicFacts += `\n${isAnyDoctorAvailableNow ? "Doctors are available now" : "No doctors are at this moment"}`;
       clinicFacts += `\nNext doctor available: ${nextOpenTime}`;
-      // ----- Build today's doctor list from parsed data -----
-      if (doctorsTodayList.length > 0) {
-        doctorsTodayStr = "\n\nDoctors available today:\n";
-        doctorsTodayList.forEach((doc) => {
-          doctorsTodayStr += `- ${doc.name}: ${doc.timings}\n`;
-        });
-      }
-    } else {
-      // ----- Subsequent messages: only remind about repetition if needed -----
-      // We need to check if the bot already listed doctors. Use the last bot message, not hardcoded names.
-      const lastBotMessage = history
-        .filter((m) => m.role === "assistant")
-        .pop();
-      if (
-        lastBotMessage &&
-        /available dentists? are:|doctors? available/i.test(
-          lastBotMessage.content,
-        )
-      ) {
-        clinicFacts =
-          "REMINDER: You have already provided the doctor list. Do NOT repeat it. Only answer the current question.";
-      }
+      // No doctor list injection – Qwen will read BUSINESS KNOWLEDGE directly.
     }
 
     const getCurrentDateTime = () => {
