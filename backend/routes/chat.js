@@ -56,49 +56,62 @@ router.post("/message", async (req, res) => {
     // 4️⃣ Get Chat History
     const history = await fetchConversation(session.sessionId, 12);
 
-    // ============================================
-    // 🚨 1.5️⃣ CLINIC HOURS ENFORCEMENT - MULTI-TENANT PARSER
-    // ============================================
-    const now = new Date();
-    const currentHour = now.getHours();
-    const currentMinutes = now.getMinutes();
-    const currentTimeDecimal = currentHour + currentMinutes / 60;
+// ============================================
+// 🚨 1.5️⃣ CLINIC HOURS ENFORCEMENT - MULTI-TENANT PARSER
+// ============================================
+const now = new Date();
+const currentHour = now.getHours();
+const currentMinutes = now.getMinutes();
+const currentTimeDecimal = currentHour + currentMinutes / 60;
 
-    let isAnyDoctorAvailableNow = false;
-    let isClinicOpen = false;
-    let nextOpenTime = "tomorrow during business hours";
-    let upcomingDoctorsToday = []; // ✅ FIXED: was missing
+let isAnyDoctorAvailableNow = false;
+let isClinicOpen = false;
+let nextOpenTime = "tomorrow during business hours";
+let upcomingDoctorsToday = [];
 
-    if (clientData?.siteContext) {
-      const siteContext = clientData.siteContext;
+// Variables for clinic hours display (remain undefined until parsed)
+let openDisplayHour, openDisplayMinute, openDisplayAmPm;
+let closeDisplayHour, closeDisplayMinute, closeDisplayAmPm;
+let clinicHoursExist = false; // flag
 
-      // STEP 1: Parse Clinic Hours
-      const clinicHoursMatch = siteContext.match(
-        /Clinic Hours:?\s*([^-]+)-?\s*(\d+):(\d+)\s*(AM|PM)?\s*(?:-|to)\s*(\d+):(\d+)\s*(AM|PM)/i,
-      );
+if (clientData?.siteContext) {
+  const siteContext = clientData.siteContext;
 
-      if (clinicHoursMatch) {
-        let openHour = parseInt(clinicHoursMatch[2]);
-        const openMinute = parseInt(clinicHoursMatch[3]) || 0;
-        const openAmPm = clinicHoursMatch[4];
-        let closeHour = parseInt(clinicHoursMatch[5]);
-        const closeMinute = parseInt(clinicHoursMatch[6]) || 0;
-        const closeAmPm = clinicHoursMatch[7];
+  // STEP 1: Parse Clinic Hours
+  const clinicHoursMatch = siteContext.match(
+    /Clinic Hours:?\s*([^-]+)-?\s*(\d+):(\d+)\s*(AM|PM)?\s*(?:-|to)\s*(\d+):(\d+)\s*(AM|PM)/i,
+  );
 
-        if (openAmPm?.toLowerCase() === "pm" && openHour !== 12) openHour += 12;
-        if (openAmPm?.toLowerCase() === "am" && openHour === 12) openHour = 0;
-        if (closeAmPm?.toLowerCase() === "pm" && closeHour !== 12)
-          closeHour += 12;
-        if (closeAmPm?.toLowerCase() === "am" && closeHour === 12)
-          closeHour = 0;
+  if (clinicHoursMatch) {
+    clinicHoursExist = true;
+    let openHour = parseInt(clinicHoursMatch[2]);
+    const openMinute = parseInt(clinicHoursMatch[3]) || 0;
+    const openAmPm = clinicHoursMatch[4];
+    let closeHour = parseInt(clinicHoursMatch[5]);
+    const closeMinute = parseInt(clinicHoursMatch[6]) || 0;
+    const closeAmPm = clinicHoursMatch[7];
 
-        const openDecimal = openHour + openMinute / 60;
-        const closeDecimal = closeHour + closeMinute / 60;
+    // Store display values (original 12-hour format)
+    openDisplayHour = openHour;
+    openDisplayMinute = openMinute;
+    openDisplayAmPm = openAmPm;
+    closeDisplayHour = closeHour;
+    closeDisplayMinute = closeMinute;
+    closeDisplayAmPm = closeAmPm;
 
-        isClinicOpen =
-          currentTimeDecimal >= openDecimal &&
-          currentTimeDecimal < closeDecimal;
-      }
+    // Convert to 24-hour for comparison
+    if (openAmPm?.toLowerCase() === "pm" && openHour !== 12) openHour += 12;
+    if (openAmPm?.toLowerCase() === "am" && openHour === 12) openHour = 0;
+    if (closeAmPm?.toLowerCase() === "pm" && closeHour !== 12) closeHour += 12;
+    if (closeAmPm?.toLowerCase() === "am" && closeHour === 12) closeHour = 0;
+
+    const openDecimal = openHour + openMinute / 60;
+    const closeDecimal = closeHour + closeMinute / 60;
+
+    isClinicOpen =
+      currentTimeDecimal >= openDecimal &&
+      currentTimeDecimal < closeDecimal;
+  }
 
       // STEP 2: Parse doctor blocks
       const doctorBlocks = siteContext.split(
@@ -207,16 +220,23 @@ router.post("/message", async (req, res) => {
     // ============================================
     let clinicFacts = "";
 
-    // 👇👇👇 NEW: ALWAYS include clinic status FIRST
-    if (!isClinicOpen) {
-      clinicFacts = `🚨 CRITICAL INSTRUCTION: The clinic is CURRENTLY CLOSED. Today's hours are ${openHour % 12 || 12}:${openMinute.toString().padStart(2, "0")} ${openAmPm?.toUpperCase() || "AM"} - ${closeHour % 12 || 12}:${closeMinute.toString().padStart(2, "0")} ${closeAmPm?.toUpperCase() || "PM"}.
-
-IMPORTANT: If the user asks about TODAY'S availability (doctors, services, etc.), you MUST begin your response with: "Our clinic is currently closed." THEN you may provide the information they requested. After providing today's info, ask if they'd like to know about tomorrow's availability.`;
-    } else {
-      clinicFacts = `✅ Clinic is CURRENTLY OPEN. Today's hours are ${openHour % 12 || 12}:${openMinute.toString().padStart(2, "0")} ${openAmPm?.toUpperCase() || "AM"} - ${closeHour % 12 || 12}:${closeMinute.toString().padStart(2, "0")} ${closeAmPm?.toUpperCase() || "PM"}.`;
+    // Build hours string only if we have clinic hours
+    let hoursStr = "";
+    if (clinicHoursExist) {
+      const openTime = `${openDisplayHour % 12 || 12}:${openDisplayMinute.toString().padStart(2, "0")} ${openDisplayAmPm?.toUpperCase() || "AM"}`;
+      const closeTime = `${closeDisplayHour % 12 || 12}:${closeDisplayMinute.toString().padStart(2, "0")} ${closeDisplayAmPm?.toUpperCase() || "PM"}`;
+      hoursStr = ` Today's hours are ${openTime} - ${closeTime}.`;
     }
 
-    // Add current context
+    if (!isClinicOpen) {
+      clinicFacts = `🚨 CRITICAL INSTRUCTION: The clinic is CURRENTLY CLOSED.${hoursStr}
+
+IMPORTANT: If the user asks about TODAY'S availability, you MUST begin your response with: "Our clinic is currently closed." THEN provide the information they requested. After providing today's info, ask if they'd like to know about tomorrow's availability.`;
+    } else {
+      clinicFacts = `✅ Clinic is CURRENTLY OPEN.${hoursStr}`;
+    }
+
+    // Add current context (always available)
     clinicFacts += `\nCurrent time: ${currentHour}:${currentMinutes.toString().padStart(2, "0")}`;
     clinicFacts += `\n${isAnyDoctorAvailableNow ? "Doctors are available now" : "No doctors are at this moment"}`;
     clinicFacts += `\nNext doctor available: ${nextOpenTime}`;
