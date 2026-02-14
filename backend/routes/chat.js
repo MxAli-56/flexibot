@@ -352,34 +352,31 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
         aiReplyText = aiReplyText.trim() + " 😊";
       }
 
-      // 14. DYNAMIC LINK CONVERSION - YOUR ORIGINAL LOGIC - UNTOUCHED
+      // 14. 📞 CONVERT PHONE NUMBER TO MARKDOWN LINK (step 14 will turn it into HTML)
+      aiReplyText = aiReplyText.replace(
+        /(?:0\d{2,3}[-\s]?\d{5,8}|\+?92[-\s]?\d{9,12}|\+\d{1,3}[-\s]?\d{4,14})/g,
+        (match) => {
+          const cleanNumber = match.replace(/[-\s]/g, "");
+          if (cleanNumber.length < 10) return match; // ignore short numbers
+          const displayNumber = match.replace(/-/g, " "); // show with spaces
+          return `[${displayNumber}](tel:${cleanNumber})`;
+        },
+      );
+
+      // 15. DYNAMIC LINK CONVERSION - YOUR ORIGINAL LOGIC - UNTOUCHED
       aiReplyText = aiReplyText.replace(
         /\[(.*?)\]\((.*?)\)/g,
         '<a href="$2" target="_blank" style="color: #007bff; text-decoration: underline; font-weight: bold;">$1</a>',
       );
 
-      // 15. FINAL CLEANUP
+      // 16. FINAL CLEANUP
       aiReplyText = aiReplyText
         .trim()
         .replace(/(<br\s*\/?>|\n|\s)+$/gi, "")
         .trim();
 
-      // 16. REMOVE EXCESSIVE LINE BREAKS (max 2 = 1 blank line) - MOVED FROM 16
+      // 17. REMOVE EXCESSIVE LINE BREAKS (max 2 = 1 blank line) - MOVED FROM 16
       aiReplyText = aiReplyText.replace(/(<br\s*\/?>){3,}/gi, "<br/><br/>");
-
-      // 17. 📞 CONVERT PHONE NUMBER TO CLICKABLE TEL LINK (with space formatting)
-      aiReplyText = aiReplyText.replace(
-        /(?:0\d{2,3}[-\s]?\d{5,8}|\+?92[-\s]?\d{9,12}|\+\d{1,3}[-\s]?\d{4,14})/g,
-        (match) => {
-          // Remove all non‑digit characters for the tel: link, but keep leading '+' if present
-          const cleanNumber = match.replace(/[-\s]/g, "");
-          // Only convert if the number is long enough to be plausible (≥10 digits)
-          if (cleanNumber.length < 10) return match;
-          // Create a display version: replace dashes with spaces
-          const displayNumber = match.replace(/-/g, " ");
-          return `<a href="tel:${cleanNumber}" style="color: #007bff; text-decoration: underline; font-weight: bold;">${displayNumber}</a>`;
-        },
-      );
     }
 
     // 8️⃣ Save & Respond (Using the now cleaned aiReplyText)
