@@ -352,15 +352,14 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
         aiReplyText = aiReplyText.trim() + " 😊";
       }
 
-      // 14. 📞 DIRECT PHONE LINK CONVERSION (AFTER all other text processing)
+      // 14. 📞 CONVERT PHONE NUMBER TO CLICKABLE LINK (with CSS class)
       aiReplyText = aiReplyText.replace(
         /(?:0\d{2,3}[-\s]?\d{5,8}|\+?92[-\s]?\d{9,12}|\+\d{1,3}[-\s]?\d{4,14})/g,
         (match) => {
           const cleanNumber = match.replace(/[-\s]/g, "");
           if (cleanNumber.length < 10) return match; // ignore short numbers
           const displayNumber = match.replace(/-/g, " "); // show with spaces
-          // Use a simple, clean style – no target="_blank" for tel: links
-          return `<a href="tel:${cleanNumber}" style="color: #007bff; text-decoration: underline; font-weight: bold;">${displayNumber}</a>`;
+          return `<a href="tel:${cleanNumber}" class="phone-link">${displayNumber}</a>`;
         },
       );
 

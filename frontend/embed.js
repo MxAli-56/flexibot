@@ -236,6 +236,12 @@ window.addEventListener("DOMContentLoaded", async () => {
     background-color: rgba(255, 255, 255, 0.6); /* Brighter white on hover */
 }
 
+.phone-link {
+  color: #007bff;
+  text-decoration: underline;
+  font-weight: bold;
+}
+
 /* The wrapper that adds padding around the pill */
 .flexibot-input-container {
   padding: 15px;
