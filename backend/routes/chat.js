@@ -125,7 +125,6 @@ router.post("/message", async (req, res) => {
           currentTimeDecimal,
         });
         console.log("🏥 isClinicOpen:", isClinicOpen);
-        console.log("👨‍⚕️ Doctors working today check:", doctorsWorkingToday); // Add this variable if you have it
       }
 
       // (Optional) You could still parse a simple "isAnyDoctorAvailableNow" if you want,
