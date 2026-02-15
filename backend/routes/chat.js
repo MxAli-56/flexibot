@@ -125,6 +125,7 @@ router.post("/message", async (req, res) => {
           currentTimeDecimal,
         });
         console.log("🏥 isClinicOpen:", isClinicOpen);
+        console.log("👨‍⚕️ Doctors working today check:", doctorsWorkingToday); // Add this variable if you have it
       }
 
       // (Optional) You could still parse a simple "isAnyDoctorAvailableNow" if you want,
@@ -366,30 +367,36 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
         aiReplyText = aiReplyText.trim() + " 😊";
       }
 
-      // 14. 📞 CONVERT PHONE NUMBER TO MARKDOWN LINK (step 15 will turn into HTML)
+      // 14. 📞 PHONE NUMBER → MARKDOWN LINK
       aiReplyText = aiReplyText.replace(
         /(?:0\d{2,3}[-\s]?\d{5,8}|\+?92[-\s]?\d{9,12}|\+\d{1,3}[-\s]?\d{4,14})/g,
         (match) => {
           const cleanNumber = match.replace(/[-\s]/g, "");
-          if (cleanNumber.length < 10) return match; // ignore short numbers
-          const displayNumber = match.replace(/-/g, " "); // show with spaces
+          if (cleanNumber.length < 10) return match;
+          const displayNumber = match.replace(/-/g, " ");
           return `[${displayNumber}](tel:${cleanNumber})`;
         },
       );
 
-      // 15. DYNAMIC LINK CONVERSION
+      // 15. DYNAMIC LINK CONVERSION (markdown → HTML)
       aiReplyText = aiReplyText.replace(
         /\[(.*?)\]\((.*?)\)/g,
         '<a href="$2" class="phone-link" target="_blank">$1</a>',
       );
 
-      // 16. FINAL CLEANUP
+      // 16 FIX PUNCTUATION AROUND LINKS
+      aiReplyText = aiReplyText.replace(
+        /<a([^>]+)>([^<]+)([.,!?;])<\/a>/g,
+        "<a$1>$2</a>$3",
+      );
+
+      // 17. FINAL CLEANUP
       aiReplyText = aiReplyText
         .trim()
         .replace(/(<br\s*\/?>|\n|\s)+$/gi, "")
         .trim();
 
-      // 17. REMOVE EXCESSIVE LINE BREAKS (max 2 = 1 blank line) - MOVED FROM 16
+      // 18. REMOVE EXCESSIVE LINE BREAKS (max 2 = 1 blank line) - MOVED FROM 16
       aiReplyText = aiReplyText.replace(/(<br\s*\/?>){3,}/gi, "<br/><br/>");
     }
 
