@@ -366,26 +366,31 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
         aiReplyText = aiReplyText.trim() + " 😊";
       }
 
-      // 14. 📞 PHONE NUMBER → MARKDOWN LINK
-      aiReplyText = aiReplyText.replace(
-        /(?:0\d{2,3}[-\s]?\d{5,8}|\+?92[-\s]?\d{9,12}|\+\d{1,3}[-\s]?\d{4,14})/g,
-        (match) => {
-          const cleanNumber = match.replace(/[-\s]/g, "");
-          if (cleanNumber.length < 10) return match;
-          const displayNumber = match.replace(/-/g, " ");
-          return `[${displayNumber}](tel:${cleanNumber})`;
-        },
-      );
-
-      // 15. DYNAMIC LINK CONVERSION (markdown → HTML)
+      // 14. DYNAMIC LINK CONVERSION (Markdown [Text](URL) → HTML)
+      // This handles your Google Maps Link first.
       aiReplyText = aiReplyText.replace(
         /\[(.*?)\]\((.*?)\)/g,
         '<a href="$2" class="phone-link" target="_blank">$1</a>',
       );
 
-      // 16 FIX PUNCTUATION AROUND LINKS
+      // 15. 📞 PHONE NUMBER → HTML LINK
+      // We process this SECOND and go straight to HTML to avoid the markdown parser.
       aiReplyText = aiReplyText.replace(
-        /<a([^>]+)>([^<]+)([.,!?;])<\/a>/g,
+        /(?:0\d{2,3}[-\s]?\d{5,8}|\+?92[-\s]?\d{9,12}|\+\d{1,3}[-\s]?\d{4,14})/g,
+        (match) => {
+          const cleanNumber = match.replace(/[-\s]/g, "");
+          // Check if it's already inside an <a> tag to avoid double-wrapping
+          if (match.length < 10) return match;
+
+          const displayNumber = match.trim();
+          return `<a href="tel:${cleanNumber}" class="phone-link">${displayNumber}</a>`;
+        },
+      );
+
+      // 16. FIX PUNCTUATION & CLEANUP
+      // This ensures no trailing punctuation gets sucked into the <a> tags.
+      aiReplyText = aiReplyText.replace(
+        /<a([^>]+)>(.*?) ([.,!?;])<\/a>/g,
         "<a$1>$2</a>$3",
       );
 
