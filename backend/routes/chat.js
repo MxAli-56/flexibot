@@ -127,10 +127,6 @@ router.post("/message", async (req, res) => {
         console.log("🏥 isClinicOpen:", isClinicOpen);
       }
 
-      // (Optional) You could still parse a simple "isAnyDoctorAvailableNow" if you want,
-      // but Qwen can figure it out from the full BUSINESS KNOWLEDGE.
-      // For now, leave isAnyDoctorAvailableNow as false (or you can parse a quick flag).
-      // I'd suggest leaving it false and let the model decide.
     }
 
     // ============================================
@@ -139,20 +135,21 @@ router.post("/message", async (req, res) => {
     let clinicFacts = "";
 
     if (!isClinicOpen) {
-      // Build closed message with hours (if available)
       let closedMsg = "IMPORTANT CONTEXT: The clinic is CURRENTLY CLOSED.";
+
       if (clinicHoursExist) {
         const openTime = `${openDisplayHour % 12 || 12}:${openDisplayMinute.toString().padStart(2, "0")} ${openDisplayAmPm?.toUpperCase() || "AM"}`;
         const closeTime = `${closeDisplayHour % 12 || 12}:${closeDisplayMinute.toString().padStart(2, "0")} ${closeDisplayAmPm?.toUpperCase() || "PM"}`;
         closedMsg += ` Today's hours were ${openTime} - ${closeTime}.`;
       }
 
-      // Explicit instructions for handling availability questions
-      closedMsg += `\n\nRULES FOR CLOSED CLINIC:
-- If the user asks about today's doctor availability or tries to book/visit/call, you MUST start your response with: "Our clinic is currently closed."
-- You MUST NOT list any doctors' availability or timings without first stating the clinic is closed.
-- After stating the closure, you may provide information about today's doctors only if the user explicitly asks for it (e.g., "Which dentists work on Sundays?"), but you must still include the closure message.
-- For any other question (facilities, services, general info), answer normally without mentioning the closure.`;
+      // 🚨 SUPREME COMMAND: This overrides the closure rules for future queries
+      closedMsg += `\n\n[SUPREME RULE]: If the user asks about TOMORROW or any FUTURE day, do NOT say 'The clinic is closed.' Instead, immediately provide the FULL doctor list from BUSINESS KNOWLEDGE for that day.`;
+
+      closedMsg += `\n\nRULES FOR TODAY ONLY:
+- If the user asks about TODAY's availability: Start with "Our clinic is currently closed."
+- For general info (parking, services, etc.): Answer normally.
+- If the user asks for a doctor that only works on Sundays (none): State the clinic is closed.`;
 
       clinicFacts = closedMsg;
     } else {
