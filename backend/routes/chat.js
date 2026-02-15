@@ -366,31 +366,26 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
         aiReplyText = aiReplyText.trim() + " 😊";
       }
 
-      // 14. DYNAMIC LINK CONVERSION (Markdown [Text](URL) → HTML)
-      // This handles your Google Maps Link first.
-      aiReplyText = aiReplyText.replace(
-        /\[(.*?)\]\((.*?)\)/g,
-        '<a href="$2" class="phone-link" target="_blank">$1</a>',
-      );
-
-      // 15. 📞 PHONE NUMBER → HTML LINK
-      // We process this SECOND and go straight to HTML to avoid the markdown parser.
+      // 14. 📞 PHONE NUMBER → MARKDOWN LINK (with punctuation outside)
       aiReplyText = aiReplyText.replace(
         /(?:0\d{2,3}[-\s]?\d{5,8}|\+?92[-\s]?\d{9,12}|\+\d{1,3}[-\s]?\d{4,14})/g,
         (match) => {
           const cleanNumber = match.replace(/[-\s]/g, "");
-          // Check if it's already inside an <a> tag to avoid double-wrapping
-          if (match.length < 10) return match;
-
-          const displayNumber = match.trim();
-          return `<a href="tel:${cleanNumber}" class="phone-link">${displayNumber}</a>`;
+          if (cleanNumber.length < 10) return match;
+          const displayNumber = match.replace(/-/g, " ");
+          return `[${displayNumber}](tel:${cleanNumber})`;
         },
       );
 
-      // 16. FIX PUNCTUATION & CLEANUP
-      // This ensures no trailing punctuation gets sucked into the <a> tags.
+      // 15. MARKDOWN → HTML (with class, no target="_blank")
       aiReplyText = aiReplyText.replace(
-        /<a([^>]+)>(.*?) ([.,!?;])<\/a>/g,
+        /\[(.*?)\]\((.*?)\)/g,
+        '<a href="$2" class="phone-link">$1</a>',
+      );
+
+      // 15.5 FIX PUNCTUATION AFTER LINKS (move trailing punctuation outside)
+      aiReplyText = aiReplyText.replace(
+        /<a([^>]+)>([^<]+)([.,!?;])<\/a>/g,
         "<a$1>$2</a>$3",
       );
 
