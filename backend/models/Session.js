@@ -11,6 +11,7 @@ const sessionSchema = new mongoose.Schema({
     phone: { type: String, default: "" },
     issue: { type: String, default: "" },
     doctor: { type: String, default: "" },
+    time: { type: String, default: "" },
   },
   createdAt: { type: Date, default: Date.now },
 });

@@ -14,17 +14,18 @@ const router = express.Router();
 
 async function createLeadAndNotify(session, clientData, leadData) {
   try {
-    // Create lead in database
-    const lead = await Lead.create({
+    // Save lead to database (await this – we want it saved)
+    await Lead.create({
       sessionId: session.sessionId,
       clientId: session.clientId,
       name: leadData.name,
       phone: leadData.phone,
       issue: leadData.issue,
       doctor: leadData.doctor || "",
+      time: leadData.time || "",
     });
 
-    // If clinic has an email, send notification
+    // If clinic has an email, send notification in the background (don't await)
     if (clientData.email) {
       const subject = `New Lead from FlexiBot - ${clientData.name || "Clinic"}`;
       const body = `
@@ -34,17 +35,21 @@ Name: ${leadData.name}
 Phone: ${leadData.phone}
 Issue: ${leadData.issue}
 Doctor preference: ${leadData.doctor || "Any"}
+Preferred time: ${leadData.time || "Not specified"}
 
 Please contact them soon.
       `;
-      await sendEmailWithRetry(clientData.email, subject, body);
+      // Fire and forget – errors will be logged but not block the response
+      sendEmailWithRetry(clientData.email, subject, body).catch((e) =>
+        console.error("Background email error:", e),
+      );
     } else {
       console.warn(
         `⚠️ No email set for client ${session.clientId}, lead stored but not sent.`,
       );
     }
   } catch (error) {
-    console.error("❌ Error creating lead or sending email:", error);
+    console.error("❌ Error creating lead:", error);
     // Do not throw – we don't want to break the conversation
   }
 }
@@ -103,7 +108,7 @@ router.post("/message", async (req, res) => {
       // If no current lead state but we detect intent, start the flow
       if (bookingIntent && !session.leadState) {
         session.leadState = "awaiting_name";
-        session.tempLead = { name: "", phone: "", issue: "", doctor: "" };
+        session.tempLead = { name: "", phone: "", issue: "", doctor: "", time: "" };
         await session.save();
         return res.json({
           reply:
@@ -115,6 +120,17 @@ router.post("/message", async (req, res) => {
       // If we are in the middle of lead collection (session.leadState is set)
       if (session.leadState) {
         let reply = "";
+
+        // Allow user to cancel lead collection
+        if (/cancel|never mind|forget it|stop/i.test(text)) {
+          session.leadState = null;
+          session.tempLead = null;
+          await session.save();
+          return res.json({
+            reply: "Okay, let me know if you need any help!",
+            sessionId: session.sessionId,
+          });
+        }
 
         switch (session.leadState) {
           case "awaiting_name":
@@ -138,13 +154,17 @@ router.post("/message", async (req, res) => {
             break;
 
           case "awaiting_doctor":
-            // Save doctor preference (if "any", store empty string)
             session.tempLead.doctor = text.toLowerCase() === "any" ? "" : text;
+            session.leadState = "awaiting_time";
+            reply =
+              "What time would you prefer? (e.g., 'around 6 PM' or 'anytime')";
+            break;
 
-            // Create lead and send email
+          case "awaiting_time":
+            session.tempLead.time =
+              text.toLowerCase() === "anytime" ? "" : text;
+            // Create lead and send email (fire and forget)
             await createLeadAndNotify(session, clientData, session.tempLead);
-
-            // Mark lead as captured and clear state
             session.leadCaptured = true;
             session.leadState = null;
             session.tempLead = null;
@@ -153,7 +173,6 @@ router.post("/message", async (req, res) => {
             break;
 
           default:
-            // Should not happen, but reset just in case
             session.leadState = null;
             reply = "Sorry, something went wrong. How can I help you?";
         }

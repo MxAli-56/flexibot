@@ -3,12 +3,14 @@ const nodemailer = require("nodemailer");
 // Configure transporter once (reuse for all emails)
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
-  port: process.env.SMTP_PORT,
-  secure: false, // true for 465, false for other ports
+  port: 465,
+  secure: true, // use SSL
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
+  connectionTimeout: 10000, // 10 seconds
+  socketTimeout: 10000,
 });
 
 /**
