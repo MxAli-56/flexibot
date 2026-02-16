@@ -8,12 +8,13 @@ const clientSchema = new mongoose.Schema(
     name: { type: String, required: true },
     websiteURL: { type: String, required: true },
     botName: { type: String, default: "FlexiBot" },
-    theme: {type: String, default: ""},
-    systemPrompt: {type: String, default: ""},
+    theme: { type: String, default: "" },
+    email: { type: String, default: null },
+    systemPrompt: { type: String, default: "" },
     siteContext: { type: String, default: "" },
     embedCode: { type: String },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // Create the model
