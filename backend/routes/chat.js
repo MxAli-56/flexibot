@@ -92,13 +92,87 @@ router.post("/message", async (req, res) => {
       text,
     });
 
+    // --- LEAD COLLECTION LOGIC STARTS HERE ---
+    // If lead already captured, skip
+    if (!session.leadCaptured) {
+      const bookingIntent =
+        /book|appointment|schedule|visit|come in|see a doctor|consult|checkup|treatment|procedure|i'?d like to come|i want to come|i'?ll visit|i'?ll come|can i see dr\.?|make an appointment|fix an appointment|set up a visit/i.test(
+          text,
+        );
+
+      // If no current lead state but we detect intent, start the flow
+      if (bookingIntent && !session.leadState) {
+        session.leadState = "awaiting_name";
+        session.tempLead = { name: "", phone: "", issue: "", doctor: "" };
+        await session.save();
+        return res.json({
+          reply:
+            "Sure, I can help you schedule that. Please provide your name.",
+          sessionId: session.sessionId,
+        });
+      }
+
+      // If we are in the middle of lead collection (session.leadState is set)
+      if (session.leadState) {
+        let reply = "";
+
+        switch (session.leadState) {
+          case "awaiting_name":
+            session.tempLead.name = text;
+            session.leadState = "awaiting_phone";
+            reply = "Thanks! Now please provide your phone number.";
+            break;
+
+          case "awaiting_phone":
+            session.tempLead.phone = text;
+            session.leadState = "awaiting_issue";
+            reply =
+              "Please briefly describe the issue you're facing (e.g., wisdom tooth pain, general checkup).";
+            break;
+
+          case "awaiting_issue":
+            session.tempLead.issue = text;
+            session.leadState = "awaiting_doctor";
+            reply =
+              "Is there a specific doctor you'd prefer? (If you're not sure, just say 'any')";
+            break;
+
+          case "awaiting_doctor":
+            // Save doctor preference (if "any", store empty string)
+            session.tempLead.doctor = text.toLowerCase() === "any" ? "" : text;
+
+            // Create lead and send email
+            await createLeadAndNotify(session, clientData, session.tempLead);
+
+            // Mark lead as captured and clear state
+            session.leadCaptured = true;
+            session.leadState = null;
+            session.tempLead = null;
+            reply =
+              "Thank you! Our team will call you shortly to confirm your appointment. Is there anything else I can help with?";
+            break;
+
+          default:
+            // Should not happen, but reset just in case
+            session.leadState = null;
+            reply = "Sorry, something went wrong. How can I help you?";
+        }
+
+        await session.save();
+        return res.json({ reply, sessionId: session.sessionId });
+      }
+    }
+    // --- LEAD COLLECTION LOGIC ENDS HERE ---
+
     // 4️⃣ Get Chat History
     const history = await fetchConversation(session.sessionId, 12);
 
     // ============================================
     // 🚨 1.5️⃣ CLINIC HOURS ENFORCEMENT - MULTI-TENANT PARSER
     // ============================================
-    const now = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Karachi"}));
+    const now = new Date(
+      new Date().toLocaleString("en-US", { timeZone: "Asia/Karachi" }),
+    );
     const currentHour = now.getHours();
     const currentMinutes = now.getMinutes();
     const currentTimeDecimal = currentHour + currentMinutes / 60;
@@ -169,7 +243,7 @@ router.post("/message", async (req, res) => {
     // ============================================
     let clinicFacts = "";
 
-        const getCurrentDateTime = () => {
+    const getCurrentDateTime = () => {
       const now = new Date();
       const options = {
         timeZone: "Asia/Karachi",
