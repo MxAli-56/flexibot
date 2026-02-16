@@ -4,11 +4,50 @@ const { randomUUID } = require("crypto");
 const Session = require("../models/Session");
 const Message = require("../models/Message");
 const Client = require("../models/Clients");
+const Lead = require("../models/Lead");
+const { sendEmailWithRetry } = require("../utils/email");
 
 const { chatWithMistral } = require("../providers/mistral");
 const { chatWithQwen } = require("../providers/qwen");
 
 const router = express.Router();
+
+async function createLeadAndNotify(session, clientData, leadData) {
+  try {
+    // Create lead in database
+    const lead = await Lead.create({
+      sessionId: session.sessionId,
+      clientId: session.clientId,
+      name: leadData.name,
+      phone: leadData.phone,
+      issue: leadData.issue,
+      doctor: leadData.doctor || "",
+    });
+
+    // If clinic has an email, send notification
+    if (clientData.email) {
+      const subject = `New Lead from FlexiBot - ${clientData.name || "Clinic"}`;
+      const body = `
+A potential patient is interested:
+
+Name: ${leadData.name}
+Phone: ${leadData.phone}
+Issue: ${leadData.issue}
+Doctor preference: ${leadData.doctor || "Any"}
+
+Please contact them soon.
+      `;
+      await sendEmailWithRetry(clientData.email, subject, body);
+    } else {
+      console.warn(
+        `⚠️ No email set for client ${session.clientId}, lead stored but not sent.`,
+      );
+    }
+  } catch (error) {
+    console.error("❌ Error creating lead or sending email:", error);
+    // Do not throw – we don't want to break the conversation
+  }
+}
 
 async function fetchConversation(sessionId, limit = 12) {
   const docs = await Message.find({ sessionId })
