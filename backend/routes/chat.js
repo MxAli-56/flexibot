@@ -59,15 +59,12 @@ router.post("/message", async (req, res) => {
     // ============================================
     // 🚨 1.5️⃣ CLINIC HOURS ENFORCEMENT - MULTI-TENANT PARSER
     // ============================================
-    const now = new Date();
+    const now = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Karachi"}));
     const currentHour = now.getHours();
     const currentMinutes = now.getMinutes();
     const currentTimeDecimal = currentHour + currentMinutes / 60;
 
-    let isAnyDoctorAvailableNow = false; // will be updated by doctor parsing (if any)
     let isClinicOpen = false;
-    let nextOpenTime = "tomorrow during business hours";
-
     let openDisplayHour, openDisplayMinute, openDisplayAmPm;
     let closeDisplayHour, closeDisplayMinute, closeDisplayAmPm;
     let clinicHoursExist = false;
