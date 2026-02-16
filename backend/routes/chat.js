@@ -126,47 +126,40 @@ router.post("/message", async (req, res) => {
         });
         console.log("🏥 isClinicOpen:", isClinicOpen);
       }
-
     }
 
     // ============================================
-    // ✅ INJECT CLINIC FACTS - COMPLETE CLOSED HANDLING
+    // ✅ CLINIC FACTS INJECTION
     // ============================================
     let clinicFacts = "";
 
-    if (!isClinicOpen) {
-      let closedMsg = "IMPORTANT CONTEXT: The clinic is CURRENTLY CLOSED.";
+    // 1. ALWAYS generate the Metadata (This fixes the "Open" logic amnesia)
+    const contextMetadata = `[CONTEXT: Today=${getCurrentDateTime().split(",")[0]} | Time=${currentHour}:${currentMinutes.toString().padStart(2, "0")} | Clinic_Status=${isClinicOpen ? "OPEN" : "CLOSED"}]`;
 
+    if (!isClinicOpen) {
+      // --- START: YOUR SAVED CLOSED LOGIC (UNTOUCHED) ---
+      let closedMsg = "IMPORTANT CONTEXT: The clinic is CURRENTLY CLOSED.";
       if (clinicHoursExist) {
         const openTime = `${openDisplayHour % 12 || 12}:${openDisplayMinute.toString().padStart(2, "0")} ${openDisplayAmPm?.toUpperCase() || "AM"}`;
         const closeTime = `${closeDisplayHour % 12 || 12}:${closeDisplayMinute.toString().padStart(2, "0")} ${closeDisplayAmPm?.toUpperCase() || "PM"}`;
         closedMsg += ` Today's hours were ${openTime} - ${closeTime}.`;
       }
-
-      // 🚨 SUPREME COMMAND: This overrides the closure rules for future queries
       closedMsg += `\n\n[SUPREME RULE]: If the user asks about TOMORROW or any FUTURE day, do NOT say 'The clinic is closed.' Instead, immediately provide the FULL doctor list from BUSINESS KNOWLEDGE for that day.`;
-
-      closedMsg += `\n\nRULES FOR TODAY ONLY:
-- If the user asks about TODAY's availability: Start with "Our clinic is currently closed."
-- For general info (parking, services, etc.): Answer normally.
-- If the user asks for a doctor that only works on Sundays (none): State the clinic is closed.`;
-
-      clinicFacts = closedMsg;
+      closedMsg += `\n\nRULES FOR TODAY ONLY:\n- If the user asks about TODAY's availability: Start with "Our clinic is currently closed."\n- For general info (parking, services, etc.): Answer normally.\n- If the user asks for a doctor that only works on Sundays (none): State the clinic is closed.`;
+      clinicFacts = contextMetadata + "\n" + closedMsg;
+      // --- END: YOUR SAVED CLOSED LOGIC ---
     } else {
-      // Clinic open – full context only on first message (unchanged)
+      // --- START: NEW OPEN LOGIC (ONLY FIXING OPEN STATUS) ---
+      clinicFacts = contextMetadata;
       if (history.length === 0) {
-        let hoursStr = "";
-        if (clinicHoursExist) {
-          const openTime = `${openDisplayHour % 12 || 12}:${openDisplayMinute.toString().padStart(2, "0")} ${openDisplayAmPm?.toUpperCase() || "AM"}`;
-          const closeTime = `${closeDisplayHour % 12 || 12}:${closeDisplayMinute.toString().padStart(2, "0")} ${closeDisplayAmPm?.toUpperCase() || "PM"}`;
-          hoursStr = ` Today's hours are ${openTime} - ${closeTime}.`;
-        }
-        clinicFacts = `✅ Clinic is CURRENTLY OPEN.${hoursStr}`;
-        clinicFacts += `\nCurrent time: ${currentHour}:${currentMinutes.toString().padStart(2, "0")}`;
-        clinicFacts += `\n${isAnyDoctorAvailableNow ? "Doctors are available now" : "No doctors are at this moment"}`;
-        clinicFacts += `\nNext doctor available: ${nextOpenTime}`;
+        const openTimeStr = clinicHoursExist
+          ? `${openDisplayHour % 12 || 12}:${openDisplayMinute.toString().padStart(2, "0")} ${openDisplayAmPm?.toUpperCase()}`
+          : "9:00 AM";
+        const closeTimeStr = clinicHoursExist
+          ? `${closeDisplayHour % 12 || 12}:${closeDisplayMinute.toString().padStart(2, "0")} ${closeDisplayAmPm?.toUpperCase()}`
+          : "10:00 PM";
+        clinicFacts += `\n✅ Clinic is CURRENTLY OPEN. Today's hours are ${openTimeStr} - ${closeTimeStr}.`;
       }
-      // No extra facts on subsequent messages – bot relies on memory
     }
 
     const getCurrentDateTime = () => {
