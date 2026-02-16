@@ -133,6 +133,21 @@ router.post("/message", async (req, res) => {
     // ============================================
     let clinicFacts = "";
 
+        const getCurrentDateTime = () => {
+      const now = new Date();
+      const options = {
+        timeZone: "Asia/Karachi",
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      };
+      return now.toLocaleString("en-US", options);
+    };
+
     // 1. ALWAYS generate the Metadata (This fixes the "Open" logic amnesia)
     const contextMetadata = `[CONTEXT: Today=${getCurrentDateTime().split(",")[0]} | Time=${currentHour}:${currentMinutes.toString().padStart(2, "0")} | Clinic_Status=${isClinicOpen ? "OPEN" : "CLOSED"}]`;
 
@@ -161,21 +176,6 @@ router.post("/message", async (req, res) => {
         clinicFacts += `\n✅ Clinic is CURRENTLY OPEN. Today's hours are ${openTimeStr} - ${closeTimeStr}.`;
       }
     }
-
-    const getCurrentDateTime = () => {
-      const now = new Date();
-      const options = {
-        timeZone: "Asia/Karachi",
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: true,
-      };
-      return now.toLocaleString("en-US", options);
-    };
 
     const finalSystemPrompt = `
 ${clientData?.systemPrompt || "You are a helpful assistant."}
