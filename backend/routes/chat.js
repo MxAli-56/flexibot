@@ -95,6 +95,21 @@ async function quickValidateWithAI(prompt) {
   }
 }
 
+const getCurrentDateTime = () => {
+  const now = new Date();
+  const options = {
+    timeZone: "Asia/Karachi",
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  };
+  return now.toLocaleString("en-US", options);
+};
+
 router.post("/message", async (req, res) => {
   try {
     const { sessionId, clientId = "default", text } = req.body;
@@ -420,21 +435,6 @@ Do not add any extra text.
     // A short, persistent reminder about listing ALL doctors – included in every response
     const doctorListReminder =
       "\n📌 REMINDER: When asked about today's doctors, you MUST list EVERY doctor working today (including evening shifts) from BUSINESS KNOWLEDGE. Do NOT omit any.";
-
-    const getCurrentDateTime = () => {
-      const now = new Date();
-      const options = {
-        timeZone: "Asia/Karachi",
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: true,
-      };
-      return now.toLocaleString("en-US", options);
-    };
 
     // 1. ALWAYS generate the Metadata (This fixes the "Open" logic amnesia)
     const contextMetadata = `[CONTEXT: Today=${getCurrentDateTime().split(",")[0]} | Time=${currentHour}:${currentMinutes.toString().padStart(2, "0")} | Clinic_Status=${isClinicOpen ? "OPEN" : "CLOSED"}]`;
