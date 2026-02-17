@@ -124,9 +124,6 @@ router.post("/message", async (req, res) => {
     // 1️⃣ Fetch Client Knowledge Base
     const clientData = await Client.findOne({ clientId });
 
-    // 4️⃣ Get Chat History
-    const history = await fetchConversation(session.sessionId, 12);
-
     // ============================================
     // 🚨 1.5️⃣ CLINIC HOURS ENFORCEMENT - MULTI-TENANT PARSER
     // ============================================
@@ -439,6 +436,9 @@ Do not add any other text.
         sessionId: session.sessionId,
       });
     }
+
+    // 4️⃣ Get Chat History
+    const history = await fetchConversation(session.sessionId, 12);
 
     // ============================================
     // ✅ CLINIC FACTS INJECTION
