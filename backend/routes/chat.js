@@ -138,6 +138,7 @@ router.post("/message", async (req, res) => {
     let openDisplayHour, openDisplayMinute, openDisplayAmPm;
     let closeDisplayHour, closeDisplayMinute, closeDisplayAmPm;
     let clinicHoursExist = false;
+    let doctorSchedules = {};
 
     if (clientData?.siteContext) {
       const siteContext = clientData.siteContext;
@@ -193,7 +194,24 @@ router.post("/message", async (req, res) => {
         });
         console.log("🏥 isClinicOpen:", isClinicOpen);
       }
-    }
+
+      // --- PARSE DOCTOR SCHEDULES (for JavaScript validation) ---
+        // Replace the inner declaration with assignment only
+        doctorSchedules = {};
+        const doctorRegex =
+          /Dr\.\s*([^:]+):\s*\(Unavailable:\s*([^)]+)\)\.?\s*Available:\s*([^.]+)\.?/gi;
+        let match;
+        while ((match = doctorRegex.exec(siteContext)) !== null) {
+          const name = match[1].trim();
+          const unavailable = match[2].split(",").map((d) => d.trim());
+          const available = match[3].trim();
+          doctorSchedules[name.toLowerCase()] = {
+            name,
+            unavailable,
+            available,
+          };
+        }
+      }
 
     // 2️⃣ Create or find session
     let session = await Session.findOne({ sessionId });
@@ -360,64 +378,146 @@ router.post("/message", async (req, res) => {
             break;
 
           case "awaiting_confirmation":
+            // Inside awaiting_confirmation, after user says "yes"
             if (/yes|correct|right|ok|yep|yeah/i.test(text)) {
+
+            // ----- PRE-VALIDATION (JavaScript) -----
+            let validationError = null;
+            let canUseJavaScript = false;
+            let requestedHour = null, requestedMinute = 0;
+
+  // Parse requested time if not "Anytime"
+  if (session.tempLead.time && session.tempLead.time.toLowerCase() !== "anytime") {
+    const timeStr = session.tempLead.time;
+    const timeMatch = timeStr.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
+    if (timeMatch) {
+      let hour = parseInt(timeMatch[1]);
+      const minute = parseInt(timeMatch[2]) || 0;
+      const ampm = timeMatch[3] ? timeMatch[3].toLowerCase() : null;
+
+      if (ampm === 'pm' && hour !== 12) hour += 12;
+      if (ampm === 'am' && hour === 12) hour = 0;
+
+      requestedHour = hour;
+      requestedMinute = minute;
+      canUseJavaScript = true;
+    }
+  }
+
+  // Clinic hours pre-validation
+  if (canUseJavaScript && clinicHoursExist) {
+    const requestedDecimal = requestedHour + requestedMinute / 60;
+    const openDecimal = openDisplayHour + openDisplayMinute / 60;
+    const closeDecimal = closeDisplayHour + closeDisplayMinute / 60;
+
+    if (requestedDecimal < openDecimal || requestedDecimal > closeDecimal) {
+      validationError = `Our clinic is closed at that time. Hours are ${openDisplayHour % 12 || 12}:${openDisplayMinute.toString().padStart(2, '0')} ${openDisplayAmPm?.toUpperCase() || 'AM'} - ${closeDisplayHour % 12 || 12}:${closeDisplayMinute.toString().padStart(2, '0')} ${closeDisplayAmPm?.toUpperCase() || 'PM'}.`;
+    }
+  }
+
+  // Doctor availability pre-validation
+  if (!validationError && session.tempLead.doctor && session.tempLead.doctor.toLowerCase() !== "any") {
+    const doctorInput = session.tempLead.doctor.toLowerCase().replace(/^dr\.?\s*/, '').trim();
+    const matchedDoctor = Object.values(doctorSchedules).find(d =>
+      d.name.toLowerCase().includes(doctorInput) || doctorInput.includes(d.name.toLowerCase())
+    );
+
+    if (matchedDoctor) {
+      const today = getCurrentDateTime().split(",")[0];
+      const todayAbbr = today.substring(0, 3);
+      if (matchedDoctor.unavailable.includes(todayAbbr)) {
+        validationError = `${matchedDoctor.name} does not work on ${today}. Their full schedule: ${matchedDoctor.available}. Would you like to try a different day or doctor?`;
+      }
+    }
+  }
+
+  // If we have a validation error, skip AI and respond directly
+  if (validationError) {
+    reply = `I notice an issue: ${validationError} Would you like to restart? (type <b>restart</b> to begin again or <b>cancel</b> to stop)`;
+    session.leadState = null;
+    session.tempLead = null;
+    await session.save();
+    return res.json({ reply, sessionId: session.sessionId });
+  }
+  // ----- END PRE-VALIDATION -----
+}
               // AI validation
               const validationPrompt = `
-You are a validation assistant. Check if the following appointment request is valid based on BUSINESS KNOWLEDGE.
+You are a validation assistant. Check if this appointment request is valid.
 
-Today's date: ${getCurrentDateTime().split(",")[0]}
-Current time: ${currentHour}:${currentMinutes.toString().padStart(2, "0")}
-${clinicHoursExist ? `Today's clinic hours: ${openDisplayHour % 12 || 12}:${openDisplayMinute.toString().padStart(2, "0")} ${openDisplayAmPm?.toUpperCase() || "AM"} - ${closeDisplayHour % 12 || 12}:${closeDisplayMinute.toString().padStart(2, "0")} ${closeDisplayAmPm?.toUpperCase() || "PM"}` : ""}
+TODAY'S DATE: ${getCurrentDateTime().split(",")[0]}
+CURRENT TIME: ${currentHour}:${currentMinutes.toString().padStart(2, "0")}
 
-Request details:
+CLINIC HOURS: ${clinicHoursExist ? `${openDisplayHour % 12 || 12}:${openDisplayMinute.toString().padStart(2, "0")} ${openDisplayAmPm?.toUpperCase() || "AM"} - ${closeDisplayHour % 12 || 12}:${closeDisplayMinute.toString().padStart(2, "0")} ${closeDisplayAmPm?.toUpperCase() || "PM"}` : "Not specified"}
+
+REQUEST DETAILS:
 - Doctor: ${session.tempLead.doctor || "Any"}
 - Requested time: ${session.tempLead.time || "Anytime"}
 - Issue: ${session.tempLead.issue}
 
-BUSINESS KNOWLEDGE:
+DOCTOR SCHEDULES (from BUSINESS KNOWLEDGE):
 ${clientData.siteContext || "No data"}
 
-Instructions:
-1. If the requested time is not "Anytime", check if it is within today's clinic hours (if provided). A time is within hours if it is between the open time and the close time, inclusive of the close time. If outside, respond with exactly: "INVALID: I am sorry but our clinic is closed at that time. Would you like to book any other time today or tomorrow?"
-2. If the requested time is "Anytime", skip the time check (any time is acceptable as long as the doctor works today).
-3. Now check the doctor's schedule:
-   - Look at the doctor's entry in BUSINESS KNOWLEDGE. It will have a line like:
-     "Dr. Alizeh Shah: (Unavailable: Mon, Wed, Fri, Sun). Available: Tue, Thu, Sat (4:00 PM - 9:00 PM)."
-     The days in parentheses after "Unavailable:" are the days the doctor does NOT work.
-     The days listed after "Available:" are the days they DO work.
-   - If today's day is in the "Available:" list, then the doctor works today.
-   - If today's day is in the "Unavailable:" list (or not in the "Available:" list), then they do NOT work today.
-   - Then proceed with the corresponding responses.
-   4. If valid, respond with exactly: "VALID".
-Do not add any other text.
+INSTRUCTIONS - FOLLOW EXACTLY:
+
+1. TIME FORMAT: Always convert times to 24-hour format for comparison. Example: "8:55 PM" = 20:55, "9:00 PM" = 21:00.
+
+2. CLINIC HOURS CHECK:
+   - If clinic hours exist, the requested time must be BETWEEN open and close times.
+   - Times at exactly the close time are allowed (e.g., 10:00 PM if clinic closes at 10:00 PM).
+
+3. DOCTOR AVAILABILITY CHECK:
+   - Look at the doctor's schedule in BUSINESS KNOWLEDGE.
+   - Check the "Unavailable" list: days in parentheses after "(Unavailable: ...)" are days the doctor DOES NOT work.
+   - Check the "Available" list: days and times listed are when the doctor DOES work.
+   - Example: "Dr. Alizeh Shah: (Unavailable: Mon, Wed, Fri, Sun). Available: Tue, Thu, Sat (4:00 PM - 9:00 PM)."
+     → Works Tue/Thu/Sat, 4-9 PM. Does NOT work Mon/Wed/Fri/Sun.
+
+4. RESPONSE FORMAT - RESPOND WITH EXACTLY ONE OF THESE:
+   - "VALID" if the request is valid
+   - "INVALID: [reason]" where [reason] is a helpful message that includes:
+     * If clinic closed: "Our clinic is closed at that time. Hours are [hours]."
+     * If doctor not available today: "[Doctor] does not work on [day]. Their schedule: [full schedule]."
+     * If doctor works today but time invalid: "[Doctor] is not available at [time]. Their hours today: [today's hours]. Full schedule: [full schedule]."
+
+DO NOT add any other text. DO NOT explain your reasoning. Just return VALID or INVALID: followed by the reason.
 `;
 
-              console.log("VALIDATION PROMPT:", validationPrompt);
-              const validation = await quickValidateWithAI(validationPrompt);
-              console.log("VALIDATION RESPONSE:", validation);
+console.log("VALIDATION PROMPT:", validationPrompt);
+const validation = await quickValidateWithAI(validationPrompt);
+console.log("VALIDATION RESPONSE:", validation);
 
-              if (validation.startsWith("VALID")) {
-      await createLeadAndNotify(session, clientData, session.tempLead);
-      session.leadCaptured = true;
-      session.leadState = null;
-      session.tempLead = null;
-      reply = "Thank you! Your appointment request has been sent. Our team will call you shortly to confirm.";
-    } else {
-      // Remove "INVALID: " prefix if present, otherwise use whole string
-      const reason = validation.replace(/^INVALID:\s*/i, "");
-      reply = `I notice an issue: ${reason}. Would you like to restart? (type <b>restart</b> to begin again or <b>cancel</b> to stop)`;
-      session.leadState = null;
-      session.tempLead = null;
-    }
-  } else {
-    // User said no – restart
-    session.leadState = null;
-    session.tempLead = null;
-    reply = "No problem! Let's start over. What would you like to book?";
+const cleanValidation = validation.trim();
+
+// Enhanced parsing with regex patterns
+const validPattern = /^VALID$/i;
+const invalidPattern = /^INVALID:\s*(.+)$/i;
+
+if (validPattern.test(cleanValidation)) {
+  // Valid - create lead
+  await createLeadAndNotify(session, clientData, session.tempLead);
+  session.leadCaptured = true;
+  session.leadState = null;
+  session.tempLead = null;
+  reply = "Thank you! Your appointment request has been sent. Our team will call you shortly to confirm.";
+} else {
+  // Try to extract reason
+  let reason = cleanValidation;
+  const invalidMatch = cleanValidation.match(invalidPattern);
+  if (invalidMatch) {
+    reason = invalidMatch[1];
   }
-  break;
+  
+  // If reason is empty or looks like an error, use a generic message
+  if (!reason || reason.length < 5) {
+    reason = "We couldn't confirm this time. Please try a different time.";
+  }
+  
+  reply = `I notice an issue: ${reason} Would you like to restart? (type <b>restart</b> to begin again or <b>cancel</b> to stop)`;
+  session.leadState = null;
+  session.tempLead = null;
 }
-
+}
         await session.save();
         return res.json({ reply, sessionId: session.sessionId });
       }
