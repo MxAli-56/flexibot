@@ -169,7 +169,16 @@ router.post("/message", async (req, res) => {
             break;
 
           case "awaiting_phone":
-            session.tempLead.phone = text;
+            // Remove all non-digit characters except leading plus
+            const cleaned = text.replace(/[^\d+]/g, "");
+            // Allow optional leading plus, then 8-15 digits
+            const isValidPhone = /^\+?\d{8,15}$/.test(cleaned);
+            if (!isValidPhone) {
+              reply = "Please enter a valid phone number.";
+              // Stay in awaiting_phone state
+              break;
+            }
+            session.tempLead.phone = text; // store original input
             session.leadState = "awaiting_issue";
             reply =
               "Please briefly describe the issue you're facing (e.g., wisdom tooth pain, general checkup).";
