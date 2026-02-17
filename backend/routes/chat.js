@@ -13,8 +13,26 @@ const { chatWithQwen } = require("../providers/qwen");
 const router = express.Router();
 
 async function createLeadAndNotify(session, clientData, leadData) {
+  // Handle missing client data gracefully
+  if (!clientData) {
+    console.warn(
+      `⚠️ No client data found for session ${session.sessionId}, lead stored without email.`,
+    );
+    // Save lead without email notification
+    await Lead.create({
+      sessionId: session.sessionId,
+      clientId: session.clientId,
+      name: leadData.name,
+      phone: leadData.phone,
+      issue: leadData.issue,
+      doctor: leadData.doctor || "",
+      time: leadData.time || "",
+    });
+    return; // Exit early – no email to send
+  }
+
   try {
-    // Save lead to database (await this – we want it saved)
+    // Save lead to database
     await Lead.create({
       sessionId: session.sessionId,
       clientId: session.clientId,
@@ -25,7 +43,7 @@ async function createLeadAndNotify(session, clientData, leadData) {
       time: leadData.time || "",
     });
 
-    // If clinic has an email, send notification in the background (don't await)
+    // If clinic has an email, send notification in the background
     if (clientData.email) {
       const subject = `New Lead from FlexiBot - ${clientData.name || "Clinic"}`;
       const body = `
