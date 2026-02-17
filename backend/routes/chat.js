@@ -131,7 +131,7 @@ router.post("/message", async (req, res) => {
         await session.save();
         return res.json({
           reply:
-            "Sure, I can help you schedule that. Please provide your name.",
+            "Sure, I can help you schedule that. Please provide your name. (You can type 'cancel' anytime to stop or 'restart' to start over the booking process.)",
           sessionId: session.sessionId,
         });
       }
