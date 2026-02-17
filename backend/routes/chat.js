@@ -304,12 +304,15 @@ Request details:
 BUSINESS KNOWLEDGE:
 ${clientData.siteContext || "No data"}
 
-Based on the doctor's schedule in BUSINESS KNOWLEDGE, is the requested time within today's clinic hours and within the doctor's working hours (if a specific doctor is mentioned)? If "Any" is chosen, just check if the time is within clinic hours.
+First, check if the requested time is within today's clinic hours (shown above). If it is not, respond with exactly "I am sorry but our clinic is closed at that time. Would you like to book any other time today or tomorrow?".
+If it is within clinic hours, then check the doctor's schedule:
+- If the user specified a doctor, verify that doctor works today (check "Unavailable" list) and that the requested time falls within that doctor's working hours.
+- If the user chose "Any", then just check that the time is within clinic hours (already done) – it's valid.
 
-Respond with exactly "VALID" if it is valid.
-If the doctor is not available at that time, respond with exactly "INVALID: [reason]".
-If the time is outside clinic hours for today, respond with exactly "INVALID: Clinic closed at that time".
-Do not add any extra text.
+Respond with exactly:
+- "VALID" if the request is valid.
+- "INVALID: [reason]" if not, where [reason] is a short explanation (e.g., "Dr. Alizeh Shah does not work on Mondays" or "Dr. Faraz's shift starts at 5 PM").
+Do not add any other text.
 `;
 
               const validation = await quickValidateWithAI(validationPrompt);
