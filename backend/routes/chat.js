@@ -87,13 +87,11 @@ async function fetchConversation(sessionId, limit = 12) {
 // ============================================
 async function quickValidateWithAI(prompt) {
   try {
-    // Reuse your Qwen provider with low token limit
-    // If chatWithQwen accepts options, pass max_tokens
     const response = await chatWithQwen(prompt, { max_tokens: 50 });
-    return response.reply.trim();
+    return response.reply.trim().split("\n")[0]; // take first line only
   } catch (error) {
     console.error("Validation AI failed:", error);
-    return "VALID"; // fallback – assume valid if AI fails
+    return "VALID";
   }
 }
 
@@ -248,7 +246,8 @@ router.post("/message", async (req, res) => {
             if (/yes|correct|right|ok|yep|yeah/i.test(text)) {
               // AI validation
               const validationPrompt = `
-Based on the BUSINESS KNOWLEDGE below, check if this appointment request is valid:
+Based on the BUSINESS KNOWLEDGE and the current date/time below, check if this appointment request is valid for TODAY:
+Current date and time: ${getCurrentDateTime()}
 - Doctor: ${session.tempLead.doctor || "Any"}
 - Time: ${session.tempLead.time || "Anytime"}
 - Issue: ${session.tempLead.issue}
@@ -256,10 +255,11 @@ Based on the BUSINESS KNOWLEDGE below, check if this appointment request is vali
 BUSINESS KNOWLEDGE:
 ${clientData.siteContext || "No data"}
 
-If the doctor is available at that time (or if "Any" is chosen), respond with "VALID".
-If the doctor is not available at that time, respond with "INVALID: [reason]".
-If the time is outside clinic hours, respond with "INVALID: Clinic closed at that time".
-    `;
+If the doctor is available at that time today (or if "Any" is chosen), respond with exactly "VALID".
+If the doctor is not available at that time, respond with exactly "INVALID: [reason]".
+If the time is outside clinic hours for today, respond with exactly "INVALID: Clinic closed at that time".
+Do not add any extra text.
+`;
               const validation = await quickValidateWithAI(validationPrompt);
 
               if (validation.startsWith("VALID")) {
