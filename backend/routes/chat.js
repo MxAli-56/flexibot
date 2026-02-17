@@ -274,7 +274,7 @@ Do not add any extra text.
                 reply =
                   "Thank you! Your appointment request has been sent. Our team will call you shortly to confirm.";
               } else {
-                reply = `I notice an issue: ${validation.replace("INVALID: ", "")}. Would you like to restart? (type 'restart' to begin again)`;
+                reply = `I notice an issue: ${validation.replace("INVALID: ", "")}. Would you like to restart? (type <b>restart</b> to begin again)`;
                 // Optionally, you could set a state to handle restart, but simplest is to let them restart manually
                 session.leadState = null; // reset state so next message is fresh
                 session.tempLead = null;
