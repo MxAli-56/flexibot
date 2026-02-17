@@ -13,26 +13,10 @@ const { chatWithQwen } = require("../providers/qwen");
 const router = express.Router();
 
 async function createLeadAndNotify(session, clientData, leadData) {
-  // Handle missing client data gracefully
   if (!clientData) {
-    console.warn(
-      `⚠️ No client data found for session ${session.sessionId}, lead stored without email.`,
-    );
-    // Save lead without email notification
-    await Lead.create({
-      sessionId: session.sessionId,
-      clientId: session.clientId,
-      name: leadData.name,
-      phone: leadData.phone,
-      issue: leadData.issue,
-      doctor: leadData.doctor || "",
-      time: leadData.time || "",
-    });
-    return; // Exit early – no email to send
-  }
-
+    console.warn(`⚠️ No client data found for session ${session.sessionId}, lead stored without email.`);}
   try {
-    // Save lead to database
+    // Save lead to database (await this – we want it saved)
     await Lead.create({
       sessionId: session.sessionId,
       clientId: session.clientId,
@@ -43,7 +27,7 @@ async function createLeadAndNotify(session, clientData, leadData) {
       time: leadData.time || "",
     });
 
-    // If clinic has an email, send notification in the background
+    // If clinic has an email, send notification in the background (don't await)
     if (clientData.email) {
       const subject = `New Lead from FlexiBot - ${clientData.name || "Clinic"}`;
       const body = `
@@ -181,18 +165,35 @@ router.post("/message", async (req, res) => {
           case "awaiting_time":
             session.tempLead.time =
               text.toLowerCase() === "anytime" ? "" : text;
-            // Create lead and send email (fire and forget)
-            await createLeadAndNotify(session, clientData, session.tempLead);
-            session.leadCaptured = true;
+            // Move to confirmation state instead of creating lead immediately
+            session.leadState = "awaiting_confirmation";
+            reply = `Great! Let me confirm the details:\n\nName: ${session.tempLead.name}\nPhone: ${session.tempLead.phone}\nIssue: ${session.tempLead.issue}\nDoctor: ${session.tempLead.doctor || "Any"}\nTime: ${session.tempLead.time || "Anytime"}\n\nIs this correct? (yes/no)`;
+            break;
+
+          case "awaiting_confirmation":
+            if (/yes|correct|right|ok|yep|yeah/i.test(text)) {
+              // Create lead and send email
+              await createLeadAndNotify(session, clientData, session.tempLead);
+              session.leadCaptured = true;
+              session.leadState = null;
+              session.tempLead = null;
+              reply =
+                "Thank you! Your appointment request has been sent. Our team will call you shortly to confirm.";
+            } else {
+              // User said no – give them options
+              session.leadState = "awaiting_correction";
+              reply =
+                "Which detail would you like to change? (name/phone/issue/doctor/time) or type 'cancel' to start over.";
+            }
+            break;
+
+          case "awaiting_correction":
+            // Simple handler – for MVP, we'll just let them restart
             session.leadState = null;
             session.tempLead = null;
             reply =
-              "Thank you! Our team will call you shortly to confirm your appointment. Is there anything else I can help with?";
+              "No problem! Let's start over. What would you like to book?";
             break;
-
-          default:
-            session.leadState = null;
-            reply = "Sorry, something went wrong. How can I help you?";
         }
 
         await session.save();
