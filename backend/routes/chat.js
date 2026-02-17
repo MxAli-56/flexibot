@@ -14,7 +14,21 @@ const router = express.Router();
 
 async function createLeadAndNotify(session, clientData, leadData) {
   if (!clientData) {
-    console.warn(`⚠️ No client data found for session ${session.sessionId}, lead stored without email.`);}
+    console.warn(`⚠️ No client data found for session ${session.sessionId}, lead stored without email.`);
+    
+    // Still save the lead (no email possible)
+    await Lead.create({
+      sessionId: session.sessionId,
+      clientId: session.clientId,
+      name: leadData.name,
+      phone: leadData.phone,
+      issue: leadData.issue,
+      doctor: leadData.doctor || "",
+      time: leadData.time || "",
+    });
+    return; // exit early – no email to send
+  }
+
   try {
     // Save lead to database (await this – we want it saved)
     await Lead.create({
