@@ -158,7 +158,7 @@ router.post("/message", async (req, res) => {
         await session.save();
         return res.json({
           reply:
-            "Sure, I can help you schedule that. Please provide your name. (You can type 'cancel' anytime to stop or 'restart' to start over the booking process.)",
+            "Sure, I can help you schedule that. Please provide your name. (You can type <b>cancel</b> anytime to stop or <b>restart</b> to start over the booking process.)",
           sessionId: session.sessionId,
         });
       }
@@ -208,21 +208,21 @@ router.post("/message", async (req, res) => {
             session.tempLead.phone = text; // store original input
             session.leadState = "awaiting_issue";
             reply =
-              "Please briefly describe the issue you're facing (e.g., wisdom tooth pain, general checkup).";
+              "Please briefly describe the issue you're facing (e.g: wisdom tooth pain, general checkup).";
             break;
 
           case "awaiting_issue":
             session.tempLead.issue = text;
             session.leadState = "awaiting_doctor";
             reply =
-              "Is there a specific doctor you'd prefer? (If you're not sure, just say 'any' for our team to assign best doctor for your issue)";
+              "Is there a specific doctor you'd prefer? (If you're not sure, just say <b>any</b> for our team to assign best doctor for your issue)";
             break;
 
           case "awaiting_doctor":
             session.tempLead.doctor = text.toLowerCase() === "any" ? "" : text;
             session.leadState = "awaiting_time";
             reply =
-              "What time would you prefer? (e.g., 'around 6 PM' or 'anytime')";
+              "What time would you prefer? (e.g: 'around 6 PM' or 'anytime')";
             break;
 
           case "awaiting_time":
@@ -232,7 +232,7 @@ router.post("/message", async (req, res) => {
               // contains doctor keyword but no digits
               session.leadState = "awaiting_doctor";
               reply =
-                "Sure, which doctor would you prefer? (If you're not sure, just say 'any' for our team to assign best doctor for your issue)";
+                "Sure, which doctor would you prefer? (If you're not sure, just say <b>any</b> for our team to assign best doctor for your issue)";
               break;
             }
             // Normal time handling
