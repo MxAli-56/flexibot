@@ -110,7 +110,13 @@ router.post("/message", async (req, res) => {
       // If no current lead state but we detect intent, start the flow
       if (bookingIntent && !session.leadState) {
         session.leadState = "awaiting_name";
-        session.tempLead = { name: "", phone: "", issue: "", doctor: "", time: "" };
+        session.tempLead = {
+          name: "",
+          phone: "",
+          issue: "",
+          doctor: "",
+          time: "",
+        };
         await session.save();
         return res.json({
           reply:
@@ -299,6 +305,10 @@ If the time is outside clinic hours, respond with "INVALID: Clinic closed at tha
     // ============================================
     let clinicFacts = "";
 
+    // A short, persistent reminder about listing ALL doctors – included in every response
+    const doctorListReminder =
+      "\n📌 REMINDER: When asked about today's doctors, you MUST list EVERY doctor working today (including evening shifts) from BUSINESS KNOWLEDGE. Do NOT omit any.";
+
     const getCurrentDateTime = () => {
       const now = new Date();
       const options = {
@@ -327,11 +337,10 @@ If the time is outside clinic hours, respond with "INVALID: Clinic closed at tha
       }
       closedMsg += `\n\n[SUPREME RULE]: If the user asks about TOMORROW or any FUTURE day, do NOT say 'The clinic is closed.' Instead, immediately provide the FULL doctor list from BUSINESS KNOWLEDGE for that day.`;
       closedMsg += `\n\nRULES FOR TODAY ONLY:\n- If the user asks about TODAY's availability: Start with "Our clinic is currently closed."\n- For general info (parking, services, etc.): Answer normally.\n- If the user asks for a doctor that only works on Sundays (none): State the clinic is closed.`;
-      clinicFacts = contextMetadata + "\n" + closedMsg;
-      // --- END: YOUR SAVED CLOSED LOGIC ---
+      clinicFacts = contextMetadata + doctorListReminder + "\n" + closedMsg;
     } else {
-      // --- START: NEW OPEN LOGIC (ONLY FIXING OPEN STATUS) ---
-      clinicFacts = contextMetadata;
+      // --- START: NEW OPEN LOGIC ---
+      clinicFacts = contextMetadata + doctorListReminder;
       if (history.length === 0) {
         const openTimeStr = clinicHoursExist
           ? `${openDisplayHour % 12 || 12}:${openDisplayMinute.toString().padStart(2, "0")} ${openDisplayAmPm?.toUpperCase()}`
