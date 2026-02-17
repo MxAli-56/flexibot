@@ -91,6 +91,17 @@ router.post("/message", async (req, res) => {
       });
     }
 
+    // --- ABANDONED LEAD CHECK ---
+    if (
+      session.leadState &&
+      Date.now() - new Date(session.createdAt).getTime() > 30 * 60 * 1000
+    ) {
+      // Reset lead state for abandoned sessions
+      session.leadState = null;
+      session.tempLead = null;
+      await session.save();
+    }
+
     // 3️⃣ Save user message
     await Message.create({
       sessionId: session.sessionId,
@@ -128,6 +139,16 @@ router.post("/message", async (req, res) => {
       // If we are in the middle of lead collection (session.leadState is set)
       if (session.leadState) {
         let reply = "";
+
+        if (/go back|restart|start over/i.test(text)) {
+          session.leadState = null;
+          session.tempLead = null;
+          await session.save();
+          return res.json({
+            reply: "Okay, let's start fresh. How can I help you?",
+            sessionId: session.sessionId,
+          });
+        }
 
         // Allow user to cancel lead collection
         if (/cancel|never mind|forget it|stop/i.test(text)) {
@@ -225,6 +246,18 @@ If the time is outside clinic hours, respond with "INVALID: Clinic closed at tha
       }
     }
     // --- LEAD COLLECTION LOGIC ENDS HERE ---
+
+    // --- POST‑LEAD CHANGE HANDLER ---
+    if (
+      session.leadCaptured &&
+      /change|modify|update|reschedule|cancel|wrong|mistake/i.test(text)
+    ) {
+      return res.json({
+        reply:
+          "If you need to change or cancel your appointment, please let our receptionist know when they call to confirm. They'll be happy to assist you.",
+        sessionId: session.sessionId,
+      });
+    }
 
     // 4️⃣ Get Chat History
     const history = await fetchConversation(session.sessionId, 12);
