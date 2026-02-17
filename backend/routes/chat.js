@@ -381,11 +381,14 @@ Instructions:
 1. If the requested time is not "Anytime", check if it is within today's clinic hours (if provided). A time is within hours if it is between the open time and the close time, inclusive of the close time. If outside, respond with exactly: "INVALID: I am sorry but our clinic is closed at that time. Would you like to book any other time today or tomorrow?"
 2. If the requested time is "Anytime", skip the time check (any time is acceptable as long as the doctor works today).
 3. Now check the doctor's schedule:
-   - If the user specified a doctor, verify that doctor works today (check the "Unavailable" list). If they do not work today, respond with exactly: "INVALID: ${session.tempLead.doctor} does not work on ${getCurrentDateTime().split(",")[0]}. Their full schedule is: [list all working days and hours from BUSINESS KNOWLEDGE]. Would you like to try a different day or doctor?"
-   - If they work today, and the requested time is not "Anytime", check that the requested time falls within that doctor's working hours (inclusive of end time). If not, respond with exactly: "INVALID: ${session.tempLead.doctor} is not available at that time. Their full schedule is: [list all working days and hours]. Would you like to try a different time or doctor?"
-   - If they work today and the requested time is "Anytime", the request is valid (any time is fine).
-   - If the user chose "Any", then just check that the requested time (if not "Anytime") is within clinic hours (if provided) – it's valid. If the requested time is "Anytime", it's automatically valid.
-4. If valid, respond with exactly: "VALID".
+   - Look at the doctor's entry in BUSINESS KNOWLEDGE. It will have a line like:
+     "Dr. Alizeh Shah: (Unavailable: Mon, Wed, Fri, Sun). Available: Tue, Thu, Sat (4:00 PM - 9:00 PM)."
+     The days in parentheses after "Unavailable:" are the days the doctor does NOT work.
+     The days listed after "Available:" are the days they DO work.
+   - If today's day is in the "Available:" list, then the doctor works today.
+   - If today's day is in the "Unavailable:" list (or not in the "Available:" list), then they do NOT work today.
+   - Then proceed with the corresponding responses.
+   4. If valid, respond with exactly: "VALID".
 Do not add any other text.
 `;
 
