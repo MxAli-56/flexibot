@@ -200,7 +200,7 @@ router.post("/message", async (req, res) => {
 
           case "awaiting_time":
             // Check if user is trying to change doctor instead of providing time
-            const doctorChangeRegex = /dr\.?\s*[a-z]+/i; // basic doctor mention
+            const doctorChangeRegex = /dr\.?\s*[a-z]+(?:\s+[a-z]+)?/i; // basic doctor mention
             if (doctorChangeRegex.test(text) && !text.match(/\d/)) {
               // contains doctor keyword but no digits
               session.leadState = "awaiting_doctor";
