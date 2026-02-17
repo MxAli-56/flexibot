@@ -199,6 +199,16 @@ router.post("/message", async (req, res) => {
             break;
 
           case "awaiting_time":
+            // Check if user is trying to change doctor instead of providing time
+            const doctorChangeRegex = /dr\.?\s*[a-z]+/i; // basic doctor mention
+            if (doctorChangeRegex.test(text) && !text.match(/\d/)) {
+              // contains doctor keyword but no digits
+              session.leadState = "awaiting_doctor";
+              reply =
+                "Sure, which doctor would you prefer? (If you're not sure, just say 'any')";
+              break;
+            }
+            // Normal time handling
             session.tempLead.time =
               text.toLowerCase() === "anytime" ? "" : text;
             session.leadState = "awaiting_confirmation";
