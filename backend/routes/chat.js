@@ -188,7 +188,7 @@ router.post("/message", async (req, res) => {
             session.tempLead.issue = text;
             session.leadState = "awaiting_doctor";
             reply =
-              "Is there a specific doctor you'd prefer? (If you're not sure, just say 'any')";
+              "Is there a specific doctor you'd prefer? (If you're not sure, just say 'any' for our team to assign best doctor for your issue)";
             break;
 
           case "awaiting_doctor":
@@ -205,7 +205,7 @@ router.post("/message", async (req, res) => {
               // contains doctor keyword but no digits
               session.leadState = "awaiting_doctor";
               reply =
-                "Sure, which doctor would you prefer? (If you're not sure, just say 'any')";
+                "Sure, which doctor would you prefer? (If you're not sure, just say 'any' for our team to assign best doctor for your issue)";
               break;
             }
             // Normal time handling
