@@ -124,6 +124,80 @@ router.post("/message", async (req, res) => {
     // 1️⃣ Fetch Client Knowledge Base
     const clientData = await Client.findOne({ clientId });
 
+    // 4️⃣ Get Chat History
+    const history = await fetchConversation(session.sessionId, 12);
+
+    // ============================================
+    // 🚨 1.5️⃣ CLINIC HOURS ENFORCEMENT - MULTI-TENANT PARSER
+    // ============================================
+    const now = new Date(
+      new Date().toLocaleString("en-US", { timeZone: "Asia/Karachi" }),
+    );
+    const currentHour = now.getHours();
+    const currentMinutes = now.getMinutes();
+    const currentTimeDecimal = currentHour + currentMinutes / 60;
+
+    let isClinicOpen = false;
+    let openDisplayHour, openDisplayMinute, openDisplayAmPm;
+    let closeDisplayHour, closeDisplayMinute, closeDisplayAmPm;
+    let clinicHoursExist = false;
+
+    if (clientData?.siteContext) {
+      const siteContext = clientData.siteContext;
+
+      // STEP 1: Parse Clinic Hours (keep this)
+      const clinicHoursMatch = siteContext.match(
+        /Clinic Hours:?\s*([A-Za-z, -]+?)\s*(\d+):(\d+)\s*(AM|PM)?\s*(?:-|to)\s*(\d+):(\d+)\s*(AM|PM)/i,
+      );
+      console.log("🔍 Clinic hours match:", clinicHoursMatch);
+
+      if (clinicHoursMatch) {
+        clinicHoursExist = true;
+        let openHour = parseInt(clinicHoursMatch[2]);
+        const openMinute = parseInt(clinicHoursMatch[3]) || 0;
+        const openAmPm = clinicHoursMatch[4];
+        let closeHour = parseInt(clinicHoursMatch[5]);
+        const closeMinute = parseInt(clinicHoursMatch[6]) || 0;
+        const closeAmPm = clinicHoursMatch[7];
+
+        openDisplayHour = openHour;
+        openDisplayMinute = openMinute;
+        openDisplayAmPm = openAmPm;
+        closeDisplayHour = closeHour;
+        closeDisplayMinute = closeMinute;
+        closeDisplayAmPm = closeAmPm;
+
+        if (openAmPm?.toLowerCase() === "pm" && openHour !== 12) openHour += 12;
+        if (openAmPm?.toLowerCase() === "am" && openHour === 12) openHour = 0;
+        if (closeAmPm?.toLowerCase() === "pm" && closeHour !== 12)
+          closeHour += 12;
+        if (closeAmPm?.toLowerCase() === "am" && closeHour === 12)
+          closeHour = 0;
+
+        const openDecimal = openHour + openMinute / 60;
+        const closeDecimal = closeHour + closeMinute / 60;
+
+        isClinicOpen =
+          currentTimeDecimal >= openDecimal &&
+          currentTimeDecimal < closeDecimal;
+
+        console.log("📅 Parsed hours:", {
+          openHour,
+          openMinute,
+          openAmPm,
+          closeHour,
+          closeMinute,
+          closeAmPm,
+        });
+        console.log("⏰ 24h conversion:", {
+          openDecimal,
+          closeDecimal,
+          currentTimeDecimal,
+        });
+        console.log("🏥 isClinicOpen:", isClinicOpen);
+      }
+    }
+
     // 2️⃣ Create or find session
     let session = await Session.findOne({ sessionId });
     if (!session) {
@@ -291,12 +365,14 @@ router.post("/message", async (req, res) => {
           case "awaiting_confirmation":
             if (/yes|correct|right|ok|yep|yeah/i.test(text)) {
               // AI validation
+              const clinicHoursLine = clinicHoursExist
+                ? `Today's clinic hours: ${openDisplayHour % 12 || 12}:${openDisplayMinute.toString().padStart(2, "0")} ${openDisplayAmPm?.toUpperCase() || "AM"} - ${closeDisplayHour % 12 || 12}:${closeDisplayMinute.toString().padStart(2, "0")} ${closeDisplayAmPm?.toUpperCase() || "PM"}\n`
+                : "";
+
               const validationPrompt = `
 Based on the BUSINESS KNOWLEDGE and the current date/time below, check if this appointment request is valid for TODAY (${getCurrentDateTime().split(",")[0]}).
 
-Today's clinic hours: ${openDisplayHour % 12 || 12}:${openDisplayMinute.toString().padStart(2, "0")} ${openDisplayAmPm?.toUpperCase() || "AM"} - ${closeDisplayHour % 12 || 12}:${closeDisplayMinute.toString().padStart(2, "0")} ${closeDisplayAmPm?.toUpperCase() || "PM"}
-
-Request details:
+${clinicHoursLine}Request details:
 - Doctor: ${session.tempLead.doctor || "Any"}
 - Requested time: ${session.tempLead.time || "Anytime"}
 - Issue: ${session.tempLead.issue}
@@ -304,10 +380,10 @@ Request details:
 BUSINESS KNOWLEDGE:
 ${clientData.siteContext || "No data"}
 
-First, check if the requested time is within today's clinic hours (shown above). If it is not, respond with exactly "I am sorry but our clinic is closed at that time. Would you like to book any other time today or tomorrow?".
-If it is within clinic hours, then check the doctor's schedule:
+First, check if the requested time is within today's clinic hours (if provided). If it is not within clinic hours, respond with exactly "I am sorry but our clinic is closed at that time. Would you like to book any other time today or tomorrow?".
+If it is within clinic hours (or if clinic hours are not specified), then check the doctor's schedule:
 - If the user specified a doctor, verify that doctor works today (check "Unavailable" list) and that the requested time falls within that doctor's working hours.
-- If the user chose "Any", then just check that the time is within clinic hours (already done) – it's valid.
+- If the user chose "Any", then just check that the time is within clinic hours (if provided) – it's valid.
 
 Respond with exactly:
 - "VALID" if the request is valid.
@@ -362,80 +438,6 @@ Do not add any other text.
           "If you need to change or cancel your appointment, please let our receptionist know when they call to confirm. They'll be happy to assist you.",
         sessionId: session.sessionId,
       });
-    }
-
-    // 4️⃣ Get Chat History
-    const history = await fetchConversation(session.sessionId, 12);
-
-    // ============================================
-    // 🚨 1.5️⃣ CLINIC HOURS ENFORCEMENT - MULTI-TENANT PARSER
-    // ============================================
-    const now = new Date(
-      new Date().toLocaleString("en-US", { timeZone: "Asia/Karachi" }),
-    );
-    const currentHour = now.getHours();
-    const currentMinutes = now.getMinutes();
-    const currentTimeDecimal = currentHour + currentMinutes / 60;
-
-    let isClinicOpen = false;
-    let openDisplayHour, openDisplayMinute, openDisplayAmPm;
-    let closeDisplayHour, closeDisplayMinute, closeDisplayAmPm;
-    let clinicHoursExist = false;
-
-    if (clientData?.siteContext) {
-      const siteContext = clientData.siteContext;
-
-      // STEP 1: Parse Clinic Hours (keep this)
-      const clinicHoursMatch = siteContext.match(
-        /Clinic Hours:?\s*([A-Za-z, -]+?)\s*(\d+):(\d+)\s*(AM|PM)?\s*(?:-|to)\s*(\d+):(\d+)\s*(AM|PM)/i,
-      );
-      console.log("🔍 Clinic hours match:", clinicHoursMatch);
-
-      if (clinicHoursMatch) {
-        clinicHoursExist = true;
-        let openHour = parseInt(clinicHoursMatch[2]);
-        const openMinute = parseInt(clinicHoursMatch[3]) || 0;
-        const openAmPm = clinicHoursMatch[4];
-        let closeHour = parseInt(clinicHoursMatch[5]);
-        const closeMinute = parseInt(clinicHoursMatch[6]) || 0;
-        const closeAmPm = clinicHoursMatch[7];
-
-        openDisplayHour = openHour;
-        openDisplayMinute = openMinute;
-        openDisplayAmPm = openAmPm;
-        closeDisplayHour = closeHour;
-        closeDisplayMinute = closeMinute;
-        closeDisplayAmPm = closeAmPm;
-
-        if (openAmPm?.toLowerCase() === "pm" && openHour !== 12) openHour += 12;
-        if (openAmPm?.toLowerCase() === "am" && openHour === 12) openHour = 0;
-        if (closeAmPm?.toLowerCase() === "pm" && closeHour !== 12)
-          closeHour += 12;
-        if (closeAmPm?.toLowerCase() === "am" && closeHour === 12)
-          closeHour = 0;
-
-        const openDecimal = openHour + openMinute / 60;
-        const closeDecimal = closeHour + closeMinute / 60;
-
-        isClinicOpen =
-          currentTimeDecimal >= openDecimal &&
-          currentTimeDecimal < closeDecimal;
-
-        console.log("📅 Parsed hours:", {
-          openHour,
-          openMinute,
-          openAmPm,
-          closeHour,
-          closeMinute,
-          closeAmPm,
-        });
-        console.log("⏰ 24h conversion:", {
-          openDecimal,
-          closeDecimal,
-          currentTimeDecimal,
-        });
-        console.log("🏥 isClinicOpen:", isClinicOpen);
-      }
     }
 
     // ============================================
