@@ -139,6 +139,7 @@ router.post("/message", async (req, res) => {
     let closeDisplayHour, closeDisplayMinute, closeDisplayAmPm;
     let clinicHoursExist = false;
     let doctorSchedules = {};
+    let doctorsTodayList = [];
 
     if (clientData?.siteContext) {
       const siteContext = clientData.siteContext;
@@ -196,22 +197,36 @@ router.post("/message", async (req, res) => {
       }
 
       // --- PARSE DOCTOR SCHEDULES (for JavaScript validation) ---
-        // Replace the inner declaration with assignment only
-        doctorSchedules = {};
-        const doctorRegex =
-          /Dr\.\s*([^:]+):\s*\(Unavailable:\s*([^)]+)\)\.?\s*Available:\s*([^.]+)\.?/gi;
-        let match;
-        while ((match = doctorRegex.exec(siteContext)) !== null) {
-          const name = match[1].trim();
-          const unavailable = match[2].split(",").map((d) => d.trim());
-          const available = match[3].trim();
-          doctorSchedules[name.toLowerCase()] = {
-            name,
-            unavailable,
-            available,
-          };
+      // Replace the inner declaration with assignment only
+      doctorSchedules = {};
+      const doctorRegex =
+        /Dr\.\s*([^:]+):\s*\(Unavailable:\s*([^)]+)\)\.?\s*Available:\s*([^.]+)\.?/gi;
+      let match;
+      while ((match = doctorRegex.exec(siteContext)) !== null) {
+        const name = match[1].trim();
+        const unavailable = match[2].split(",").map((d) => d.trim());
+        const available = match[3].trim();
+        doctorSchedules[name.toLowerCase()] = {
+          name,
+          unavailable,
+          available,
+        };
+      }
+      // --- BUILD TODAY'S DOCTOR LIST (for injection) ---
+      doctorsTodayList = [];
+      const todayFull = getCurrentDateTime().split(",")[0];
+      const todayAbbr = todayFull.substring(0, 3);
+      for (let key in doctorSchedules) {
+        const doc = doctorSchedules[key];
+        if (!doc.unavailable.includes(todayAbbr)) {
+          const timeMatch = doc.available.match(
+            /(\d{1,2}:\d{2}\s*(?:AM|PM)\s*-\s*\d{1,2}:\d{2}\s*(?:AM|PM))/i,
+          );
+          const timings = timeMatch ? timeMatch[1] : doc.available;
+          doctorsTodayList.push({ name: doc.name, timings });
         }
       }
+    }
 
     // 2️⃣ Create or find session
     let session = await Session.findOne({ sessionId });
@@ -378,70 +393,101 @@ router.post("/message", async (req, res) => {
             break;
 
           case "awaiting_confirmation":
-            // Inside awaiting_confirmation, after user says "yes"
             if (/yes|correct|right|ok|yep|yeah/i.test(text)) {
+              // ----- PRE-VALIDATION (JavaScript) -----
+              let validationError = null;
+              let canUseJavaScript = false;
+              let requestedHour = null,
+                requestedMinute = 0;
 
-            // ----- PRE-VALIDATION (JavaScript) -----
-            let validationError = null;
-            let canUseJavaScript = false;
-            let requestedHour = null, requestedMinute = 0;
+              // Parse requested time if not "Anytime"
+              if (
+                session.tempLead.time &&
+                session.tempLead.time.toLowerCase() !== "anytime"
+              ) {
+                const timeStr = session.tempLead.time;
+                const timeMatch = timeStr.match(
+                  /(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i,
+                );
+                if (timeMatch) {
+                  let hour = parseInt(timeMatch[1]);
+                  const minute = parseInt(timeMatch[2]) || 0;
+                  const ampm = timeMatch[3] ? timeMatch[3].toLowerCase() : null;
 
-  // Parse requested time if not "Anytime"
-  if (session.tempLead.time && session.tempLead.time.toLowerCase() !== "anytime") {
-    const timeStr = session.tempLead.time;
-    const timeMatch = timeStr.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
-    if (timeMatch) {
-      let hour = parseInt(timeMatch[1]);
-      const minute = parseInt(timeMatch[2]) || 0;
-      const ampm = timeMatch[3] ? timeMatch[3].toLowerCase() : null;
+                  if (ampm === "pm" && hour !== 12) hour += 12;
+                  if (ampm === "am" && hour === 12) hour = 0;
 
-      if (ampm === 'pm' && hour !== 12) hour += 12;
-      if (ampm === 'am' && hour === 12) hour = 0;
+                  requestedHour = hour;
+                  requestedMinute = minute;
+                  canUseJavaScript = true;
+                }
+              }
 
-      requestedHour = hour;
-      requestedMinute = minute;
-      canUseJavaScript = true;
-    }
-  }
+              // Clinic hours pre-validation
+              if (canUseJavaScript && clinicHoursExist) {
+                const requestedDecimal = requestedHour + requestedMinute / 60;
+                const openDecimal = openDisplayHour + openDisplayMinute / 60;
+                const closeDecimal = closeDisplayHour + closeDisplayMinute / 60;
 
-  // Clinic hours pre-validation
-  if (canUseJavaScript && clinicHoursExist) {
-    const requestedDecimal = requestedHour + requestedMinute / 60;
-    const openDecimal = openDisplayHour + openDisplayMinute / 60;
-    const closeDecimal = closeDisplayHour + closeDisplayMinute / 60;
+                if (
+                  requestedDecimal < openDecimal ||
+                  requestedDecimal > closeDecimal
+                ) {
+                  validationError = `Our clinic is closed at that time. Hours are ${openDisplayHour % 12 || 12}:${openDisplayMinute.toString().padStart(2, "0")} ${openDisplayAmPm?.toUpperCase() || "AM"} - ${closeDisplayHour % 12 || 12}:${closeDisplayMinute.toString().padStart(2, "0")} ${closeDisplayAmPm?.toUpperCase() || "PM"}.`;
+                }
+              }
 
-    if (requestedDecimal < openDecimal || requestedDecimal > closeDecimal) {
-      validationError = `Our clinic is closed at that time. Hours are ${openDisplayHour % 12 || 12}:${openDisplayMinute.toString().padStart(2, '0')} ${openDisplayAmPm?.toUpperCase() || 'AM'} - ${closeDisplayHour % 12 || 12}:${closeDisplayMinute.toString().padStart(2, '0')} ${closeDisplayAmPm?.toUpperCase() || 'PM'}.`;
-    }
-  }
+              // Past time check
+              if (canUseJavaScript && !validationError) {
+                const requestedDateTime = new Date();
+                requestedDateTime.setHours(
+                  requestedHour,
+                  requestedMinute,
+                  0,
+                  0,
+                );
+                const now = new Date();
+                if (requestedDateTime < now) {
+                  validationError =
+                    "That time has already passed today. Please choose a future time.";
+                }
+              }
 
-  // Doctor availability pre-validation
-  if (!validationError && session.tempLead.doctor && session.tempLead.doctor.toLowerCase() !== "any") {
-    const doctorInput = session.tempLead.doctor.toLowerCase().replace(/^dr\.?\s*/, '').trim();
-    const matchedDoctor = Object.values(doctorSchedules).find(d =>
-      d.name.toLowerCase().includes(doctorInput) || doctorInput.includes(d.name.toLowerCase())
-    );
+              // Doctor availability pre-validation
+              if (
+                !validationError &&
+                session.tempLead.doctor &&
+                session.tempLead.doctor.toLowerCase() !== "any"
+              ) {
+                const doctorInput = session.tempLead.doctor
+                  .toLowerCase()
+                  .replace(/^dr\.?\s*/, "")
+                  .trim();
+                const matchedDoctor = Object.values(doctorSchedules).find(
+                  (d) =>
+                    d.name.toLowerCase().includes(doctorInput) ||
+                    doctorInput.includes(d.name.toLowerCase()),
+                );
 
-    if (matchedDoctor) {
-      const today = getCurrentDateTime().split(",")[0];
-      const todayAbbr = today.substring(0, 3);
-      if (matchedDoctor.unavailable.includes(todayAbbr)) {
-        validationError = `${matchedDoctor.name} does not work on ${today}. Their full schedule: ${matchedDoctor.available}. Would you like to try a different day or doctor?`;
-      }
-    }
-  }
+                if (matchedDoctor) {
+                  const today = getCurrentDateTime().split(",")[0];
+                  const todayAbbr = today.substring(0, 3);
+                  if (matchedDoctor.unavailable.includes(todayAbbr)) {
+                    validationError = `${matchedDoctor.name} does not work on ${today}. Their full schedule: ${matchedDoctor.available}. Would you like to try a different day or doctor?`;
+                  }
+                }
+              }
 
-  // If we have a validation error, skip AI and respond directly
-  if (validationError) {
-    reply = `I notice an issue: ${validationError} Would you like to restart? (type <b>restart</b> to begin again or <b>cancel</b> to stop)`;
-    session.leadState = null;
-    session.tempLead = null;
-    await session.save();
-    return res.json({ reply, sessionId: session.sessionId });
-  }
-  // ----- END PRE-VALIDATION -----
-}
-              // AI validation
+              // If pre-validation error, skip AI
+              if (validationError) {
+                reply = `I notice an issue: ${validationError} Would you like to restart? (type <b>restart</b> to begin again or <b>cancel</b> to stop)`;
+                session.leadState = null;
+                session.tempLead = null;
+                await session.save();
+                return res.json({ reply, sessionId: session.sessionId });
+              }
+
+              // ----- AI VALIDATION -----
               const validationPrompt = `
 You are a validation assistant. Check if this appointment request is valid.
 
@@ -483,41 +529,45 @@ INSTRUCTIONS - FOLLOW EXACTLY:
 DO NOT add any other text. DO NOT explain your reasoning. Just return VALID or INVALID: followed by the reason.
 `;
 
-console.log("VALIDATION PROMPT:", validationPrompt);
-const validation = await quickValidateWithAI(validationPrompt);
-console.log("VALIDATION RESPONSE:", validation);
+              console.log("VALIDATION PROMPT:", validationPrompt);
+              const validation = await quickValidateWithAI(validationPrompt);
+              console.log("VALIDATION RESPONSE:", validation);
 
-const cleanValidation = validation.trim();
+              const cleanValidation = validation.trim();
+              const validPattern = /^VALID$/i;
+              const invalidPattern = /^INVALID:\s*(.+)$/i;
 
-// Enhanced parsing with regex patterns
-const validPattern = /^VALID$/i;
-const invalidPattern = /^INVALID:\s*(.+)$/i;
-
-if (validPattern.test(cleanValidation)) {
-  // Valid - create lead
-  await createLeadAndNotify(session, clientData, session.tempLead);
-  session.leadCaptured = true;
-  session.leadState = null;
-  session.tempLead = null;
-  reply = "Thank you! Your appointment request has been sent. Our team will call you shortly to confirm.";
-} else {
-  // Try to extract reason
-  let reason = cleanValidation;
-  const invalidMatch = cleanValidation.match(invalidPattern);
-  if (invalidMatch) {
-    reason = invalidMatch[1];
-  }
-  
-  // If reason is empty or looks like an error, use a generic message
-  if (!reason || reason.length < 5) {
-    reason = "We couldn't confirm this time. Please try a different time.";
-  }
-  
-  reply = `I notice an issue: ${reason} Would you like to restart? (type <b>restart</b> to begin again or <b>cancel</b> to stop)`;
-  session.leadState = null;
-  session.tempLead = null;
-}
-}
+              if (validPattern.test(cleanValidation)) {
+                await createLeadAndNotify(
+                  session,
+                  clientData,
+                  session.tempLead,
+                );
+                session.leadCaptured = true;
+                session.leadState = null;
+                session.tempLead = null;
+                reply =
+                  "Thank you! Your appointment request has been sent. Our team will call you shortly to confirm.";
+              } else {
+                let reason = cleanValidation;
+                const invalidMatch = cleanValidation.match(invalidPattern);
+                if (invalidMatch) reason = invalidMatch[1];
+                if (!reason || reason.length < 5)
+                  reason =
+                    "We couldn't confirm this time. Please try a different time.";
+                reply = `I notice an issue: ${reason} Would you like to restart? (type <b>restart</b> to begin again or <b>cancel</b> to stop)`;
+                session.leadState = null;
+                session.tempLead = null;
+              }
+            } else {
+              // User said no – restart
+              session.leadState = null;
+              session.tempLead = null;
+              reply =
+                "No problem! Let's start over. What would you like to book?";
+            }
+            break;
+        }
         await session.save();
         return res.json({ reply, sessionId: session.sessionId });
       }
@@ -544,15 +594,12 @@ if (validPattern.test(cleanValidation)) {
     // ============================================
     let clinicFacts = "";
 
-    // A short, persistent reminder about listing ALL doctors – included in every response
     const doctorListReminder =
       "\n📌 REMINDER: When asked about today's doctors, you MUST list EVERY doctor working today (including evening shifts) from BUSINESS KNOWLEDGE. Do NOT omit any.";
-
-    // 1. ALWAYS generate the Metadata (This fixes the "Open" logic amnesia)
     const contextMetadata = `[CONTEXT: Today=${getCurrentDateTime().split(",")[0]} | Time=${currentHour}:${currentMinutes.toString().padStart(2, "0")} | Clinic_Status=${isClinicOpen ? "OPEN" : "CLOSED"}]`;
 
     if (!isClinicOpen) {
-      // --- START: YOUR SAVED CLOSED LOGIC (UNTOUCHED) ---
+      // --- CLOSED LOGIC ---
       let closedMsg = "IMPORTANT CONTEXT: The clinic is CURRENTLY CLOSED.";
       if (clinicHoursExist) {
         const openTime = `${openDisplayHour % 12 || 12}:${openDisplayMinute.toString().padStart(2, "0")} ${openDisplayAmPm?.toUpperCase() || "AM"}`;
@@ -562,9 +609,18 @@ if (validPattern.test(cleanValidation)) {
       closedMsg += `\n\n[SUPREME RULE]: If the user asks about TOMORROW or any FUTURE day, do NOT say 'The clinic is closed.' Instead, immediately provide the FULL doctor list from BUSINESS KNOWLEDGE for that day.`;
       closedMsg += `\n\nRULES FOR TODAY ONLY:\n- If the user asks about TODAY's availability: Start with "Our clinic is currently closed."\n- For general info (parking, services, etc.): Answer normally.\n- If the user asks for a doctor that only works on Sundays (none): State the clinic is closed.`;
       clinicFacts = contextMetadata + doctorListReminder + "\n" + closedMsg;
+
+      // Add doctor list only on first message
+      if (history.length === 0 && doctorsTodayList.length > 0) {
+        clinicFacts += "\n\nDoctors working today:";
+        doctorsTodayList.forEach((doc) => {
+          clinicFacts += `\n- ${doc.name}: ${doc.timings}`;
+        });
+      }
     } else {
-      // --- START: NEW OPEN LOGIC ---
+      // --- OPEN LOGIC ---
       clinicFacts = contextMetadata + doctorListReminder;
+
       if (history.length === 0) {
         const openTimeStr = clinicHoursExist
           ? `${openDisplayHour % 12 || 12}:${openDisplayMinute.toString().padStart(2, "0")} ${openDisplayAmPm?.toUpperCase()}`
@@ -573,6 +629,14 @@ if (validPattern.test(cleanValidation)) {
           ? `${closeDisplayHour % 12 || 12}:${closeDisplayMinute.toString().padStart(2, "0")} ${closeDisplayAmPm?.toUpperCase()}`
           : "10:00 PM";
         clinicFacts += `\n✅ Clinic is CURRENTLY OPEN. Today's hours are ${openTimeStr} - ${closeTimeStr}.`;
+
+        // Add doctor list only on first message
+        if (doctorsTodayList.length > 0) {
+          clinicFacts += "\n\nDoctors working today:";
+          doctorsTodayList.forEach((doc) => {
+            clinicFacts += `\n- ${doc.name}: ${doc.timings}`;
+          });
+        }
       }
     }
 
