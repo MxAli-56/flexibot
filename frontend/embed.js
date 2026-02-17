@@ -883,7 +883,7 @@ window.addEventListener("DOMContentLoaded", async () => {
       const suggestions = [
         "Which dentist is available today?",
         "What services do you offer?",
-        "What is the process for emergencies?",
+        "I want to book an appointment",
       ];
 
       const buttonContainer = document.createElement("div");
