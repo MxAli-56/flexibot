@@ -362,14 +362,14 @@ router.post("/message", async (req, res) => {
           case "awaiting_confirmation":
             if (/yes|correct|right|ok|yep|yeah/i.test(text)) {
               // AI validation
-              const clinicHoursLine = clinicHoursExist
-                ? `Today's clinic hours: ${openDisplayHour % 12 || 12}:${openDisplayMinute.toString().padStart(2, "0")} ${openDisplayAmPm?.toUpperCase() || "AM"} - ${closeDisplayHour % 12 || 12}:${closeDisplayMinute.toString().padStart(2, "0")} ${closeDisplayAmPm?.toUpperCase() || "PM"}\n`
-                : "";
-
               const validationPrompt = `
-Based on the BUSINESS KNOWLEDGE and the current date/time below, check if this appointment request is valid for TODAY (${getCurrentDateTime().split(",")[0]}).
+You are a validation assistant. Check if the following appointment request is valid based on BUSINESS KNOWLEDGE.
 
-${clinicHoursLine}Request details:
+Today's date: ${getCurrentDateTime().split(",")[0]}
+Current time: ${currentHour}:${currentMinutes.toString().padStart(2, "0")}
+${clinicHoursExist ? `Today's clinic hours: ${openDisplayHour % 12 || 12}:${openDisplayMinute.toString().padStart(2, "0")} ${openDisplayAmPm?.toUpperCase() || "AM"} - ${closeDisplayHour % 12 || 12}:${closeDisplayMinute.toString().padStart(2, "0")} ${closeDisplayAmPm?.toUpperCase() || "PM"}` : ""}
+
+Request details:
 - Doctor: ${session.tempLead.doctor || "Any"}
 - Requested time: ${session.tempLead.time || "Anytime"}
 - Issue: ${session.tempLead.issue}
@@ -377,14 +377,15 @@ ${clinicHoursLine}Request details:
 BUSINESS KNOWLEDGE:
 ${clientData.siteContext || "No data"}
 
-First, check if the requested time is within today's clinic hours (if provided). If it is not within clinic hours, respond with exactly "INVALID: I am sorry but our clinic is closed at that time. Would you like to book any other time today or tomorrow?".
-If it is within clinic hours (or if clinic hours are not specified), then check the doctor's schedule:
-- If the user specified a doctor, verify that doctor works today (check "Unavailable" list) and that the requested time falls within that doctor's working hours.
-- If the user chose "Any", then just check that the time is within clinic hours (if provided) – it's valid.
-
-Respond with exactly:
-- "VALID" if the request is valid.
-- "INVALID: [reason]" if not, where [reason] is a short explanation (e.g., "Dr. Alizeh Shah does not work on Mondays" or "Dr. Faraz's shift starts at 5 PM").
+Instructions:
+1. If the requested time is not "Anytime", check if it is within today's clinic hours (if provided). A time is within hours if it is between the open time and the close time, inclusive of the close time. If outside, respond with exactly: "INVALID: I am sorry but our clinic is closed at that time. Would you like to book any other time today or tomorrow?"
+2. If the requested time is "Anytime", skip the time check (any time is acceptable as long as the doctor works today).
+3. Now check the doctor's schedule:
+   - If the user specified a doctor, verify that doctor works today (check the "Unavailable" list). If they do not work today, respond with exactly: "INVALID: ${session.tempLead.doctor} does not work on ${getCurrentDateTime().split(",")[0]}. Their full schedule is: [list all working days and hours from BUSINESS KNOWLEDGE]. Would you like to try a different day or doctor?"
+   - If they work today, and the requested time is not "Anytime", check that the requested time falls within that doctor's working hours (inclusive of end time). If not, respond with exactly: "INVALID: ${session.tempLead.doctor} is not available at that time. Their full schedule is: [list all working days and hours]. Would you like to try a different time or doctor?"
+   - If they work today and the requested time is "Anytime", the request is valid (any time is fine).
+   - If the user chose "Any", then just check that the requested time (if not "Anytime") is within clinic hours (if provided) – it's valid. If the requested time is "Anytime", it's automatically valid.
+4. If valid, respond with exactly: "VALID".
 Do not add any other text.
 `;
 
@@ -393,31 +394,26 @@ Do not add any other text.
               console.log("VALIDATION RESPONSE:", validation);
 
               if (validation.startsWith("VALID")) {
-                await createLeadAndNotify(
-                  session,
-                  clientData,
-                  session.tempLead,
-                );
-                session.leadCaptured = true;
-                session.leadState = null;
-                session.tempLead = null;
-                reply =
-                  "Thank you! Your appointment request has been sent. Our team will call you shortly to confirm.";
-              } else {
-                reply = `I notice an issue: ${validation.replace("INVALID: ", "")}. Would you like to restart? (type <b>restart</b> to begin again or <b>cancel</b> to stop)`;
-                // Optionally, you could set a state to handle restart, but simplest is to let them restart manually
-                session.leadState = null; // reset state so next message is fresh
-                session.tempLead = null;
-              }
-            } else {
-              // User said no – restart
-              session.leadState = null;
-              session.tempLead = null;
-              reply =
-                "No problem! Let's start over. What would you like to book?";
-            }
-            break;
-        }
+      await createLeadAndNotify(session, clientData, session.tempLead);
+      session.leadCaptured = true;
+      session.leadState = null;
+      session.tempLead = null;
+      reply = "Thank you! Your appointment request has been sent. Our team will call you shortly to confirm.";
+    } else {
+      // Remove "INVALID: " prefix if present, otherwise use whole string
+      const reason = validation.replace(/^INVALID:\s*/i, "");
+      reply = `I notice an issue: ${reason}. Would you like to restart? (type <b>restart</b> to begin again or <b>cancel</b> to stop)`;
+      session.leadState = null;
+      session.tempLead = null;
+    }
+  } else {
+    // User said no – restart
+    session.leadState = null;
+    session.tempLead = null;
+    reply = "No problem! Let's start over. What would you like to book?";
+  }
+  break;
+}
 
         await session.save();
         return res.json({ reply, sessionId: session.sessionId });
