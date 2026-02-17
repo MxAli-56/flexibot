@@ -1,21 +1,11 @@
-const nodemailer = require("nodemailer");
+const BrevoApi = require("@getbrevo/brevo");
 
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false, // 🚨 MUST be false for Port 587
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS, // Your 16-character App Password
-  },
-  tls: {
-    // This helps bypass some certificate issues on cloud servers
-    rejectUnauthorized: false,
-  },
-  family: 4, // Keep this to force IPv4
-  connectionTimeout: 20000,
-  socketTimeout: 20000,
-});
+// Initialize the API client
+const apiInstance = new BrevoApi.TransactionalEmailsApi();
+apiInstance.setApiKey(
+  BrevoApi.TransactionalEmailsApiApiKeys.apiKey,
+  process.env.BREVO_API_KEY,
+);
 
 /**
  * Send an email with exponential backoff retries (max 3 attempts)
@@ -28,20 +18,22 @@ const transporter = nodemailer.createTransport({
  */
 async function sendEmailWithRetry(to, subject, text, retries = 3, attempt = 1) {
   try {
-    console.log(`📧 Sending email to ${to} (attempt ${attempt})...`);
-    await transporter.sendMail({
-      from: `"FlexiBot" <${process.env.SMTP_USER}>`,
-      to,
-      subject,
-      text,
-    });
+    console.log(`📧 Sending email via Brevo to ${to} (attempt ${attempt})...`);
+
+    const sendSmtpEmail = new BrevoApi.SendSmtpEmail();
+    sendSmtpEmail.sender = { email: process.env.FROM_EMAIL };
+    sendSmtpEmail.to = [{ email: to }];
+    sendSmtpEmail.subject = subject;
+    sendSmtpEmail.textContent = text;
+
+    await apiInstance.sendTransacEmail(sendSmtpEmail);
+
     console.log(`✅ Email sent successfully to ${to}`);
     return true;
   } catch (error) {
-    console.error(`❌ Email attempt ${attempt} failed:`, error.message);
+    console.error(`❌ Brevo attempt ${attempt} failed:`, error.message);
 
     if (retries > 0) {
-      // Exponential backoff: 2s, 4s, 8s
       const wait = Math.pow(2, attempt) * 1000;
       console.log(
         `⏳ Retrying in ${wait / 1000}s... (${retries} retries left)`,
@@ -53,12 +45,12 @@ async function sendEmailWithRetry(to, subject, text, retries = 3, attempt = 1) {
       const adminSubject = `[FlexiBot] Email Failure for ${to}`;
       const adminText = `Failed to send lead email to ${to} after multiple attempts.\n\nSubject: ${subject}\nBody:\n${text}`;
       try {
-        await transporter.sendMail({
-          from: `"FlexiBot" <${process.env.SMTP_USER}>`,
-          to: process.env.ADMIN_EMAIL,
-          subject: adminSubject,
-          text: adminText,
-        });
+        const adminEmail = new BrevoApi.SendSmtpEmail();
+        adminEmail.sender = { email: process.env.FROM_EMAIL };
+        adminEmail.to = [{ email: process.env.ADMIN_EMAIL }];
+        adminEmail.subject = adminSubject;
+        adminEmail.textContent = adminText;
+        await apiInstance.sendTransacEmail(adminEmail);
         console.log(`⚠️ Admin alerted about email failure.`);
       } catch (adminError) {
         console.error(`❌ Failed to send admin alert:`, adminError.message);
