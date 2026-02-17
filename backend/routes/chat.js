@@ -165,34 +165,52 @@ router.post("/message", async (req, res) => {
           case "awaiting_time":
             session.tempLead.time =
               text.toLowerCase() === "anytime" ? "" : text;
-            // Move to confirmation state instead of creating lead immediately
             session.leadState = "awaiting_confirmation";
             reply = `Great! Let me confirm the details:\n\nName: ${session.tempLead.name}\nPhone: ${session.tempLead.phone}\nIssue: ${session.tempLead.issue}\nDoctor: ${session.tempLead.doctor || "Any"}\nTime: ${session.tempLead.time || "Anytime"}\n\nIs this correct? (yes/no)`;
             break;
 
           case "awaiting_confirmation":
             if (/yes|correct|right|ok|yep|yeah/i.test(text)) {
-              // Create lead and send email
-              await createLeadAndNotify(session, clientData, session.tempLead);
-              session.leadCaptured = true;
+              // AI validation
+              const validationPrompt = `
+Based on the BUSINESS KNOWLEDGE below, check if this appointment request is valid:
+- Doctor: ${session.tempLead.doctor || "Any"}
+- Time: ${session.tempLead.time || "Anytime"}
+- Issue: ${session.tempLead.issue}
+
+BUSINESS KNOWLEDGE:
+${clientData.siteContext || "No data"}
+
+If the doctor is available at that time (or if "Any" is chosen), respond with "VALID".
+If the doctor is not available at that time, respond with "INVALID: [reason]".
+If the time is outside clinic hours, respond with "INVALID: Clinic closed at that time".
+    `;
+              const validation = await quickValidateWithAI(validationPrompt);
+
+              if (validation.startsWith("VALID")) {
+                await createLeadAndNotify(
+                  session,
+                  clientData,
+                  session.tempLead,
+                );
+                session.leadCaptured = true;
+                session.leadState = null;
+                session.tempLead = null;
+                reply =
+                  "Thank you! Your appointment request has been sent. Our team will call you shortly to confirm.";
+              } else {
+                reply = `I notice an issue: ${validation.replace("INVALID: ", "")}. Would you like to restart? (type 'restart' to begin again)`;
+                // Optionally, you could set a state to handle restart, but simplest is to let them restart manually
+                session.leadState = null; // reset state so next message is fresh
+                session.tempLead = null;
+              }
+            } else {
+              // User said no – restart
               session.leadState = null;
               session.tempLead = null;
               reply =
-                "Thank you! Your appointment request has been sent. Our team will call you shortly to confirm.";
-            } else {
-              // User said no – give them options
-              session.leadState = "awaiting_correction";
-              reply =
-                "Which detail would you like to change? (name/phone/issue/doctor/time) or type 'cancel' to start over.";
+                "No problem! Let's start over. What would you like to book?";
             }
-            break;
-
-          case "awaiting_correction":
-            // Simple handler – for MVP, we'll just let them restart
-            session.leadState = null;
-            session.tempLead = null;
-            reply =
-              "No problem! Let's start over. What would you like to book?";
             break;
         }
 
