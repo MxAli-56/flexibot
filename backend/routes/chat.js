@@ -270,7 +270,7 @@ router.post("/message", async (req, res) => {
             session.tempLead.time =
               text.toLowerCase() === "anytime" ? "" : text;
             session.leadState = "awaiting_confirmation";
-            reply = `Great! Let me confirm the details:\n\nName: ${session.tempLead.name}\nPhone: ${session.tempLead.phone}\nIssue: ${session.tempLead.issue}\nDoctor: ${session.tempLead.doctor || "Any"}\nTime: ${session.tempLead.time || "Anytime"}\n\nIs this correct? (yes/no)`;
+            reply = `Great! Let me confirm the details:<br><br>Name: ${session.tempLead.name}<br>Phone: ${session.tempLead.phone}<br>Issue: ${session.tempLead.issue}<br>Doctor: ${session.tempLead.doctor || "Any"}<br>Time: ${session.tempLead.time || "Anytime"}<br><br>Is this correct? (yes/no)`;
             break;
 
           case "awaiting_confirmation":
@@ -305,7 +305,7 @@ Do not add any extra text.
                 reply =
                   "Thank you! Your appointment request has been sent. Our team will call you shortly to confirm.";
               } else {
-                reply = `I notice an issue: ${validation.replace("INVALID: ", "")}. Would you like to restart? (type <b>restart</b> to begin again)`;
+                reply = `I notice an issue: ${validation.replace("INVALID: ", "")}. Would you like to restart? (type <b>restart</b> to begin again or <b>cancel</b> to stop)`;
                 // Optionally, you could set a state to handle restart, but simplest is to let them restart manually
                 session.leadState = null; // reset state so next message is fresh
                 session.tempLead = null;
