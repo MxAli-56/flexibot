@@ -129,6 +129,29 @@ router.post("/message", async (req, res) => {
       await session.save();
     }
 
+    // --- RESTART COMMAND HANDLER (outside lead collection) ---
+    if (
+      !session.leadCaptured &&
+      /restart|start over/i.test(text) &&
+      !session.leadState
+    ) {
+      // Start a fresh booking flow
+      session.leadState = "awaiting_name";
+      session.tempLead = {
+        name: "",
+        phone: "",
+        issue: "",
+        doctor: "",
+        time: "",
+      };
+      await session.save();
+      return res.json({
+        reply:
+          "Sure, I can help you schedule that. Please provide your name. (You can type <b>cancel</b> anytime to stop or <b>restart</b> to start over the booking process.)",
+        sessionId: session.sessionId,
+      });
+    }
+
     // 3️⃣ Save user message
     await Message.create({
       sessionId: session.sessionId,
@@ -168,11 +191,19 @@ router.post("/message", async (req, res) => {
         let reply = "";
 
         if (/go back|restart|start over/i.test(text)) {
-          session.leadState = null;
-          session.tempLead = null;
+          // Restart booking flow from beginning
+          session.leadState = "awaiting_name";
+          session.tempLead = {
+            name: "",
+            phone: "",
+            issue: "",
+            doctor: "",
+            time: "",
+          };
           await session.save();
           return res.json({
-            reply: "Okay, let's start fresh. How can I help you?",
+            reply:
+              "Sure, I can help you schedule that. Please provide your name. (You can type <b>cancel</b> anytime to stop or <b>restart</b> to start over the booking process.)",
             sessionId: session.sessionId,
           });
         }
