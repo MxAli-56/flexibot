@@ -377,7 +377,7 @@ ${clinicHoursLine}Request details:
 BUSINESS KNOWLEDGE:
 ${clientData.siteContext || "No data"}
 
-First, check if the requested time is within today's clinic hours (if provided). If it is not within clinic hours, respond with exactly "I am sorry but our clinic is closed at that time. Would you like to book any other time today or tomorrow?".
+First, check if the requested time is within today's clinic hours (if provided). If it is not within clinic hours, respond with exactly "INVALID: I am sorry but our clinic is closed at that time. Would you like to book any other time today or tomorrow?".
 If it is within clinic hours (or if clinic hours are not specified), then check the doctor's schedule:
 - If the user specified a doctor, verify that doctor works today (check "Unavailable" list) and that the requested time falls within that doctor's working hours.
 - If the user chose "Any", then just check that the time is within clinic hours (if provided) – it's valid.
