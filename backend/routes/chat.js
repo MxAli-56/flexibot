@@ -82,6 +82,21 @@ async function fetchConversation(sessionId, limit = 12) {
   }));
 }
 
+// ============================================
+// ✅ AI Validation Helper (used in confirmation step)
+// ============================================
+async function quickValidateWithAI(prompt) {
+  try {
+    // Reuse your Qwen provider with low token limit
+    // If chatWithQwen accepts options, pass max_tokens
+    const response = await chatWithQwen(prompt, { max_tokens: 50 });
+    return response.reply.trim();
+  } catch (error) {
+    console.error("Validation AI failed:", error);
+    return "VALID"; // fallback – assume valid if AI fails
+  }
+}
+
 router.post("/message", async (req, res) => {
   try {
     const { sessionId, clientId = "default", text } = req.body;
