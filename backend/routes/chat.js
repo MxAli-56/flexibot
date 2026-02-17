@@ -315,7 +315,9 @@ Respond with exactly:
 Do not add any other text.
 `;
 
+              console.log("VALIDATION PROMPT:", validationPrompt);
               const validation = await quickValidateWithAI(validationPrompt);
+              console.log("VALIDATION RESPONSE:", validation);
 
               if (validation.startsWith("VALID")) {
                 await createLeadAndNotify(
