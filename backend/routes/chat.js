@@ -197,21 +197,20 @@ router.post("/message", async (req, res) => {
       }
 
       // --- PARSE DOCTOR SCHEDULES (for JavaScript validation) ---
-      // Replace the inner declaration with assignment only
       doctorSchedules = {};
       const doctorRegex =
-        /Dr\.\s*([^:]+):\s*\(Unavailable:\s*([^)]+)\)\.?\s*Available:\s*([^.]+)\.?/gi;
+        /Dr\.\s*([^:]+):\s*\(Unavailable:\s*([^)]+)\)[^A-Z]*Available:\s*([^.]+)/gi;
       let match;
+      console.log("📄 Starting doctor parsing...");
       while ((match = doctorRegex.exec(siteContext)) !== null) {
         const name = match[1].trim();
         const unavailable = match[2].split(",").map((d) => d.trim());
         const available = match[3].trim();
-        doctorSchedules[name.toLowerCase()] = {
-          name,
-          unavailable,
-          available,
-        };
+        console.log(`✅ Parsed doctor: ${name}`, { unavailable, available });
+        doctorSchedules[name.toLowerCase()] = { name, unavailable, available };
       }
+      console.log("📋 doctorSchedules keys:", Object.keys(doctorSchedules));
+
       // --- BUILD TODAY'S DOCTOR LIST (for injection) ---
       doctorsTodayList = [];
       const todayFull = getCurrentDateTime().split(",")[0];
@@ -226,6 +225,7 @@ router.post("/message", async (req, res) => {
           doctorsTodayList.push({ name: doc.name, timings });
         }
       }
+      console.log("📋 doctorsTodayList after build:", doctorsTodayList.map(d => d.name));
     }
 
     // 2️⃣ Create or find session
