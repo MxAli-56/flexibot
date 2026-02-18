@@ -432,6 +432,18 @@ router.post("/message", async (req, res) => {
                 const openDecimal = openDisplayHour + openDisplayMinute / 60;
                 const closeDecimal = closeDisplayHour + closeDisplayMinute / 60;
 
+                console.log("🔎 Time check input:", {
+                  requestedHour,
+                  requestedMinute,
+                  requestedDecimal: requestedHour + requestedMinute / 60,
+                  openDisplayHour,
+                  openDisplayMinute,
+                  openDecimal: openDisplayHour + openDisplayMinute / 60,
+                  closeDisplayHour,
+                  closeDisplayMinute,
+                  closeDecimal: closeDisplayHour + closeDisplayMinute / 60,
+                });
+
                 if (
                   requestedDecimal < openDecimal ||
                   requestedDecimal > closeDecimal
@@ -439,7 +451,6 @@ router.post("/message", async (req, res) => {
                   validationError = `Our clinic is closed at that time. Hours are ${openDisplayHour % 12 || 12}:${openDisplayMinute.toString().padStart(2, "0")} ${openDisplayAmPm?.toUpperCase() || "AM"} - ${closeDisplayHour % 12 || 12}:${closeDisplayMinute.toString().padStart(2, "0")} ${closeDisplayAmPm?.toUpperCase() || "PM"}. Please come back tomorrow for scheduling an appointment`;
                 }
               }
-
               // Past time check
               if (canUseJavaScript && !validationError) {
                 const requestedDateTime = new Date();
