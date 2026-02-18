@@ -225,7 +225,10 @@ router.post("/message", async (req, res) => {
           doctorsTodayList.push({ name: doc.name, timings });
         }
       }
-      console.log("📋 doctorsTodayList after build:", doctorsTodayList.map(d => d.name));
+      console.log(
+        "📋 doctorsTodayList after build:",
+        doctorsTodayList.map((d) => d.name),
+      );
     }
 
     // 2️⃣ Create or find session
@@ -598,6 +601,16 @@ DO NOT add any other text. DO NOT explain your reasoning. Just return VALID or I
       "\n📌 REMINDER: When asked about today's doctors, you MUST list EVERY doctor working today (including evening shifts) from BUSINESS KNOWLEDGE. Do NOT omit any.";
     const contextMetadata = `[CONTEXT: Today=${getCurrentDateTime().split(",")[0]} | Time=${currentHour}:${currentMinutes.toString().padStart(2, "0")} | Clinic_Status=${isClinicOpen ? "OPEN" : "CLOSED"}]`;
 
+    // Build the doctor list string once
+    let doctorListStr = "";
+    if (doctorsTodayList.length > 0) {
+      doctorListStr =
+        "\n\nHere is the EXACT list of doctors working today. You MUST use this list when answering questions about today's availability and do NOT omit any doctor:";
+      doctorsTodayList.forEach((doc) => {
+        doctorListStr += `\n- ${doc.name}: ${doc.timings}`;
+      });
+    }
+
     if (!isClinicOpen) {
       // --- CLOSED LOGIC ---
       let closedMsg = "IMPORTANT CONTEXT: The clinic is CURRENTLY CLOSED.";
@@ -608,19 +621,11 @@ DO NOT add any other text. DO NOT explain your reasoning. Just return VALID or I
       }
       closedMsg += `\n\n[SUPREME RULE]: If the user asks about TOMORROW or any FUTURE day, do NOT say 'The clinic is closed.' Instead, immediately provide the FULL doctor list from BUSINESS KNOWLEDGE for that day.`;
       closedMsg += `\n\nRULES FOR TODAY ONLY:\n- If the user asks about TODAY's availability: Start with "Our clinic is currently closed."\n- For general info (parking, services, etc.): Answer normally.\n- If the user asks for a doctor that only works on Sundays (none): State the clinic is closed.`;
-      clinicFacts = contextMetadata + doctorListReminder + "\n" + closedMsg;
-
-      // Add doctor list only on first message
-      if (history.length === 0 && doctorsTodayList.length > 0) {
-        clinicFacts += "\n\nDoctors working today:";
-        doctorsTodayList.forEach((doc) => {
-          clinicFacts += `\n- ${doc.name}: ${doc.timings}`;
-        });
-      }
+      clinicFacts =
+        contextMetadata + doctorListReminder + "\n" + closedMsg + doctorListStr;
     } else {
       // --- OPEN LOGIC ---
-      clinicFacts = contextMetadata + doctorListReminder;
-
+      let openMsg = contextMetadata + doctorListReminder;
       if (history.length === 0) {
         const openTimeStr = clinicHoursExist
           ? `${openDisplayHour % 12 || 12}:${openDisplayMinute.toString().padStart(2, "0")} ${openDisplayAmPm?.toUpperCase()}`
@@ -628,17 +633,11 @@ DO NOT add any other text. DO NOT explain your reasoning. Just return VALID or I
         const closeTimeStr = clinicHoursExist
           ? `${closeDisplayHour % 12 || 12}:${closeDisplayMinute.toString().padStart(2, "0")} ${closeDisplayAmPm?.toUpperCase()}`
           : "10:00 PM";
-        clinicFacts += `\n✅ Clinic is CURRENTLY OPEN. Today's hours are ${openTimeStr} - ${closeTimeStr}.`;
-
-        // Add doctor list only on first message
-        if (doctorsTodayList.length > 0) {
-          clinicFacts += "\n\nDoctors working today:";
-          doctorsTodayList.forEach((doc) => {
-            clinicFacts += `\n- ${doc.name}: ${doc.timings}`;
-          });
-        }
+        openMsg += `\n✅ Clinic is CURRENTLY OPEN. Today's hours are ${openTimeStr} - ${closeTimeStr}.`;
       }
+      clinicFacts = openMsg + doctorListStr;
     }
+    console.log("📦 clinicFacts:", clinicFacts);
 
     const finalSystemPrompt = `
 ${clientData?.systemPrompt || "You are a helpful assistant."}
