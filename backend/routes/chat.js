@@ -433,7 +433,7 @@ router.post("/message", async (req, res) => {
                   requestedDecimal < openDecimal ||
                   requestedDecimal > closeDecimal
                 ) {
-                  validationError = `Our clinic is closed at that time. Hours are ${openDisplayHour % 12 || 12}:${openDisplayMinute.toString().padStart(2, "0")} ${openDisplayAmPm?.toUpperCase() || "AM"} - ${closeDisplayHour % 12 || 12}:${closeDisplayMinute.toString().padStart(2, "0")} ${closeDisplayAmPm?.toUpperCase() || "PM"}.`;
+                  validationError = `Our clinic is closed at that time. Hours are ${openDisplayHour % 12 || 12}:${openDisplayMinute.toString().padStart(2, "0")} ${openDisplayAmPm?.toUpperCase() || "AM"} - ${closeDisplayHour % 12 || 12}:${closeDisplayMinute.toString().padStart(2, "0")} ${closeDisplayAmPm?.toUpperCase() || "PM"}. Please come back tomorrow for scheduling an appointment`;
                 }
               }
 
