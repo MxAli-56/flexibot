@@ -12,6 +12,20 @@ const { chatWithQwen } = require("../providers/qwen");
 
 const router = express.Router();
 
+// Helper to convert phone numbers to clickable links (same regex as post‑processing)
+function formatPhoneNumbers(text) {
+  return text.replace(
+        /(?<!href="tel:|">)(0\d{2,3}[-\s]?\d{5,8}|\+?92[-\s]?\d{9,12})(?![^<]*<\/a>)/g,
+        (match) => {
+          const cleanNumber = match.replace(/[-\s]/g, "");
+          if (cleanNumber.length < 10) return match;
+
+          const displayNumber = match.trim();
+          return `<a href="tel:${cleanNumber}" class="phone-link">${displayNumber}</a>`;
+        },
+      );
+    }
+
 async function createLeadAndNotify(session, clientData, leadData) {
   if (!clientData) {
     console.warn(`⚠️ No client data found for session ${session.sessionId}, lead stored without email.`);
@@ -524,21 +538,18 @@ INSTRUCTIONS - FOLLOW EXACTLY:
 3. DOCTOR AVAILABILITY CHECK:
    - Look at the doctor's schedule in BUSINESS KNOWLEDGE. It will be given in 12‑hour format (e.g., "9:00 AM - 2:00 PM").
    - First, check the "Unavailable" list: days in parentheses after "(Unavailable: ...)" are days the doctor DOES NOT work.
-   - If today is in the "Unavailable" list, respond with "INVALID: [Doctor] does not work on [day]."
-   - Otherwise, the doctor works today. Now you must convert both the requested time and the doctor's hours to 24‑hour format for comparison.
-   - For example: "9:00 AM" = 9:00, "2:00 PM" = 14:00, "5:00 PM" = 17:00.
-   - The requested time has already been converted to 24‑hour format in the request details (e.g., "1:10 PM" is given as "13:10").
-   - Compare the requested time to the doctor's start and end times (converted to 24‑hour). If the requested time is between the start and end (inclusive of the end time), then it is valid.
+   - If today is in the "Unavailable" list, respond with "INVALID: [Doctor] does not work on [day]. Their full schedule: [full schedule]."
+   - Otherwise, the doctor works today. Convert the doctor's hours to 24‑hour format (e.g., "9:00 AM" = 9:00, "2:00 PM" = 14:00). The requested time is already in 24‑hour format in the request details (e.g., "13:10").
+   - Compare the requested time to the doctor's start and end times.
+        * If the requested time is less than the start time, respond with "INVALID: [Doctor]'s shift starts at [start time]. Please choose a time after that."
+        * If the requested time is greater than the end time, respond with "INVALID: [Doctor]'s shift ends at [end time]. Please choose an earlier time."
+        * If the requested time is between start and end (inclusive of end time), then it is valid. (For example, 13:58 is between 9:00 and 14:00, so it is valid.)
    - If valid, respond with "VALID".
-   - If not valid, respond with "INVALID: [Doctor] is not available at [time]. Their hours today: [today's hours]. Full schedule: [full schedule]."
+   - If the user chose "Any", just check clinic hours – it's valid if within clinic hours.rs.
 
 4. RESPONSE FORMAT - RESPOND WITH EXACTLY ONE OF THESE:
    - "VALID" if the request is valid
-   - "INVALID: [reason]" where [reason] is a helpful message that includes:
-     * If clinic closed: "Our clinic is closed at that time. Hours are [hours]."
-     * If doctor not available today: "[Doctor] does not work on [day]. Their schedule: [full schedule]."
-     * If doctor works today but time invalid: "[Doctor] is not available at [time]. Their hours today: [today's hours]. Full schedule: [full schedule]."
-
+   - "INVALID: [reason]" where [reason] is one of the messages described above.
 DO NOT add any other text. DO NOT explain your reasoning. Just return VALID or INVALID: followed by the reason.
 `;
 
@@ -591,17 +602,12 @@ DO NOT add any other text. DO NOT explain your reasoning. Just return VALID or I
 if (session.leadCaptured) {
   // If user tries to book another appointment
   if (/book|appointment|schedule|visit|another|again/i.test(text)) {
-    return res.json({
-      reply: "You already have an appointment scheduled with us. If you'd like to make changes or book another one, please call us at 021-34121905 and our team will be happy to assist you.",
-      sessionId: session.sessionId,
-    });
+    const reply = formatPhoneNumbers("You already have an appointment scheduled with us. If you'd like to make changes or book another one, please call us at 021-34121905 and our team will be happy to assist you.");
+    return res.json({ reply, sessionId: session.sessionId });
   }
-  // If user wants to change/cancel
   if (/change|modify|update|reschedule|cancel|wrong|mistake/i.test(text)) {
-    return res.json({
-      reply: "If you need to change or cancel your appointment, please call us at 021-34121905. Our team will help you right away.",
-      sessionId: session.sessionId,
-    });
+    const reply = formatPhoneNumbers("If you need to change or cancel your appointment, please call us at 021-34121905. Our team will help you right away.");
+    return res.json({ reply, sessionId: session.sessionId });
   }
 }
 
