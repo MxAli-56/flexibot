@@ -522,11 +522,15 @@ INSTRUCTIONS - FOLLOW EXACTLY:
    - Times at exactly the close time are allowed (e.g., 10:00 PM if clinic closes at 10:00 PM).
 
 3. DOCTOR AVAILABILITY CHECK:
-   - Look at the doctor's schedule in BUSINESS KNOWLEDGE.
-   - Check the "Unavailable" list: days in parentheses after "(Unavailable: ...)" are days the doctor DOES NOT work.
-   - Check the "Available" list: days and times listed are when the doctor DOES work.
-   - Example: "Dr. Alizeh Shah: (Unavailable: Mon, Wed, Fri, Sun). Available: Tue, Thu, Sat (4:00 PM - 9:00 PM)."
-     → Works Tue/Thu/Sat, 4-9 PM. Does NOT work Mon/Wed/Fri/Sun.
+   - Look at the doctor's schedule in BUSINESS KNOWLEDGE. It will be given in 12‑hour format (e.g., "9:00 AM - 2:00 PM").
+   - First, check the "Unavailable" list: days in parentheses after "(Unavailable: ...)" are days the doctor DOES NOT work.
+   - If today is in the "Unavailable" list, respond with "INVALID: [Doctor] does not work on [day]."
+   - Otherwise, the doctor works today. Now you must convert both the requested time and the doctor's hours to 24‑hour format for comparison.
+   - For example: "9:00 AM" = 9:00, "2:00 PM" = 14:00, "5:00 PM" = 17:00.
+   - The requested time has already been converted to 24‑hour format in the request details (e.g., "1:10 PM" is given as "13:10").
+   - Compare the requested time to the doctor's start and end times (converted to 24‑hour). If the requested time is between the start and end (inclusive of the end time), then it is valid.
+   - If valid, respond with "VALID".
+   - If not valid, respond with "INVALID: [Doctor] is not available at [time]. Their hours today: [today's hours]. Full schedule: [full schedule]."
 
 4. RESPONSE FORMAT - RESPOND WITH EXACTLY ONE OF THESE:
    - "VALID" if the request is valid
