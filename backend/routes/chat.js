@@ -587,17 +587,23 @@ DO NOT add any other text. DO NOT explain your reasoning. Just return VALID or I
     }
     // --- LEAD COLLECTION LOGIC ENDS HERE ---
 
-    // --- POST‑LEAD CHANGE HANDLER ---
-    if (
-      session.leadCaptured &&
-      /change|modify|update|reschedule|cancel|wrong|mistake/i.test(text)
-    ) {
-      return res.json({
-        reply:
-          "If you need to change or cancel your appointment, please let our receptionist know when they call to confirm. They'll be happy to assist you.",
-        sessionId: session.sessionId,
-      });
-    }
+    // --- POST‑LEAD CHANGE / NEW BOOKING HANDLER ---
+if (session.leadCaptured) {
+  // If user tries to book another appointment
+  if (/book|appointment|schedule|visit|another|again/i.test(text)) {
+    return res.json({
+      reply: "You already have an appointment scheduled with us. If you'd like to make changes or book another one, please call us at 021-34121905 and our team will be happy to assist you.",
+      sessionId: session.sessionId,
+    });
+  }
+  // If user wants to change/cancel
+  if (/change|modify|update|reschedule|cancel|wrong|mistake/i.test(text)) {
+    return res.json({
+      reply: "If you need to change or cancel your appointment, please call us at 021-34121905. Our team will help you right away.",
+      sessionId: session.sessionId,
+    });
+  }
+}
 
     // 4️⃣ Get Chat History
     const history = await fetchConversation(session.sessionId, 12);
