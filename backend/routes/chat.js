@@ -140,6 +140,7 @@ router.post("/message", async (req, res) => {
     let clinicHoursExist = false;
     let doctorSchedules = {};
     let doctorsTodayList = [];
+    let openDecimal = 0, closeDecimal = 0;
 
     if (clientData?.siteContext) {
       const siteContext = clientData.siteContext;
@@ -173,8 +174,8 @@ router.post("/message", async (req, res) => {
         if (closeAmPm?.toLowerCase() === "am" && closeHour === 12)
           closeHour = 0;
 
-        const openDecimal = openHour + openMinute / 60;
-        const closeDecimal = closeHour + closeMinute / 60;
+        openDecimal = openHour + openMinute / 60;
+        closeDecimal = closeHour + closeMinute / 60;
 
         isClinicOpen =
           currentTimeDecimal >= openDecimal &&
@@ -429,19 +430,13 @@ router.post("/message", async (req, res) => {
               // Clinic hours pre-validation
               if (canUseJavaScript && clinicHoursExist) {
                 const requestedDecimal = requestedHour + requestedMinute / 60;
-                const openDecimal = openDisplayHour + openDisplayMinute / 60;
-                const closeDecimal = closeDisplayHour + closeDisplayMinute / 60;
 
                 console.log("🔎 Time check input:", {
                   requestedHour,
                   requestedMinute,
-                  requestedDecimal: requestedHour + requestedMinute / 60,
-                  openDisplayHour,
-                  openDisplayMinute,
-                  openDecimal: openDisplayHour + openDisplayMinute / 60,
-                  closeDisplayHour,
-                  closeDisplayMinute,
-                  closeDecimal: closeDisplayHour + closeDisplayMinute / 60,
+                  requestedDecimal,
+                  openDecimal, // now the correct 24‑hour value
+                  closeDecimal, // now the correct 24‑hour value
                 });
 
                 if (
