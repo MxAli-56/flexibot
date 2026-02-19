@@ -364,16 +364,22 @@ router.post("/message", async (req, res) => {
             break;
 
           case "awaiting_phone":
-            // Remove all non-digit characters except leading plus
-            const cleaned = text.replace(/[^\d+]/g, "");
-            // Allow optional leading plus, then 8-15 digits
-            const isValidPhone = /^\+?\d{8,15}$/.test(cleaned);
-            if (!isValidPhone) {
-              reply = "Please enter a valid <b>phone number</b>.";
+            // First, check raw input for allowed characters only: digits, spaces, dashes, optional leading plus
+            if (!/^\+?[0-9\s-]+$/.test(text)) {
+              reply =
+                "Please enter a valid phone number using only digits, spaces, dashes, and an optional leading plus sign.";
               // Stay in awaiting_phone state
               break;
             }
-            session.tempLead.phone = text; // store original input
+            // Remove all non-digit characters except leading plus for length check
+            const cleaned = text.replace(/[^\d+]/g, "");
+            const isValidPhone = /^\+?\d{8,15}$/.test(cleaned);
+            if (!isValidPhone) {
+              reply = "Please enter a valid phone number with 8 to 15 digits.";
+              // Stay in awaiting_phone state
+              break;
+            }
+            session.tempLead.phone = text; // store original input (already validated)
             session.leadState = "awaiting_issue";
             reply =
               "Please briefly describe the <b>issue</b> you're facing (e.g: wisdom tooth pain, general checkup).";
@@ -390,7 +396,7 @@ router.post("/message", async (req, res) => {
             session.tempLead.doctor = text.toLowerCase() === "any" ? "" : text;
             session.leadState = "awaiting_time";
             reply =
-              "What <b>time</b> would you prefer? (e.g: 'around 6 PM' or 'anytime')";
+              "What <b>time</b> would you prefer? Please include AM or PM (e.g., '6 PM' or '1:30 PM'). You can also say 'anytime'.";
             break;
 
           case "awaiting_time":
@@ -403,11 +409,27 @@ router.post("/message", async (req, res) => {
                 "Sure, which <b>doctor</b> would you prefer? (If you're not sure, just say <b>any</b> for our team to assign best doctor for your issue)";
               break;
             }
-            // Normal time handling
-            session.tempLead.time =
-              text.toLowerCase() === "anytime" ? "" : text;
+            // Check for "anytime"
+            if (text.toLowerCase() === "anytime") {
+              session.tempLead.time = "";
+              session.leadState = "awaiting_confirmation";
+              reply = `Great! Let me confirm the details:<br><br>Name: ${session.tempLead.name}<br>Phone: ${session.tempLead.phone}<br>Issue: ${session.tempLead.issue}<br>Doctor: ${session.tempLead.doctor || "Any"}<br>Time: Anytime<br><br>Is this correct? (yes/no)`;
+              break;
+            }
+
+            // Validate time format (must include AM/PM)
+            const timeMatch = text.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
+            if (!timeMatch || !timeMatch[3]) {
+              reply =
+                "Please specify AM or PM (e.g., '6 PM' or '1:30 PM'). You can also say 'anytime'.";
+              // Stay in awaiting_time
+              break;
+            }
+
+            // Valid time with AM/PM – store and proceed
+            session.tempLead.time = text;
             session.leadState = "awaiting_confirmation";
-            reply = `Great! Let me confirm the details:<br><br>Name: ${session.tempLead.name}<br>Phone: ${session.tempLead.phone}<br>Issue: ${session.tempLead.issue}<br>Doctor: ${session.tempLead.doctor || "Any"}<br>Time: ${session.tempLead.time || "Anytime"}<br><br>Is this correct? (yes/no)`;
+            reply = `Great! Let me confirm the details:<br><br>Name: ${session.tempLead.name}<br>Phone: ${session.tempLead.phone}<br>Issue: ${session.tempLead.issue}<br>Doctor: ${session.tempLead.doctor || "Any"}<br>Time: ${session.tempLead.time}<br><br>Is this correct? (yes/no)`;
             break;
 
           case "awaiting_confirmation":
@@ -584,11 +606,18 @@ DO NOT add any other text. DO NOT explain your reasoning. Just return VALID or I
                 session.tempLead = null;
               }
             } else {
-              // User said no – restart
-              session.leadState = null;
-              session.tempLead = null;
+              // User said no – restart booking from name
+              session.leadState = "awaiting_name";
+              session.tempLead = {
+                name: "",
+                phone: "",
+                issue: "",
+                doctor: "",
+                time: "",
+              };
+              await session.save(); // Make sure to save
               reply =
-                "No problem! Let's start over. What would you like to book?";
+                "No problem! Let's start over. Please provide your <b>name</b>. (You can type <b>cancel</b> anytime to stop or <b>restart</b> to start over the booking process.)";
             }
             break;
         }
