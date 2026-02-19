@@ -367,7 +367,7 @@ router.post("/message", async (req, res) => {
             // First, check raw input for allowed characters only: digits, spaces, dashes, optional leading plus
             if (!/^\+?[0-9\s-]+$/.test(text)) {
               reply =
-                "Please enter a valid phone number using only digits, spaces, dashes, and an optional leading plus sign.";
+                "Please enter a valid phone number. (Only digits, spaces, dashes, & plus sign is allowed)";
               // Stay in awaiting_phone state
               break;
             }
@@ -396,7 +396,7 @@ router.post("/message", async (req, res) => {
             session.tempLead.doctor = text.toLowerCase() === "any" ? "" : text;
             session.leadState = "awaiting_time";
             reply =
-              "What <b>time</b> would you prefer? Please include AM or PM (e.g., '6 PM' or '1:30 PM'). You can also say 'anytime'.";
+              "What <b>time</b> would you prefer? Please include AM or PM (e.g., '6 PM' or '1:30 PM' or 'anytime')";
             break;
 
           case "awaiting_time":
@@ -421,7 +421,7 @@ router.post("/message", async (req, res) => {
             const timeMatch = text.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
             if (!timeMatch || !timeMatch[3]) {
               reply =
-                "Please specify AM or PM (e.g., '6 PM' or '1:30 PM'). You can also say 'anytime'.";
+                "Please specify AM or PM (e.g., '6 PM' or '1:30 PM' or 'anytime')";
               // Stay in awaiting_time
               break;
             }
