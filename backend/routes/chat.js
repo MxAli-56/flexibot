@@ -128,15 +128,17 @@ router.post("/message", async (req, res) => {
     // 🚨 1.5️⃣ CLINIC HOURS ENFORCEMENT - MULTI-TENANT PARSER
     // ============================================
     // Get current time in Karachi
-const nowInKarachi = new Date().toLocaleString("en-US", { timeZone: "Asia/Karachi" });
-const [timePart] = nowInKarachi.split(', ');
-const [time, modifier] = timePart.split(' ');
-let [hours, minutes] = time.split(':');
-if (modifier === 'PM' && hours !== '12') hours = parseInt(hours) + 12;
-if (modifier === 'AM' && hours === '12') hours = 0;
-const currentHour = parseInt(hours);
-const currentMinutes = parseInt(minutes);
-const currentTimeDecimal = currentHour + currentMinutes / 60;
+    const nowInKarachi = new Date().toLocaleString("en-US", {
+      timeZone: "Asia/Karachi",
+    });
+    const [timePart] = nowInKarachi.split(", ");
+    const [time, modifier] = timePart.split(" ");
+    let [hours, minutes] = time.split(":");
+    if (modifier === "PM" && hours !== "12") hours = parseInt(hours) + 12;
+    if (modifier === "AM" && hours === "12") hours = 0;
+    const currentHour = parseInt(hours);
+    const currentMinutes = parseInt(minutes);
+    const currentTimeDecimal = currentHour + currentMinutes / 60;
 
     let isClinicOpen = false;
     let openDisplayHour, openDisplayMinute, openDisplayAmPm;
@@ -144,7 +146,8 @@ const currentTimeDecimal = currentHour + currentMinutes / 60;
     let clinicHoursExist = false;
     let doctorSchedules = {};
     let doctorsTodayList = [];
-    let openDecimal = 0, closeDecimal = 0;
+    let openDecimal = 0,
+      closeDecimal = 0;
 
     if (clientData?.siteContext) {
       const siteContext = clientData.siteContext;
@@ -246,9 +249,10 @@ const currentTimeDecimal = currentHour + currentMinutes / 60;
     }
 
     // --- ABANDONED LEAD CHECK ---
+    const lastActive = session.lastActivity || session.createdAt;
     if (
       session.leadState &&
-      Date.now() - new Date(session.createdAt).getTime() > 30 * 60 * 1000
+      Date.now() - new Date(lastActive).getTime() > 30 * 60 * 1000
     ) {
       // Reset lead state for abandoned sessions
       session.leadState = null;
@@ -271,6 +275,7 @@ const currentTimeDecimal = currentHour + currentMinutes / 60;
         doctor: "",
         time: "",
       };
+      session.lastActivity = new Date();
       await session.save();
       return res.json({
         reply:
@@ -286,6 +291,10 @@ const currentTimeDecimal = currentHour + currentMinutes / 60;
       role: "user",
       text,
     });
+
+    // Update last activity time
+    session.lastActivity = new Date();
+    await session.save();
 
     // --- LEAD COLLECTION LOGIC STARTS HERE ---
     // If lead already captured, skip
@@ -305,6 +314,7 @@ const currentTimeDecimal = currentHour + currentMinutes / 60;
           doctor: "",
           time: "",
         };
+        session.lastActivity = new Date();
         await session.save();
         return res.json({
           reply:
@@ -327,6 +337,7 @@ const currentTimeDecimal = currentHour + currentMinutes / 60;
             doctor: "",
             time: "",
           };
+          session.lastActivity = new Date();
           await session.save();
           return res.json({
             reply:
@@ -339,6 +350,7 @@ const currentTimeDecimal = currentHour + currentMinutes / 60;
         if (/cancel|never mind|forget it|stop/i.test(text)) {
           session.leadState = null;
           session.tempLead = null;
+          session.lastActivity = new Date();
           await session.save();
           return res.json({
             reply: "Okay, let me know if you need any help!",
@@ -473,10 +485,14 @@ const currentTimeDecimal = currentHour + currentMinutes / 60;
                 }
               }
               // Past time check – using Karachi time
-              if (canUseJavaScript && !validationError && requestedDecimal < currentTimeDecimal) 
-                {
-                  validationError ="That time has already passed today. Please choose a future time.";
-                }
+              if (
+                canUseJavaScript &&
+                !validationError &&
+                requestedDecimal < currentTimeDecimal
+              ) {
+                validationError =
+                  "That time has already passed today. Please choose a future time.";
+              }
 
               // Doctor availability pre-validation
               if (
@@ -508,6 +524,7 @@ const currentTimeDecimal = currentHour + currentMinutes / 60;
                 reply = `I notice an issue: ${validationError} Would you like to restart? (type <b>restart</b> to begin again or <b>cancel</b> to stop)`;
                 session.leadState = null;
                 session.tempLead = null;
+                session.lastActivity = new Date();
                 await session.save();
                 return res.json({ reply, sessionId: session.sessionId });
               }
@@ -611,6 +628,7 @@ DO NOT add any other text. DO NOT explain your reasoning. Just return VALID or I
             }
             break;
         }
+        session.lastActivity = new Date();
         await session.save();
         return res.json({ reply, sessionId: session.sessionId });
       }
@@ -618,17 +636,25 @@ DO NOT add any other text. DO NOT explain your reasoning. Just return VALID or I
     // --- LEAD COLLECTION LOGIC ENDS HERE ---
 
     // --- POST‑LEAD CHANGE / NEW BOOKING HANDLER ---
-if (session.leadCaptured) {
-  // If user tries to book another appointment
-  if (/book|appointment|schedule|visit|another|again/i.test(text)) {
-    const reply = formatPhoneNumbers("You already have an appointment scheduled with us. If you'd like to make changes or book another one, please call us at 021-34121905 and our team will be happy to assist you.");
-    return res.json({ reply, sessionId: session.sessionId });
-  }
-  if (/change|modify|update|reschedule|cancel|wrong|mistake/i.test(text)) {
-    const reply = formatPhoneNumbers("If you need to change or cancel your appointment, please call us at 021-34121905. Our team will help you right away.");
-    return res.json({ reply, sessionId: session.sessionId });
-  }
-}
+    if (session.leadCaptured) {
+      // If user tries to book another appointment
+      if (/book|appointment|schedule|visit|another|again/i.test(text)) {
+        const reply = formatPhoneNumbers(
+          "You already have an appointment scheduled with us. If you'd like to make changes or book another one, please call us at 021-34121905 and our team will be happy to assist you.",
+        );
+        session.lastActivity = new Date();
+        await session.save();
+        return res.json({ reply, sessionId: session.sessionId });
+      }
+      if (/change|modify|update|reschedule|cancel|wrong|mistake/i.test(text)) {
+        const reply = formatPhoneNumbers(
+          "If you need to change or cancel your appointment, please call us at 021-34121905. Our team will help you right away.",
+        );
+        session.lastActivity = new Date();
+        await session.save();
+        return res.json({ reply, sessionId: session.sessionId });
+      }
+    }
 
     // 4️⃣ Get Chat History
     const history = await fetchConversation(session.sessionId, 12);
@@ -740,28 +766,28 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
     try {
       console.log(`🤖 Qwen primary for: ${clientData?.name || clientId}`);
       const qwenRes = await chatWithQwen(prompt);
-  if (qwenRes.status === "success" && qwenRes.reply) {
-    aiReplyText = qwenRes.reply;
-    console.log("✅ Qwen successful");
-  } else {
-    throw new Error(qwenRes.error || "Qwen returned no reply");
-  }
-} catch (error) {
-  console.error("❌ Qwen failed:", error.message);  // Now logs the actual error
-  console.warn("⚠️ Falling back to Mistral...");
-  try {
-    const mistralRes = await chatWithMistral(prompt);
-    if (mistralRes.status === "success" && mistralRes.reply) {
-      aiReplyText = mistralRes.reply;
-      console.log("✅ Mistral fallback successful");
-    } else {
-      throw new Error(mistralRes.error || "Mistral returned no reply");
+      if (qwenRes.status === "success" && qwenRes.reply) {
+        aiReplyText = qwenRes.reply;
+        console.log("✅ Qwen successful");
+      } else {
+        throw new Error(qwenRes.error || "Qwen returned no reply");
+      }
+    } catch (error) {
+      console.error("❌ Qwen failed:", error.message); // Now logs the actual error
+      console.warn("⚠️ Falling back to Mistral...");
+      try {
+        const mistralRes = await chatWithMistral(prompt);
+        if (mistralRes.status === "success" && mistralRes.reply) {
+          aiReplyText = mistralRes.reply;
+          console.log("✅ Mistral fallback successful");
+        } else {
+          throw new Error(mistralRes.error || "Mistral returned no reply");
+        }
+      } catch (e) {
+        console.error("❌ Mistral also failed:", e.message);
+        aiReplyText = "Service temporarily busy. Please try again.";
+      }
     }
-  } catch (e) {
-    console.error("❌ Mistral also failed:", e.message);
-    aiReplyText = "Service temporarily busy. Please try again.";
-  }
-}
 
     // ✨ 7.5️⃣ AGGRESSIVE POST-PROCESSING FOR MISTRAL
     if (aiReplyText) {
@@ -858,14 +884,21 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
       }
 
       // 14. DYNAMIC LINK CONVERSION (Markdown [Text](URL) -> HTML) with URL filtering
-aiReplyText = aiReplyText.replace(/\[(.*?)\]\((.*?)\)/g, (match, text, url) => {
-  // Only allow http, https, or tel links
-  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('tel:')) {
-    return `<a href="${url}" class="phone-link" target="_blank">${text}</a>`;
-  }
-  // If it's something else, just return the text without a link
-  return text;
-});
+      aiReplyText = aiReplyText.replace(
+        /\[(.*?)\]\((.*?)\)/g,
+        (match, text, url) => {
+          // Only allow http, https, or tel links
+          if (
+            url.startsWith("http://") ||
+            url.startsWith("https://") ||
+            url.startsWith("tel:")
+          ) {
+            return `<a href="${url}" class="phone-link" target="_blank">${text}</a>`;
+          }
+          // If it's something else, just return the text without a link
+          return text;
+        },
+      );
 
       // 15. 📞 PHONE NUMBER -> HTML LINK (With "Already Processed" Protection)
       // This regex specifically avoids numbers that are inside href="" or already in <a> tags.
@@ -903,6 +936,10 @@ aiReplyText = aiReplyText.replace(/\[(.*?)\]\((.*?)\)/g, (match, text, url) => {
       role: "bot",
       text: aiReplyText,
     });
+
+    // Update last activity time
+    session.lastActivity = new Date();
+    await session.save();
 
     res.json({ reply: aiReplyText, sessionId: session.sessionId });
   } catch (error) {
