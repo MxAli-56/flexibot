@@ -560,7 +560,7 @@ DO NOT add any other text. DO NOT explain your reasoning. Just return VALID or I
               console.log("VALIDATION RESPONSE:", validation);
 
               const cleanValidation = validation.trim();
-              const validPattern = /^VALID$/i;
+              const validPattern = /^VALID[.!]?$/i;
               const invalidPattern = /^INVALID:\s*(.+)$/i;
 
               if (validPattern.test(cleanValidation)) {
