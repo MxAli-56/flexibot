@@ -859,11 +859,21 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
         aiReplyText = aiReplyText.trim() + " 😊";
       }
 
-      // 14. DYNAMIC LINK CONVERSION (Markdown [Text](URL) -> HTML)
-      // We do this first so the Google Maps link is safely converted.
+      // 14. DYNAMIC LINK CONVERSION (Markdown [Text](URL) -> HTML) with URL filtering
       aiReplyText = aiReplyText.replace(
         /\[(.*?)\]\((.*?)\)/g,
-        '<a href="$2" class="phone-link" target="_blank">$1</a>',
+        (match, text, url) => {
+          // Only allow http, https, or tel links
+          if (
+            url.startsWith("http://") ||
+            url.startsWith("https://") ||
+            url.startsWith("tel:")
+          ) {
+            return `<a href="${url}" class="phone-link" target="_blank">${text}</a>`;
+          }
+          // If it's something else, just return the text without a link
+          return text;
+        },
       );
 
       // 15. 📞 PHONE NUMBER -> HTML LINK (With "Already Processed" Protection)
