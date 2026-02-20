@@ -13,6 +13,7 @@ const sessionSchema = new mongoose.Schema({
     doctor: { type: String, default: "" },
     time: { type: String, default: "" },
   },
+  lastActivity: { type: Date, default: Date.now },
   createdAt: { type: Date, default: Date.now },
 });
 
