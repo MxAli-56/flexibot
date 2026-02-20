@@ -740,30 +740,28 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
     try {
       console.log(`🤖 Qwen primary for: ${clientData?.name || clientId}`);
       const qwenRes = await chatWithQwen(prompt);
-
-      if (qwenRes.status === "success" && qwenRes.reply) {
-        aiReplyText = qwenRes.reply;
-        console.log("✅ Qwen successful");
-      } else {
-        throw new Error("Qwen failed");
-      }
-    } catch (error) {
-      console.warn("⚠️ Qwen failed, falling back to Mistral...");
-
-      try {
-        console.log(`💎 Mistral fallback for: ${clientData?.name || clientId}`);
-        const mistralRes = await chatWithMistral(prompt);
-
-        if (mistralRes.status === "success" && mistralRes.reply) {
-          aiReplyText = mistralRes.reply;
-          console.log("✅ Mistral fallback successful");
-        } else {
-          throw new Error("Mistral also failed");
-        }
-      } catch (e) {
-        aiReplyText = "Service temporarily busy. Please try again.";
-      }
+  if (qwenRes.status === "success" && qwenRes.reply) {
+    aiReplyText = qwenRes.reply;
+    console.log("✅ Qwen successful");
+  } else {
+    throw new Error(qwenRes.error || "Qwen returned no reply");
+  }
+} catch (error) {
+  console.error("❌ Qwen failed:", error.message);  // Now logs the actual error
+  console.warn("⚠️ Falling back to Mistral...");
+  try {
+    const mistralRes = await chatWithMistral(prompt);
+    if (mistralRes.status === "success" && mistralRes.reply) {
+      aiReplyText = mistralRes.reply;
+      console.log("✅ Mistral fallback successful");
+    } else {
+      throw new Error(mistralRes.error || "Mistral returned no reply");
     }
+  } catch (e) {
+    console.error("❌ Mistral also failed:", e.message);
+    aiReplyText = "Service temporarily busy. Please try again.";
+  }
+}
 
     // ✨ 7.5️⃣ AGGRESSIVE POST-PROCESSING FOR MISTRAL
     if (aiReplyText) {
@@ -860,21 +858,14 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
       }
 
       // 14. DYNAMIC LINK CONVERSION (Markdown [Text](URL) -> HTML) with URL filtering
-      aiReplyText = aiReplyText.replace(
-        /\[(.*?)\]\((.*?)\)/g,
-        (match, text, url) => {
-          // Only allow http, https, or tel links
-          if (
-            url.startsWith("http://") ||
-            url.startsWith("https://") ||
-            url.startsWith("tel:")
-          ) {
-            return `<a href="${url}" class="phone-link" target="_blank">${text}</a>`;
-          }
-          // If it's something else, just return the text without a link
-          return text;
-        },
-      );
+aiReplyText = aiReplyText.replace(/\[(.*?)\]\((.*?)\)/g, (match, text, url) => {
+  // Only allow http, https, or tel links
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('tel:')) {
+    return `<a href="${url}" class="phone-link" target="_blank">${text}</a>`;
+  }
+  // If it's something else, just return the text without a link
+  return text;
+});
 
       // 15. 📞 PHONE NUMBER -> HTML LINK (With "Already Processed" Protection)
       // This regex specifically avoids numbers that are inside href="" or already in <a> tags.
