@@ -27,24 +27,8 @@ function formatPhoneNumbers(text) {
     }
 
 async function createLeadAndNotify(session, clientData, leadData) {
-  if (!clientData) {
-    console.warn(`⚠️ No client data found for session ${session.sessionId}, lead stored without email.`);
-    
-    // Still save the lead (no email possible)
-    await Lead.create({
-      sessionId: session.sessionId,
-      clientId: session.clientId,
-      name: leadData.name,
-      phone: leadData.phone,
-      issue: leadData.issue,
-      doctor: leadData.doctor || "",
-      time: leadData.time || "",
-    });
-    return; // exit early – no email to send
-  }
-
   try {
-    // Save lead to database (await this – we want it saved)
+    // Save lead to database – if this fails, we throw so the caller knows
     await Lead.create({
       sessionId: session.sessionId,
       clientId: session.clientId,
@@ -56,7 +40,7 @@ async function createLeadAndNotify(session, clientData, leadData) {
     });
 
     // If clinic has an email, send notification in the background (don't await)
-    if (clientData.email) {
+    if (clientData?.email) {
       const subject = `New Lead from FlexiBot - ${clientData.name || "Clinic"}`;
       const body = `
 A potential patient is interested:
@@ -78,9 +62,11 @@ Please contact them soon.
         `⚠️ No email set for client ${session.clientId}, lead stored but not sent.`,
       );
     }
+
+    return true; // Lead saved successfully
   } catch (error) {
     console.error("❌ Error creating lead:", error);
-    // Do not throw – we don't want to break the conversation
+    return false; // Lead save failed
   }
 }
 
@@ -141,12 +127,16 @@ router.post("/message", async (req, res) => {
     // ============================================
     // 🚨 1.5️⃣ CLINIC HOURS ENFORCEMENT - MULTI-TENANT PARSER
     // ============================================
-    const now = new Date(
-      new Date().toLocaleString("en-US", { timeZone: "Asia/Karachi" }),
-    );
-    const currentHour = now.getHours();
-    const currentMinutes = now.getMinutes();
-    const currentTimeDecimal = currentHour + currentMinutes / 60;
+    // Get current time in Karachi
+const nowInKarachi = new Date().toLocaleString("en-US", { timeZone: "Asia/Karachi" });
+const [datePart, timePart] = nowInKarachi.split(', ');
+const [time, modifier] = timePart.split(' ');
+let [hours, minutes] = time.split(':');
+if (modifier === 'PM' && hours !== '12') hours = parseInt(hours) + 12;
+if (modifier === 'AM' && hours === '12') hours = 0;
+const currentHour = parseInt(hours);
+const currentMinutes = parseInt(minutes);
+const currentTimeDecimal = currentHour + currentMinutes / 60;
 
     let isClinicOpen = false;
     let openDisplayHour, openDisplayMinute, openDisplayAmPm;
@@ -482,21 +472,11 @@ router.post("/message", async (req, res) => {
                   validationError = `Our clinic is closed at that time. Hours are ${openDisplayHour % 12 || 12}:${openDisplayMinute.toString().padStart(2, "0")} ${openDisplayAmPm?.toUpperCase() || "AM"} - ${closeDisplayHour % 12 || 12}:${closeDisplayMinute.toString().padStart(2, "0")} ${closeDisplayAmPm?.toUpperCase() || "PM"}. Please come back tomorrow for scheduling an appointment`;
                 }
               }
-              // Past time check
-              if (canUseJavaScript && !validationError) {
-                const requestedDateTime = new Date();
-                requestedDateTime.setHours(
-                  requestedHour,
-                  requestedMinute,
-                  0,
-                  0,
-                );
-                const now = new Date();
-                if (requestedDateTime < now) {
-                  validationError =
-                    "That time has already passed today. Please choose a future time.";
+              // Past time check – using Karachi time
+              if (canUseJavaScript && !validationError && requestedDecimal < currentTimeDecimal) 
+                {
+                  validationError ="That time has already passed today. Please choose a future time.";
                 }
-              }
 
               // Doctor availability pre-validation
               if (
@@ -584,16 +564,26 @@ DO NOT add any other text. DO NOT explain your reasoning. Just return VALID or I
               const invalidPattern = /^INVALID:\s*(.+)$/i;
 
               if (validPattern.test(cleanValidation)) {
-                await createLeadAndNotify(
+                const leadSaved = await createLeadAndNotify(
                   session,
                   clientData,
                   session.tempLead,
                 );
-                session.leadCaptured = true;
-                session.leadState = null;
-                session.tempLead = null;
-                reply =
-                  "Thank you! Your appointment request has been sent. Our team will call you shortly to confirm.";
+
+                if (leadSaved) {
+                  session.leadCaptured = true;
+                  session.leadState = null;
+                  session.tempLead = null;
+                  reply =
+                    "Thank you! Your appointment request has been sent. Our team will call you shortly to confirm.";
+                } else {
+                  // Lead save failed – inform user and do NOT mark lead as captured
+                  reply =
+                    "Sorry, we're having trouble saving your request right now. Please call us at 021-34121905 to book your appointment. Our team will assist you immediately.";
+                  // Keep leadState and tempLead? Probably clear them so user can restart if they want.
+                  session.leadState = null;
+                  session.tempLead = null;
+                }
               } else {
                 let reason = cleanValidation;
                 const invalidMatch = cleanValidation.match(invalidPattern);
