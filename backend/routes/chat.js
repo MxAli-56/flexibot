@@ -129,7 +129,7 @@ router.post("/message", async (req, res) => {
     // ============================================
     // Get current time in Karachi
 const nowInKarachi = new Date().toLocaleString("en-US", { timeZone: "Asia/Karachi" });
-const [datePart, timePart] = nowInKarachi.split(', ');
+const [timePart] = nowInKarachi.split(', ');
 const [time, modifier] = timePart.split(' ');
 let [hours, minutes] = time.split(':');
 if (modifier === 'PM' && hours !== '12') hours = parseInt(hours) + 12;
