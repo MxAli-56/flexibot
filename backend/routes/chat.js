@@ -443,8 +443,7 @@ router.post("/message", async (req, res) => {
             // Valid time with AM/PM – store and proceed
             session.tempLead.time = text;
             session.leadState = "awaiting_confirmation";
-            reply = `Great! Let me confirm the details:<br><br>Name: ${session.tempLead.name}<br>Phone: ${session.tempLead.phone}<br>Issue: ${session.tempLead.issue}<br>Doctor: ${session.tempLead.doctor || "Any"}<br>Time: ${session.tempLead.time}<br><br>Is this correct? (yes/no)`;
-
+            reply = `Great! Let me confirm the details:<br><br>Name: ${session.tempLead.name}<br>Phone: ${session.tempLead.phone}<br>Issue: ${session.tempLead.issue}<br>Doctor: ${session.tempLead.doctor || "Any"}<br>Date: ${session.tempLead.date}<br>Time: ${session.tempLead.time}<br><br>Is this correct? (yes/no)`;
             break;
 
           case "awaiting_confirmation":
