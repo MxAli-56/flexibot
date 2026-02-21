@@ -133,7 +133,7 @@ router.post("/message", async (req, res) => {
     const nowInKarachi = new Date().toLocaleString("en-US", {
       timeZone: "Asia/Karachi",
     });
-    const [timePart] = nowInKarachi.split(", ");
+    const [, timePart] = nowInKarachi.split(", ");
     const [time, modifier] = timePart.split(" ");
     let [hours, minutes] = time.split(":");
     if (modifier === "PM" && hours !== "12") hours = parseInt(hours) + 12;
@@ -484,9 +484,9 @@ INSTRUCTIONS - FOLLOW EXACTLY:
         * If the requested time is greater than the end time, respond with "INVALID: [Doctor]'s shift ends at [end time]. Please choose an earlier time."
         * If the requested time is between start and end (inclusive of end time), then it is valid.
    - If valid, respond with "VALID".
-   - If the user chose "Any", just check clinic hours and that at least one doctor works on that day (but not required – clinic hours alone suffice for "Any").
+   - If the user chose "Any", check that the clinic is open on that day and that at least one doctor is working (i.e., the requested day is not a day when all doctors are unavailable). If the clinic is open and at least one doctor works, respond with "VALID". Otherwise, provide an appropriate "INVALID: ..." message explaining (e.g., "The clinic is closed on Sundays" or "No doctors are available on that day").
 
-5. RESPONSE FORMAT - RESPOND WITH EXACTLY ONE OF THESE:
+   5. RESPONSE FORMAT - RESPOND WITH EXACTLY ONE OF THESE:
    - "VALID" if the request is valid
    - "INVALID: [reason]" where [reason] is one of the messages described above.
 DO NOT add any other text. DO NOT explain your reasoning. Just return VALID or INVALID: followed by the reason.
