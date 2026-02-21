@@ -509,7 +509,7 @@ DO NOT add any other text. DO NOT explain your reasoning. Just return VALID or I
                 );
 
                 if (leadSaved) {
-                  session.leadCaptured = true;
+                  session.leadCaptured = false;
                   session.leadState = null;
                   session.tempLead = null;
                   reply =
@@ -556,16 +556,6 @@ DO NOT add any other text. DO NOT explain your reasoning. Just return VALID or I
     // --- LEAD COLLECTION LOGIC ENDS HERE ---
 
     // --- POST‑LEAD CHANGE / NEW BOOKING HANDLER ---
-    if (session.leadCaptured) {
-      // If user tries to book another appointment
-      if (/book|appointment|schedule|visit|another|again/i.test(text)) {
-        const reply = formatPhoneNumbers(
-          "You already have an appointment scheduled with us. If you'd like to make changes or book another one, please call us at 021-34121905 and our team will be happy to assist you.",
-        );
-        session.lastActivity = new Date();
-        await session.save();
-        return res.json({ reply, sessionId: session.sessionId });
-      }
       if (/change|modify|update|reschedule|cancel|wrong|mistake/i.test(text)) {
         const reply = formatPhoneNumbers(
           "If you need to change or cancel your appointment, please call us at 021-34121905. Our team will help you right away.",
@@ -574,7 +564,6 @@ DO NOT add any other text. DO NOT explain your reasoning. Just return VALID or I
         await session.save();
         return res.json({ reply, sessionId: session.sessionId });
       }
-    }
 
     // 4️⃣ Get Chat History
     const history = await fetchConversation(session.sessionId, 12);
