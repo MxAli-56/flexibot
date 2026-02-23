@@ -728,6 +728,7 @@ router.post("/message", async (req, res) => {
                   session.tempLead,
                 );
                 if (leadSaved) {
+                  console.log("✅ Booking accepted by pre-validation for", matchedDoctor.name);
                   session.leadCaptured = false;
                   session.leadState = null;
                   session.tempLead = null;
