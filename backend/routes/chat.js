@@ -481,18 +481,31 @@ router.post("/message", async (req, res) => {
             if (!/^\+?[0-9\s-]+$/.test(text)) {
               reply =
                 "Please enter a valid phone number. (Only digits, spaces, dashes, & plus sign is allowed)";
-              // Stay in awaiting_phone state
-              break;
+                break;
             }
             // Remove all non-digit characters except leading plus for length check
             const cleaned = text.replace(/[^\d+]/g, "");
-            const isValidPhone = /^\+?\d{8,15}$/.test(cleaned);
-            if (!isValidPhone) {
+
+            // Basic international length check
+            if (!/^\+?\d{8,15}$/.test(cleaned)) {
               reply = "Please enter a valid phone number with 8 to 15 digits.";
-              // Stay in awaiting_phone state
               break;
             }
-            session.tempLead.phone = text; // store original input (already validated)
+
+            // Additional validation for Pakistani numbers
+            if (cleaned.startsWith("03") && cleaned.length !== 11) {
+              reply =
+                "For Pakistani mobile numbers, please enter 11 digits starting with 03.";
+              break;
+            }
+            if (cleaned.startsWith("+92") && cleaned.length !== 13) {
+              reply =
+                "For Pakistani numbers with country code, please use +92 followed by 10 digits (total 13 characters).";
+              break;
+            }
+            // If it starts with 0 but not 03, it might be a landline – accept (length 10-11)
+
+            session.tempLead.phone = text; // store original input
             session.leadState = "awaiting_issue";
             reply =
               "Please briefly describe the <b>issue</b> you're facing (e.g: wisdom tooth pain, general checkup).";
