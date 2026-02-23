@@ -13,82 +13,83 @@ const { chatWithQwen } = require("../providers/qwen");
 const router = express.Router();
 
 // ============================================
-// 📅 Date Parsing Helper (for common expressions)
+// 📅 Enhanced Date Parsing Helper
 // Returns a Date object set to that date at 00:00 Karachi time, or null if unparseable.
+// Handles:
+//   - Relative: 'today', 'tomorrow'
+//   - Ordinal: '23rd Feb', 'Feb 23', '23 feb 2026'
+//   - Numeric: '02/27/2026' (MM/DD/YYYY or DD/MM/YYYY), '2026-02-27'
 // ============================================
 function parseDate(dateStr, todayDate) {
   if (!dateStr || typeof dateStr !== 'string') return null;
 
   const lower = dateStr.trim().toLowerCase();
 
-  // Handle relative keywords
-  if (lower === 'today') {
-    return new Date(todayDate);
-  }
+  // Relative dates
+  if (lower === 'today') return new Date(todayDate);
   if (lower === 'tomorrow') {
     const tomorrow = new Date(todayDate);
     tomorrow.setDate(tomorrow.getDate() + 1);
     return tomorrow;
   }
 
-  // Try to extract month name first
+  // Try ordinal patterns first (e.g., "23rd Feb", "Feb 23", "23 feb 2026")
   const monthNames = ['january','february','march','april','may','june','july','august','september','october','november','december'];
   const monthAbbr = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
 
-  // Pattern 1: ordinal day + month name (optional year)
-  // e.g., "23rd Feb", "23 feb", "23rd February 2026"
-  const ordinalDayMonth = dateStr.match(/(\d{1,2})(?:st|nd|rd|th)?\s+([a-z]+)(?:\s+(\d{4}))?/i);
-  if (ordinalDayMonth) {
-    let day = parseInt(ordinalDayMonth[1], 10);
-    let monthStr = ordinalDayMonth[2].toLowerCase();
-    let year = ordinalDayMonth[3] ? parseInt(ordinalDayMonth[3], 10) : todayDate.getFullYear();
-
+  // Pattern: ordinal day + month name (optional year)
+  let match = dateStr.match(/(\d{1,2})(?:st|nd|rd|th)?\s+([a-z]+)(?:\s+(\d{4}))?/i);
+  if (match) {
+    let day = parseInt(match[1], 10);
+    let monthStr = match[2].toLowerCase();
+    let year = match[3] ? parseInt(match[3], 10) : todayDate.getFullYear();
     let monthIndex = monthNames.findIndex(m => m.startsWith(monthStr));
-    if (monthIndex === -1) monthIndex = monthAbbr.findIndex(m => m === monthStr);
-    if (monthIndex !== -1) {
-      // Validate day range (simplified)
-      if (day >= 1 && day <= 31) {
-        return new Date(year, monthIndex, day);
-      }
+    if (monthIndex === -1) monthIndex = monthAbbr.indexOf(monthStr);
+    if (monthIndex !== -1 && day >= 1 && day <= 31) {
+      return new Date(year, monthIndex, day);
     }
   }
 
-  // Pattern 2: month name + day (optional year)
-  // e.g., "Feb 23", "February 23 2026"
-  const monthDay = dateStr.match(/([a-z]+)\s+(\d{1,2})(?:st|nd|rd|th)?(?:\s+(\d{4}))?/i);
-  if (monthDay) {
-    let monthStr = monthDay[1].toLowerCase();
-    let day = parseInt(monthDay[2], 10);
-    let year = monthDay[3] ? parseInt(monthDay[3], 10) : todayDate.getFullYear();
-
+  // Pattern: month name + day (optional year)
+  match = dateStr.match(/([a-z]+)\s+(\d{1,2})(?:st|nd|rd|th)?(?:\s+(\d{4}))?/i);
+  if (match) {
+    let monthStr = match[1].toLowerCase();
+    let day = parseInt(match[2], 10);
+    let year = match[3] ? parseInt(match[3], 10) : todayDate.getFullYear();
     let monthIndex = monthNames.findIndex(m => m.startsWith(monthStr));
-    if (monthIndex === -1) monthIndex = monthAbbr.findIndex(m => m === monthStr);
-    if (monthIndex !== -1) {
-      if (day >= 1 && day <= 31) {
-        return new Date(year, monthIndex, day);
-      }
+    if (monthIndex === -1) monthIndex = monthAbbr.indexOf(monthStr);
+    if (monthIndex !== -1 && day >= 1 && day <= 31) {
+      return new Date(year, monthIndex, day);
     }
   }
 
-  // Pattern 3: numeric dates (dd-mm-yyyy, dd/mm/yyyy, yyyy-mm-dd)
-  // Try yyyy-mm-dd first
-  let numericMatch = dateStr.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
-  if (numericMatch) {
-    let year = parseInt(numericMatch[1], 10);
-    let month = parseInt(numericMatch[2], 10) - 1;
-    let day = parseInt(numericMatch[3], 10);
+  // Numeric patterns
+  // Try YYYY-MM-DD
+  match = dateStr.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+  if (match) {
+    let year = parseInt(match[1], 10);
+    let month = parseInt(match[2], 10) - 1;
+    let day = parseInt(match[3], 10);
     if (month >= 0 && month < 12 && day >= 1 && day <= 31) {
       return new Date(year, month, day);
     }
   }
-  // Try dd-mm-yyyy or dd/mm/yyyy
-  numericMatch = dateStr.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
-  if (numericMatch) {
-    let day = parseInt(numericMatch[1], 10);
-    let month = parseInt(numericMatch[2], 10) - 1;
-    let year = parseInt(numericMatch[3], 10);
-    if (month >= 0 && month < 12 && day >= 1 && day <= 31) {
-      return new Date(year, month, day);
+
+  // Try MM/DD/YYYY or DD/MM/YYYY – need to disambiguate
+  match = dateStr.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+  if (match) {
+    let first = parseInt(match[1], 10);
+    let second = parseInt(match[2], 10);
+    let year = parseInt(match[3], 10);
+
+    // Try as DD/MM first (day <=31, month <=12)
+    if (second >= 1 && second <= 12 && first >= 1 && first <= 31) {
+      // Valid as DD/MM
+      return new Date(year, second - 1, first);
+    }
+    // Try as MM/DD (month <=12, day <=31)
+    if (first >= 1 && first <= 12 && second >= 1 && second <= 31) {
+      return new Date(year, first - 1, second);
     }
   }
 
