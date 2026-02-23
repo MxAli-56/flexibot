@@ -96,6 +96,28 @@ function parseDate(dateStr, todayDate) {
   return null;
 }
 
+// Parse a time range like "9:00 AM - 2:00 PM" into start/end decimals
+function parseTimeRange(rangeStr) {
+  const match = rangeStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM)\s*-\s*(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+  if (!match) return null;
+  let startHour = parseInt(match[1], 10);
+  const startMin = parseInt(match[2], 10);
+  const startAmpm = match[3].toLowerCase();
+  let endHour = parseInt(match[4], 10);
+  const endMin = parseInt(match[5], 10);
+  const endAmpm = match[6].toLowerCase();
+
+  if (startAmpm === 'pm' && startHour !== 12) startHour += 12;
+  if (startAmpm === 'am' && startHour === 12) startHour = 0;
+  if (endAmpm === 'pm' && endHour !== 12) endHour += 12;
+  if (endAmpm === 'am' && endHour === 12) endHour = 0;
+
+  return {
+    start: startHour + startMin / 60,
+    end: endHour + endMin / 60
+  };
+}
+
 // Helper to convert phone numbers to clickable links (same regex as post‑processing)
 function formatPhoneNumbers(text) {
   return text.replace(
@@ -644,6 +666,82 @@ router.post("/message", async (req, res) => {
               let requestedDay = "";
               if (parsedDate) {
                 requestedDay = dayNames[parsedDate.getDay()];
+              }
+
+              // ----- TIME-OF-DAY PRE-VALIDATION (for specific doctor + specific time) -----
+              if (
+                !validationError &&
+                session.tempLead.doctor &&
+                session.tempLead.doctor.toLowerCase() !== "any" &&
+                session.tempLead.time &&
+                session.tempLead.time.toLowerCase() !== "anytime"
+              ) {
+                // Parse requested time to decimal
+                const timeStr = session.tempLead.time;
+                const timeMatch = timeStr.match(
+                  /(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i,
+                );
+                if (timeMatch) {
+                  let hour = parseInt(timeMatch[1]);
+                  const minute = parseInt(timeMatch[2]) || 0;
+                  const ampm = timeMatch[3] ? timeMatch[3].toLowerCase() : null;
+                  if (ampm === "pm" && hour !== 12) hour += 12;
+                  if (ampm === "am" && hour === 12) hour = 0;
+                  const requestedDecimal = hour + minute / 60;
+
+                  // Find the matched doctor
+                  const doctorInput = session.tempLead.doctor
+                    .toLowerCase()
+                    .replace(/^dr\.?\s*/, "")
+                    .trim();
+                  const matchedDoctor = Object.values(doctorSchedules).find(
+                    (d) =>
+                      d.name.toLowerCase().includes(doctorInput) ||
+                      doctorInput.includes(d.name.toLowerCase()),
+                  );
+
+                  if (matchedDoctor) {
+                    const range = parseTimeRange(matchedDoctor.available);
+                    if (range) {
+                      if (requestedDecimal < range.start) {
+                        validationError = `${matchedDoctor.name}'s shift starts at ${matchedDoctor.available.split("(")[1].split(")")[0]}. Please choose a time after that.`;
+                      } else if (requestedDecimal > range.end) {
+                        validationError = `${matchedDoctor.name}'s shift ends at ${matchedDoctor.available.split("(")[1].split(")")[0]}. Please choose an earlier time.`;
+                      }
+                      // if within range, no error
+                    }
+                  }
+                }
+              }
+
+              // If still no error and it's a specific doctor + specific time, accept without AI
+              if (
+                !validationError &&
+                session.tempLead.doctor &&
+                session.tempLead.doctor.toLowerCase() !== "any" &&
+                session.tempLead.time &&
+                session.tempLead.time.toLowerCase() !== "anytime"
+              ) {
+                const leadSaved = await createLeadAndNotify(
+                  session,
+                  clientData,
+                  session.tempLead,
+                );
+                if (leadSaved) {
+                  session.leadCaptured = false;
+                  session.leadState = null;
+                  session.tempLead = null;
+                  reply =
+                    "Thank you! Your appointment request has been sent. Our team will call you shortly to confirm.";
+                } else {
+                  reply =
+                    "Sorry, we're having trouble saving your request right now. Please call us at 021-34121905 to book your appointment. Our team will assist you immediately.";
+                  session.leadState = null;
+                  session.tempLead = null;
+                }
+                session.lastActivity = new Date();
+                await session.save();
+                return res.json({ reply, sessionId: session.sessionId });
               }
 
               // ----- AI VALIDATION (no JavaScript pre-validation) -----
