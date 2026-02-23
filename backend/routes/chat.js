@@ -12,6 +12,89 @@ const { chatWithQwen } = require("../providers/qwen");
 
 const router = express.Router();
 
+// ============================================
+// 📅 Date Parsing Helper (for common expressions)
+// Returns a Date object set to that date at 00:00 Karachi time, or null if unparseable.
+// ============================================
+function parseDate(dateStr, todayDate) {
+  if (!dateStr || typeof dateStr !== 'string') return null;
+
+  const lower = dateStr.trim().toLowerCase();
+
+  // Handle relative keywords
+  if (lower === 'today') {
+    return new Date(todayDate);
+  }
+  if (lower === 'tomorrow') {
+    const tomorrow = new Date(todayDate);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow;
+  }
+
+  // Try to extract month name first
+  const monthNames = ['january','february','march','april','may','june','july','august','september','october','november','december'];
+  const monthAbbr = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+
+  // Pattern 1: ordinal day + month name (optional year)
+  // e.g., "23rd Feb", "23 feb", "23rd February 2026"
+  const ordinalDayMonth = dateStr.match(/(\d{1,2})(?:st|nd|rd|th)?\s+([a-z]+)(?:\s+(\d{4}))?/i);
+  if (ordinalDayMonth) {
+    let day = parseInt(ordinalDayMonth[1], 10);
+    let monthStr = ordinalDayMonth[2].toLowerCase();
+    let year = ordinalDayMonth[3] ? parseInt(ordinalDayMonth[3], 10) : todayDate.getFullYear();
+
+    let monthIndex = monthNames.findIndex(m => m.startsWith(monthStr));
+    if (monthIndex === -1) monthIndex = monthAbbr.findIndex(m => m === monthStr);
+    if (monthIndex !== -1) {
+      // Validate day range (simplified)
+      if (day >= 1 && day <= 31) {
+        return new Date(year, monthIndex, day);
+      }
+    }
+  }
+
+  // Pattern 2: month name + day (optional year)
+  // e.g., "Feb 23", "February 23 2026"
+  const monthDay = dateStr.match(/([a-z]+)\s+(\d{1,2})(?:st|nd|rd|th)?(?:\s+(\d{4}))?/i);
+  if (monthDay) {
+    let monthStr = monthDay[1].toLowerCase();
+    let day = parseInt(monthDay[2], 10);
+    let year = monthDay[3] ? parseInt(monthDay[3], 10) : todayDate.getFullYear();
+
+    let monthIndex = monthNames.findIndex(m => m.startsWith(monthStr));
+    if (monthIndex === -1) monthIndex = monthAbbr.findIndex(m => m === monthStr);
+    if (monthIndex !== -1) {
+      if (day >= 1 && day <= 31) {
+        return new Date(year, monthIndex, day);
+      }
+    }
+  }
+
+  // Pattern 3: numeric dates (dd-mm-yyyy, dd/mm/yyyy, yyyy-mm-dd)
+  // Try yyyy-mm-dd first
+  let numericMatch = dateStr.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+  if (numericMatch) {
+    let year = parseInt(numericMatch[1], 10);
+    let month = parseInt(numericMatch[2], 10) - 1;
+    let day = parseInt(numericMatch[3], 10);
+    if (month >= 0 && month < 12 && day >= 1 && day <= 31) {
+      return new Date(year, month, day);
+    }
+  }
+  // Try dd-mm-yyyy or dd/mm/yyyy
+  numericMatch = dateStr.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+  if (numericMatch) {
+    let day = parseInt(numericMatch[1], 10);
+    let month = parseInt(numericMatch[2], 10) - 1;
+    let year = parseInt(numericMatch[3], 10);
+    if (month >= 0 && month < 12 && day >= 1 && day <= 31) {
+      return new Date(year, month, day);
+    }
+  }
+
+  return null;
+}
+
 // Helper to convert phone numbers to clickable links (same regex as post‑processing)
 function formatPhoneNumbers(text) {
   return text.replace(
@@ -448,6 +531,93 @@ router.post("/message", async (req, res) => {
 
           case "awaiting_confirmation":
             if (/yes|correct|right|ok|yep|yeah/i.test(text)) {
+              // ----- DATE PRE-VALIDATION (JavaScript) -----
+              let validationError = null;
+
+              // Get today's date in Karachi (for comparisons)
+              const nowInKarachi = new Date().toLocaleString("en-US", {
+                timeZone: "Asia/Karachi",
+              });
+              const [todayDateStr] = nowInKarachi.split(", ");
+              const [month, day, year] = todayDateStr.split("/").map(Number);
+              const todayDate = new Date(year, month - 1, day);
+
+              // Parse the user's requested date
+              const parsedDate = parseDate(session.tempLead.date, todayDate);
+
+              if (parsedDate) {
+                // 1. Past date check
+                if (parsedDate < todayDate) {
+                  validationError =
+                    "That date has already passed. Please choose a future date.";
+                } else {
+                  const dayOfWeek = parsedDate.getDay(); // 0 = Sunday, 1 = Monday, ...
+
+                  // 2. Clinic closed on Sunday (from siteContext)
+                  if (dayOfWeek === 0) {
+                    validationError =
+                      "Our clinic is closed on Sundays. Please choose another day.";
+                  } else {
+                    // 3. Doctor availability check (if specific doctor)
+                    if (
+                      session.tempLead.doctor &&
+                      session.tempLead.doctor.toLowerCase() !== "any"
+                    ) {
+                      const doctorInput = session.tempLead.doctor
+                        .toLowerCase()
+                        .replace(/^dr\.?\s*/, "")
+                        .trim();
+                      const matchedDoctor = Object.values(doctorSchedules).find(
+                        (d) =>
+                          d.name.toLowerCase().includes(doctorInput) ||
+                          doctorInput.includes(d.name.toLowerCase()),
+                      );
+                      if (matchedDoctor) {
+                        const dayAbbr = [
+                          "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat",
+                        ][dayOfWeek];
+                        if (matchedDoctor.unavailable.includes(dayAbbr)) {
+                          validationError = `${matchedDoctor.name} does not work on ${["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][dayOfWeek]}. Their full schedule: ${matchedDoctor.available}.`;
+                        }
+                      }
+                    }
+                    // 4. For "any" doctor, ensure at least one doctor works that day
+                    if (
+                      !validationError &&
+                      (!session.tempLead.doctor ||
+                        session.tempLead.doctor.toLowerCase() === "any")
+                    ) {
+                      const dayAbbr = [
+                        "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat",
+                      ][dayOfWeek];
+                      const anyDoctorWorks = Object.values(
+                        doctorSchedules,
+                      ).some((doc) => !doc.unavailable.includes(dayAbbr));
+                      if (!anyDoctorWorks) {
+                        validationError =
+                          "No doctors are available on that day. Please choose another day.";
+                      }
+                    }
+                  }
+                }
+              } else {
+                // If date parsing fails, we skip pre‑validation and let AI handle it (no error)
+                console.log(
+                  "Date parsing failed, relying on AI for:",
+                  session.tempLead.date,
+                );
+              }
+
+              // If we have a validation error, reply immediately
+              if (validationError) {
+                reply = `I notice an issue: ${validationError} Would you like to restart? (type <b>restart</b> to begin again or <b>cancel</b> to stop)`;
+                session.leadState = null;
+                session.tempLead = null;
+                session.lastActivity = new Date();
+                await session.save();
+                return res.json({ reply, sessionId: session.sessionId });
+              }
+
               // ----- AI VALIDATION (no JavaScript pre-validation) -----
               const validationPrompt = `
 You are a validation assistant. Check if this appointment request is valid.
