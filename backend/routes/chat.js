@@ -534,7 +534,7 @@ router.post("/message", async (req, res) => {
               // ----- DATE PRE-VALIDATION (JavaScript) -----
               let validationError = null;
 
-              // Get today's date in Karachi (for comparisons)
+              // Get today's date in Karachi
               const nowInKarachi = new Date().toLocaleString("en-US", {
                 timeZone: "Asia/Karachi",
               });
@@ -544,6 +544,7 @@ router.post("/message", async (req, res) => {
 
               // Parse the user's requested date
               const parsedDate = parseDate(session.tempLead.date, todayDate);
+              console.log("📅 Parsed date:", parsedDate); // debug
 
               if (parsedDate) {
                 // 1. Past date check
@@ -553,7 +554,7 @@ router.post("/message", async (req, res) => {
                 } else {
                   const dayOfWeek = parsedDate.getDay(); // 0 = Sunday, 1 = Monday, ...
 
-                  // 2. Clinic closed on Sunday (from siteContext)
+                  // 2. Clinic closed on Sunday
                   if (dayOfWeek === 0) {
                     validationError =
                       "Our clinic is closed on Sundays. Please choose another day.";
@@ -574,7 +575,13 @@ router.post("/message", async (req, res) => {
                       );
                       if (matchedDoctor) {
                         const dayAbbr = [
-                          "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat",
+                          "Sun",
+                          "Mon",
+                          "Tue",
+                          "Wed",
+                          "Thu",
+                          "Fri",
+                          "Sat",
                         ][dayOfWeek];
                         if (matchedDoctor.unavailable.includes(dayAbbr)) {
                           validationError = `${matchedDoctor.name} does not work on ${["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][dayOfWeek]}. Their full schedule: ${matchedDoctor.available}.`;
@@ -588,7 +595,13 @@ router.post("/message", async (req, res) => {
                         session.tempLead.doctor.toLowerCase() === "any")
                     ) {
                       const dayAbbr = [
-                        "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat",
+                        "Sun",
+                        "Mon",
+                        "Tue",
+                        "Wed",
+                        "Thu",
+                        "Fri",
+                        "Sat",
                       ][dayOfWeek];
                       const anyDoctorWorks = Object.values(
                         doctorSchedules,
@@ -601,7 +614,6 @@ router.post("/message", async (req, res) => {
                   }
                 }
               } else {
-                // If date parsing fails, we skip pre‑validation and let AI handle it (no error)
                 console.log(
                   "Date parsing failed, relying on AI for:",
                   session.tempLead.date,
