@@ -630,6 +630,21 @@ router.post("/message", async (req, res) => {
                 return res.json({ reply, sessionId: session.sessionId });
               }
 
+              // Get day of week for requested date (if parsed)
+              const dayNames = [
+                "Sunday",
+                "Monday",
+                "Tuesday",
+                "Wednesday",
+                "Thursday",
+                "Friday",
+                "Saturday",
+              ];
+              let requestedDay = "";
+              if (parsedDate) {
+                requestedDay = dayNames[parsedDate.getDay()];
+              }
+
               // ----- AI VALIDATION (no JavaScript pre-validation) -----
               const validationPrompt = `
 You are a validation assistant. Check if this appointment request is valid.
@@ -641,7 +656,7 @@ CLINIC HOURS: ${clinicHoursExist ? `${openDisplayHour % 12 || 12}:${openDisplayM
 
 REQUEST DETAILS:
 - Doctor: ${session.tempLead.doctor || "Any"}
-- Requested date: ${session.tempLead.date}
+- Requested date: ${session.tempLead.date}${requestedDay ? ` (${requestedDay})` : ""}
 - Requested time: ${session.tempLead.time || "Anytime"}
 - Issue: ${session.tempLead.issue}
 
@@ -659,7 +674,7 @@ INSTRUCTIONS - FOLLOW EXACTLY:
 
 4. DOCTOR AVAILABILITY CHECK:
    - Look at the doctor's schedule in BUSINESS KNOWLEDGE. It will be given in 12‑hour format (e.g., "9:00 AM - 2:00 PM").
-   - First, check the "Unavailable" list: days in parentheses after "(Unavailable: ...)" are days the doctor DOES NOT work. Determine the day of week for the requested date.
+   - First, check the "Unavailable" list: days in parentheses after "(Unavailable: ...)" are days the doctor DOES NOT work. Use the day of week provided in the request details (in parentheses) – do not recalculate it.
    - If that day is in the "Unavailable" list, respond with "INVALID: [Doctor] does not work on [day]. Their full schedule: [full schedule]."
    - Otherwise, the doctor works on that day. Convert the doctor's hours to 24‑hour format. Compare the requested time to the doctor's start and end times.
         * If the requested time is less than the start time, respond with "INVALID: [Doctor]'s shift starts at [start time]. Please choose a time after that."
