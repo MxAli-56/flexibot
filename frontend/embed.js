@@ -612,20 +612,12 @@ window.addEventListener("DOMContentLoaded", async () => {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  
-  /* Keeps it aligned with the bot's text (Avatar + Gap) */
   margin: 10px 0 10px 48px; 
-
-  /* THE DESKTOP ANCHOR: This forces the container to fill the width */
+  width: calc(100% - 48px);
+  padding-right: 12px;
+  flex-grow: 1; 
   align-self: stretch; 
-
-  /* Match the 10px right padding of your user messages exactly */
-  padding-right: 10px; 
-
-  /* Ensures buttons wrap from the left */
   justify-content: flex-start;
-  
-  /* Just in case: ensures no hidden overflow is clipping the shadow */
   box-sizing: border-box; 
 }
 
