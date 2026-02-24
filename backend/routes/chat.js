@@ -409,9 +409,7 @@ router.post("/message", async (req, res) => {
     // If lead already captured, skip
     if (!session.leadCaptured) {
       const bookingIntent =
-        /book|appointment|schedule|visit|come in|see a doctor|consult|checkup|treatment|procedure|i'?d like to come|i want to come|i'?ll visit|i'?ll come|can i see dr\.?|make an appointment|fix an appointment|set up a visit/i.test(
-          text,
-        );
+  /\b(?:book|schedule|make|fix|set up)\s+(?:an?\s+)?(?:appointment|consultation|visit)\b|\b(?:i(?:'d| would)? like to|i want to|can i|i need to)\s+(?:book|schedule|make|fix|set up|come in|see a doctor|visit)\b/i.test(text);
 
       // If no current lead state but we detect intent, start the flow
       if (bookingIntent && !session.leadState) {
@@ -1014,15 +1012,6 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
       aiReplyText = aiReplyText.replace(/\(If you'd like to book.*?\)/gi, "");
       aiReplyText = aiReplyText.replace(/\(If yes.*?\)/gi, "");
       aiReplyText = aiReplyText.replace(/\(If no.*?\)/gi, "");
-      aiReplyText = aiReplyText.replace(
-        /Would you like to book (a time|a slot|it)\?/gi,
-        "",
-      );
-      aiReplyText = aiReplyText.replace(/Should I book it\?/gi, "");
-      aiReplyText = aiReplyText.replace(
-        /Want me to check availability\?/gi,
-        "",
-      );
       aiReplyText = aiReplyText.replace(
         /^(Hey!|Hi!) How else can I help you.*?\?/i,
         "How can I help you today?",
