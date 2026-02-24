@@ -591,14 +591,18 @@ window.addEventListener("DOMContentLoaded", async () => {
   .flexibot-header {
     font-size: 16px;
   }
+
   .suggestion-btn {
     font-size: 12px;  /* Slightly smaller on mobile */
-    padding: 5px 10px; /* Slightly less padding */
+    padding: 6px 12px; /* Slightly less padding */
     white-space: nowrap; /* Prevents text wrapping */
   }
   
   .suggestion-container {
-    margin-left: 40px; /* Adjust for smaller bubble */
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 10px 0px 10px 72px;
   }
 }
 
@@ -612,16 +616,12 @@ window.addEventListener("DOMContentLoaded", async () => {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin: 10px 0 10px 48px; 
+  margin: 10px 0 10px 80px; 
   width: calc(100% - 48px);
   padding-right: 12px;
-  flex-grow: 1; 
-  align-self: stretch; 
-  justify-content: flex-start;
-  box-sizing: border-box; 
 }
 
-      .suggestion-btn {
+  .suggestion-btn {
         background: white;
         border: 1px solid #4c0f77;
         color: #4c0f77;
