@@ -157,7 +157,7 @@ Phone: ${leadData.phone}
 Issue: ${leadData.issue}
 Doctor preference: ${leadData.doctor || "Any"}
 Requested Date: ${leadData.date || "Not specified"}
-Preferred time: ${leadData.time || "Not specified"}
+Preferred time: ${leadData.time ? leadData.time : "Anytime"}
 
 Please contact them soon.
       `;
@@ -522,7 +522,7 @@ router.post("/message", async (req, res) => {
             session.tempLead.doctor = text.toLowerCase() === "any" ? "" : text;
             session.leadState = "awaiting_date";
             reply =
-              "For which <b>Day/Date</b> would you like to book? (e.g., 'today', 'tomorrow', or a specific date like 'June 5th')";
+              "For which <b>Day/Date</b> would you like to book? (e.g., 'today', 'tomorrow', 'June 5th' etc.)";
             break;
 
           case "awaiting_date":
