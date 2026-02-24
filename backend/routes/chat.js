@@ -495,12 +495,12 @@ router.post("/message", async (req, res) => {
             // Additional validation for Pakistani numbers
             if (cleaned.startsWith("03") && cleaned.length !== 11) {
               reply =
-                "For Pakistani mobile numbers, please enter 11 digits starting with 03.";
+                "For <b>Pakistani mobile numbers</b>, please enter 11 digits starting with 03.";
               break;
             }
             if (cleaned.startsWith("+92") && cleaned.length !== 13) {
               reply =
-                "For Pakistani numbers with country code, please use +92 followed by 10 digits (total 13 characters).";
+                "For <b>Pakistani numbers</b> with country code, please use +92 followed by 10 digits (total 13 characters).";
               break;
             }
             // If it starts with 0 but not 03, it might be a landline – accept (length 10-11)
@@ -522,7 +522,7 @@ router.post("/message", async (req, res) => {
             session.tempLead.doctor = text.toLowerCase() === "any" ? "" : text;
             session.leadState = "awaiting_date";
             reply =
-              "For which <b>date</b> would you like to book? (e.g., 'today', 'tomorrow', or a specific date like 'June 5th')";
+              "For which <b>Day/Date</b> would you like to book? (e.g., 'today', 'tomorrow', or a specific date like 'June 5th')";
             break;
 
           case "awaiting_date":
