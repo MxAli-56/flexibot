@@ -612,7 +612,7 @@ window.addEventListener("DOMContentLoaded", async () => {
         display: flex;
         flex-wrap: wrap;
         gap: 8px;
-        margin: 10px 0 10px 48px; /* Aligns with the message bubble text */
+        margin: 10px 10px 10px 48px; /* Aligns with the message bubble text */
       }
 
       .suggestion-btn {
