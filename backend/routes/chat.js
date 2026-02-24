@@ -409,7 +409,7 @@ router.post("/message", async (req, res) => {
     // If lead already captured, skip
     if (!session.leadCaptured) {
       const bookingIntent =
-        /\b(?:book|schedule|make|fix|set up)\s+(?:an?\s+)?(?:appointment|consultation|visit)\b|\b(?:i(?:'d| would)? like to|i want to|can i|i need to)\s+(?:book|schedule|make|fix|set up|come in|see a doctor|visit)\b/i.test(
+        /\b(?:book|schedule|make|fix|set up)\s+(?:me\s+)?(?:an?\s+)?(?:appointment|consultation|visit)\b|\b(?:i(?:'d| would)? like to|i want to|can i|i need to|please|yes|sure)\s+(?:book|schedule|make|fix|set up|come in|see a doctor|visit)\b/i.test(
           text,
         );
 
