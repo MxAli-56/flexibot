@@ -616,8 +616,8 @@ window.addEventListener("DOMContentLoaded", async () => {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin: 10px 0 10px 80px; 
-  width: calc(100% - 48px);
+  margin: 10px 0 10px 79px; 
+  width: 245px;
   padding-right: 12px;
 }
 
@@ -944,12 +944,12 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     async function sendMessage(networkRetries = 2) {
       // Remove suggestion buttons if present (first message)
-       const suggestionContainer = document.querySelector(
-         ".suggestion-container",
-       );
-       if (suggestionContainer) {
-         suggestionContainer.remove();
-       }
+      const suggestionContainer = document.querySelector(
+        ".suggestion-container",
+      );
+      if (suggestionContainer) {
+        suggestionContainer.remove();
+      }
 
       const text = Input.value.trim();
       if (!text) return;
