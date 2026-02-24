@@ -1041,6 +1041,10 @@ window.addEventListener("DOMContentLoaded", async () => {
           chatWindow.style.height = "70vh";
         }
       }
+      // Refocus input after bot replies, so user can type next message without tapping
+      setTimeout(() => {
+        Input.focus();
+      }, 100);
     }
 
     // ============================================
