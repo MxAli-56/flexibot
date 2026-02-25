@@ -404,7 +404,6 @@ router.post("/message", async (req, res) => {
     });
 
     // Update last activity time
-    session.awaitingBookingResponse = false;
     session.lastActivity = new Date();
     await session.save();
 
