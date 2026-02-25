@@ -14,6 +14,7 @@ const sessionSchema = new mongoose.Schema({
     date: { type: String, default: "" },
     time: { type: String, default: "" },
   },
+  awaitingBookingResponse: { type: Boolean, default: false },
   lastActivity: { type: Date, default: Date.now },
   createdAt: { type: Date, default: Date.now },
 });
