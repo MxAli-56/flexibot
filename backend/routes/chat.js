@@ -365,6 +365,7 @@ router.post("/message", async (req, res) => {
       // Reset lead state for abandoned sessions
       session.leadState = null;
       session.tempLead = null;
+      session.awaitingBookingResponse = false;
       await session.save();
     }
 
@@ -384,6 +385,7 @@ router.post("/message", async (req, res) => {
         date: "",
         time: "",
       };
+      session.awaitingBookingResponse = false;
       session.lastActivity = new Date();
       await session.save();
       return res.json({
@@ -402,8 +404,39 @@ router.post("/message", async (req, res) => {
     });
 
     // Update last activity time
+    session.awaitingBookingResponse = false;
     session.lastActivity = new Date();
     await session.save();
+
+    // ----- HANDLE RESPONSE TO BOOKING OFFER -----
+    if (session.awaitingBookingResponse) {
+      const affirmative =
+        /^(yes|sure|ok|okay|please|that works|go ahead|sounds good|let's do it|yeah|yep|correct)/i.test(
+          text.trim(),
+        );
+      if (affirmative) {
+        session.awaitingBookingResponse = false;
+        session.leadState = "awaiting_name";
+        session.tempLead = {
+          name: "",
+          phone: "",
+          issue: "",
+          doctor: "",
+          date: "",
+          time: "",
+        };
+        session.lastActivity = new Date();
+        await session.save();
+        return res.json({
+          reply:
+            "Sure, I can help you schedule that. Please provide your <b>name</b>. (You can type <b>cancel</b> anytime to stop or <b>restart</b> to start over the booking process.)",
+          sessionId: session.sessionId,
+        });
+      } else {
+        session.awaitingBookingResponse = false;
+        await session.save();
+      }
+    }
 
     // --- LEAD COLLECTION LOGIC STARTS HERE ---
     // If lead already captured, skip
@@ -424,6 +457,7 @@ router.post("/message", async (req, res) => {
           date: "",
           time: "",
         };
+        session.awaitingBookingResponse = false;
         session.lastActivity = new Date();
         await session.save();
         return res.json({
@@ -448,6 +482,7 @@ router.post("/message", async (req, res) => {
             date: "",
             time: "",
           };
+          session.awaitingBookingResponse = false;
           session.lastActivity = new Date();
           await session.save();
           return res.json({
@@ -461,6 +496,7 @@ router.post("/message", async (req, res) => {
         if (/cancel|never mind|forget it|stop/i.test(text)) {
           session.leadState = null;
           session.tempLead = null;
+          session.awaitingBookingResponse = false;
           session.lastActivity = new Date();
           await session.save();
           return res.json({
@@ -481,7 +517,7 @@ router.post("/message", async (req, res) => {
             if (!/^\+?[0-9\s-]+$/.test(text)) {
               reply =
                 "Please enter a valid phone number. (Only digits, spaces, dashes, & plus sign is allowed)";
-                break;
+              break;
             }
             // Remove all non-digit characters except leading plus for length check
             const cleaned = text.replace(/[^\d+]/g, "");
@@ -661,6 +697,7 @@ router.post("/message", async (req, res) => {
                 reply = `I notice an issue: ${validationError} Would you like to restart? (type <b>restart</b> to begin again or <b>cancel</b> to stop)`;
                 session.leadState = null;
                 session.tempLead = null;
+                session.awaitingBookingResponse = false;
                 session.lastActivity = new Date();
                 await session.save();
                 return res.json({ reply, sessionId: session.sessionId });
@@ -752,6 +789,7 @@ router.post("/message", async (req, res) => {
                   session.leadState = null;
                   session.tempLead = null;
                 }
+                session.awaitingBookingResponse = false;
                 session.lastActivity = new Date();
                 await session.save();
                 return res.json({ reply, sessionId: session.sessionId });
@@ -856,6 +894,7 @@ DO NOT add any other text. DO NOT explain your reasoning. Just return VALID or I
             }
             break;
         }
+        session.awaitingBookingResponse = false;
         session.lastActivity = new Date();
         await session.save();
         return res.json({ reply, sessionId: session.sessionId });
@@ -864,14 +903,15 @@ DO NOT add any other text. DO NOT explain your reasoning. Just return VALID or I
     // --- LEAD COLLECTION LOGIC ENDS HERE ---
 
     // --- POST‑LEAD CHANGE / NEW BOOKING HANDLER ---
-      if (/change|modify|update|reschedule|cancel|wrong|mistake/i.test(text)) {
-        const reply = formatPhoneNumbers(
-          "If you need to change or cancel your appointment, please call us at 021-34121905. Our team will help you right away.",
-        );
-        session.lastActivity = new Date();
-        await session.save();
-        return res.json({ reply, sessionId: session.sessionId });
-      }
+    if (/change|modify|update|reschedule|cancel|wrong|mistake/i.test(text)) {
+      const reply = formatPhoneNumbers(
+        "If you need to change or cancel your appointment, please call us at 021-34121905. Our team will help you right away.",
+      );
+      session.awaitingBookingResponse = false;
+      session.lastActivity = new Date();
+      await session.save();
+      return res.json({ reply, sessionId: session.sessionId });
+    }
 
     // 4️⃣ Get Chat History
     const history = await fetchConversation(session.sessionId, 12);
@@ -1014,10 +1054,19 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
       aiReplyText = aiReplyText.replace(/\(If you'd like to book.*?\)/gi, "");
       aiReplyText = aiReplyText.replace(/\(If yes.*?\)/gi, "");
       aiReplyText = aiReplyText.replace(/\(If no.*?\)/gi, "");
-      aiReplyText = aiReplyText.replace(/Would you like to book (a time|a slot|it)\?/gi,"",);
+      aiReplyText = aiReplyText.replace(
+        /Would you like to book (a time|a slot|it)\?/gi,
+        "",
+      );
       aiReplyText = aiReplyText.replace(/Should I book it\?/gi, "");
-      aiReplyText = aiReplyText.replace(/Want me to check availability\?/gi,"",);
-      aiReplyText = aiReplyText.replace(/^(Hey!|Hi!) How else can I help you.*?\?/i,"How can I help you today?",);
+      aiReplyText = aiReplyText.replace(
+        /Want me to check availability\?/gi,
+        "",
+      );
+      aiReplyText = aiReplyText.replace(
+        /^(Hey!|Hi!) How else can I help you.*?\?/i,
+        "How can I help you today?",
+      );
       aiReplyText = aiReplyText.replace(/^(Got it!|Certainly!)\s*/i, "");
       aiReplyText = aiReplyText.replace(
         /visit us (near|in|at) Lucky One Mall/gi,
@@ -1137,6 +1186,12 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
       aiReplyText = aiReplyText.replace(/(<br\s*\/?>){3,}/gi, "<br/><br/>");
     }
 
+    // 19. SET FLAG IF BOT ASKED A BOOKING QUESTION -----
+    if (aiReplyText && /^(?:would you like (?:me )?to book|do you want (?:me )?to schedule|shall i book|can i book|want to book an appointment|should i go ahead and book|can i schedule that for you)/i.test(aiReplyText.trim())) {
+     session.awaitingBookingResponse = true;
+     await session.save();
+    }
+
     // 8️⃣ Save & Respond (Using the now cleaned aiReplyText)
     await Message.create({
       sessionId: session.sessionId,
@@ -1146,6 +1201,7 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
     });
 
     // Update last activity time
+    session.awaitingBookingResponse = false;
     session.lastActivity = new Date();
     await session.save();
 
