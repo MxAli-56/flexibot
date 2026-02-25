@@ -409,11 +409,13 @@ router.post("/message", async (req, res) => {
 
     // ----- HANDLE RESPONSE TO BOOKING OFFER -----
     if (session.awaitingBookingResponse) {
+      console.log("🟡 Flag is true, checking affirmative");
       const affirmative =
-        /^(yes|sure|ok|okay|please|that works|go ahead|sounds good|let's do it|yeah|yep|correct)/i.test(
+        /^\s*(?:yes|sure|ok|okay|please|that works|go ahead|sounds good|let's do it|yeah|yep|correct)\b/i.test(
           text.trim(),
         );
       if (affirmative) {
+        console.log("🟢 Affirmative detected, starting booking flow");
         session.awaitingBookingResponse = false;
         session.leadState = "awaiting_name";
         session.tempLead = {
@@ -432,6 +434,7 @@ router.post("/message", async (req, res) => {
           sessionId: session.sessionId,
         });
       } else {
+        console.log("🔴 Not affirmative, clearing flag");
         session.awaitingBookingResponse = false;
         await session.save();
       }
@@ -1185,10 +1188,16 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
       aiReplyText = aiReplyText.replace(/(<br\s*\/?>){3,}/gi, "<br/><br/>");
     }
 
-    // 19. SET FLAG IF BOT ASKED A BOOKING QUESTION -----
-    if (aiReplyText && /^(?:would you like (?:me )?to book|do you want (?:me )?to schedule|shall i book|can i book|want to book an appointment|should i go ahead and book|can i schedule that for you)/i.test(aiReplyText.trim())) {
-     session.awaitingBookingResponse = true;
-     await session.save();
+    // 19. SET FLAG IF BOT ASKED A BOOKING QUESTION (anywhere in message)
+    if (
+      aiReplyText &&
+      /\b(?:would you like (?:me )?to book|do you want (?:me )?to schedule|shall i book|can i book|want to book an appointment|should i go ahead and book|can i schedule that for you)\b/i.test(
+        aiReplyText,
+      )
+    ) {
+      console.log("🔵 Setting flag: true");
+      session.awaitingBookingResponse = true;
+      await session.save();
     }
 
     // 8️⃣ Save & Respond (Using the now cleaned aiReplyText)
