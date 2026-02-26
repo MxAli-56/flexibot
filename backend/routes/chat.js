@@ -1209,7 +1209,6 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
     });
 
     // Update last activity time
-    session.awaitingBookingResponse = false;
     session.lastActivity = new Date();
     await session.save();
 
