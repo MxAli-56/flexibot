@@ -1188,17 +1188,15 @@ ${clientData?.siteContext || "No specific business data available.".slice(0, 500
       aiReplyText = aiReplyText.replace(/(<br\s*\/?>){3,}/gi, "<br/><br/>");
     }
 
-    // 19. SET FLAG IF BOT ASKED A BOOKING QUESTION (anywhere in message)
-    if (
-      aiReplyText &&
-      /\b(?:would you like (?:me )?to book|do you want (?:me )?to schedule|shall i book|can i book|want to book an appointment|should i go ahead and book|can i schedule that for you)\b/i.test(
-        aiReplyText,
-      )
-    ) {
-      console.log("🔵 Setting flag: true");
-      session.awaitingBookingResponse = true;
-      await session.save();
-    }
+    // 19. SET FLAG IF BOT ASKED A BOOKING QUESTION OR HINTED AT BOOKING
+if (
+  aiReplyText &&
+  /\b(?:would (?:you )?like (?:me )?to book|do you want (?:me )?to schedule|shall i book|can i book|want to book an appointment|should i go ahead and book|can i schedule that for you|let me know if you (?:would )?like to book|if you'?d like to book)\b/i.test(aiReplyText)
+) {
+  console.log("🔵 Setting flag: true (booking offer/hint)");
+  session.awaitingBookingResponse = true;
+  await session.save();
+}
 
     // 8️⃣ Save & Respond (Using the now cleaned aiReplyText)
     await Message.create({
