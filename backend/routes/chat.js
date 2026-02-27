@@ -118,6 +118,18 @@ function parseTimeRange(rangeStr) {
   };
 }
 
+// Helper to get start time in minutes from a timing string like "9:00 AM - 2:00 PM"
+function getStartMinutes(timingStr) {
+  const match = timingStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+  if (!match) return 0;
+  let hour = parseInt(match[1], 10);
+  const minute = parseInt(match[2], 10);
+  const ampm = match[3].toLowerCase();
+  if (ampm === 'pm' && hour !== 12) hour += 12;
+  if (ampm === 'am' && hour === 12) hour = 0;
+  return hour * 60 + minute;
+}
+
 // Helper to convert phone numbers to clickable links (same regex as post‑processing)
 function formatPhoneNumbers(text) {
   return text.replace(
@@ -341,6 +353,10 @@ router.post("/message", async (req, res) => {
           doctorsTodayList.push({ name: doc.name, timings });
         }
       }
+      // Sort doctors by shift start time (earliest first)
+      doctorsTodayList.sort(
+        (a, b) => getStartMinutes(a.timings) - getStartMinutes(b.timings),
+      );
       console.log(
         "📋 doctorsTodayList after build:",
         doctorsTodayList.map((d) => d.name),
