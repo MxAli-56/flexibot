@@ -308,19 +308,20 @@ router.post("/message", async (req, res) => {
           currentTimeDecimal >= openDecimal &&
           currentTimeDecimal < closeDecimal;
 
-        console.log("📅 Parsed hours:", {
-          openHour,
+        /* console.log("📅 Parsed hours:", {
+         openHour,
           openMinute,
           openAmPm,
           closeHour,
           closeMinute,
           closeAmPm,
         });
-        console.log("⏰ 24h conversion:", {
+         console.log("⏰ 24h conversion:", {
           openDecimal,
           closeDecimal,
           currentTimeDecimal,
-        });
+        }); */
+
         console.log("🏥 isClinicOpen:", isClinicOpen);
       }
 
@@ -329,15 +330,15 @@ router.post("/message", async (req, res) => {
       const doctorRegex =
         /Dr\.\s*([^:]+):\s*\(Unavailable:\s*([^)]+)\)[^A-Z]*Available:\s*([^.]+)/gi;
       let match;
-      console.log("📄 Starting doctor parsing...");
+      // console.log("📄 Starting doctor parsing...");
       while ((match = doctorRegex.exec(siteContext)) !== null) {
         const name = match[1].trim();
         const unavailable = match[2].split(",").map((d) => d.trim());
         const available = match[3].trim();
-        console.log(`✅ Parsed doctor: ${name}`, { unavailable, available });
+       // console.log(`✅ Parsed doctor: ${name}`, { unavailable, available });
         doctorSchedules[name.toLowerCase()] = { name, unavailable, available };
       }
-      console.log("📋 doctorSchedules keys:", Object.keys(doctorSchedules));
+      // console.log("📋 doctorSchedules keys:", Object.keys(doctorSchedules));
 
       // --- BUILD TODAY'S DOCTOR LIST (for injection) ---
       doctorsTodayList = [];
@@ -857,7 +858,7 @@ INSTRUCTIONS - FOLLOW EXACTLY:
 DO NOT add any other text. DO NOT explain your reasoning. Just return VALID or INVALID: followed by the reason.
 `;
 
-              console.log("VALIDATION PROMPT:", validationPrompt);
+              // console.log("VALIDATION PROMPT:", validationPrompt);
               const validation = await quickValidateWithAI(validationPrompt);
               console.log("VALIDATION RESPONSE:", validation);
 
