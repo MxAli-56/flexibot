@@ -594,7 +594,7 @@ window.addEventListener("DOMContentLoaded", async () => {
 
   .suggestion-btn {
     font-size: 12px;  /* Slightly smaller on mobile */
-    padding: 6px 12px; /* Slightly less padding */
+    padding: 7px 7px; /* Slightly less padding */
     white-space: nowrap; /* Prevents text wrapping */
   }
   
@@ -625,9 +625,9 @@ window.addEventListener("DOMContentLoaded", async () => {
         background: white;
         border: 1px solid #4c0f77;
         color: #4c0f77;
-        padding: 6px 14px;
+        padding: 7px 7px;
         border-radius: 20px;
-        font-size: 13px;
+        font-size: 12px;
         cursor: pointer;
         transition: all 0.2s;
         font-family: inherit;
