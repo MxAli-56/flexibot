@@ -1141,47 +1141,5 @@ window.addEventListener("DOMContentLoaded", async () => {
         Send.click();
       }
     });
-
-    // ============================================
-    // GLOBAL API EXPORT
-    // Expose FlexiBot methods for external control
-    // ============================================
-    window.FlexiBot = {
-      open: function() {
-        chatWindow.style.display = "flex";
-        chatButton.style.display = "none";
-        setTimeout(() => {
-          try {
-            Input.focus();
-          } catch (e) {}
-          Messages.scrollTop = Messages.scrollHeight;
-          sendGreeting();
-        }, 50);
-      },
-      close: function() {
-        chatWindow.style.display = "none";
-        chatButton.style.display = "flex";
-        Input.blur();
-      },
-      toggle: function() {
-        if (!chatWindow.style.display || chatWindow.style.display === "none") {
-          window.FlexiBot.open();
-        } else {
-          window.FlexiBot.close();
-        }
-      },
-      isOpen: function() {
-        return chatWindow.style.display === "flex";
-      },
-      sendMessage: function(text) {
-        if (text) {
-          Input.value = text;
-          sendMessage();
-        }
-      }
-    };
-
-    // Dispatch ready event for external listeners
-    window.dispatchEvent(new CustomEvent('flexibot:ready'));
-  } 
-});
+  }
+})
